@@ -201,8 +201,9 @@ private:
     uint16_t storedEffect = (uint16_t)EFF_ENUM::EFF_NONE;
     uint8_t storedBright;
     CRGB rgbColor = CRGB::White; // дефолтный цвет для RGB-режима
+#ifdef DLAMP_USE_TFT
     TFT_eSPI tft = TFT_eSPI();
-
+#endif
 #ifdef MIC_EFFECTS
     MICWORKER *mw = nullptr;
     void micHandler();

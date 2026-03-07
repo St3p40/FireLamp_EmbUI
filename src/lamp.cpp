@@ -48,13 +48,16 @@ void LAMP::lamp_init(const uint16_t curlimit)
   //FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
   //FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalPixelString);
   //FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(getUnsafeLedsArray(), NUM_LEDS);
+#ifdef DLAMP_USE_TFT
     tft.init();
     tft.setRotation(0);
     tft.fillScreen(TFT_BLACK);
 
     pinMode(TFT_BL, OUTPUT);
     digitalWrite(TFT_BL, LOW);
-
+#else
+    FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(getUnsafeLedsArray(), NUM_LEDS);
+#endif
   brightness(0, false);                          // начинаем с полностью потушеной матрицы 1-й яркости
   if (curlimit > 0){
     //FastLED.setMaxPowerInVoltsAndMilliamps(5, curlimit); // установка максимального тока БП
@@ -978,11 +981,16 @@ void LAMP::brightness(const uint8_t _brt, bool natural){
     if ( _cur == _brt) return;
 
     if (_brt) {
+#ifdef DLAMP_USE_TFT
       analogWrite(TFT_BL, _brt);
+#endif
       FastLED.setBrightness(_brt);
     } else {
-      analogWrite(TFT_BL,0); // полностью гасим лапу если нужна 0-я яркость
+#ifdef DLAMP_USE_TFT
+      analogWrite(TFT_BL,0);
+#endif
       FastLED.setBrightness(0);
+
       //show();
     }
 }
@@ -1272,22 +1280,20 @@ void LAMP::showWarning(
 
 
 void LAMP::show() {
-tft.startWrite(); // Починаємо транзакцію SPI
-
-    const int ledSize = 10; // 320/16 = 20, 240/12 = 20
-
+#ifdef DLAMP_USE_TFT
+  tft.startWrite();
     for (int y = 0; y < HEIGHT; y++) {
         for (int x = 0; x < WIDTH; x++) {
-            // Отримуємо колір
             CRGB pixel = leds[x + (y * WIDTH)];
             uint16_t color = tft.color565(pixel.r, pixel.g, pixel.b);
-
-            // Малюємо квадрат ПРЯМО на екран, без спрайту
-            tft.fillRect(y * ledSize, x * ledSize, ledSize, ledSize, color);
+            tft.fillRect(y * 10, x * 10, 10, 10, color);
         }
     }
 
-    tft.endWrite(); // Завершуємо транзакцію
+    tft.endWrite();
+#else
+  FastLED.show();
+#endif
 }
 
 

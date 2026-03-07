@@ -40,7 +40,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "EmbUI.h"
 #include <FastLED.h>
+#ifdef DLAMP_USE_TFT
 #include <TFT_eSPI.h>
+#endif
 // TaskScheduler
 extern Scheduler ts;
 

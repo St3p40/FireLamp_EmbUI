@@ -49,10 +49,9 @@ void LAMP::lamp_init(const uint16_t curlimit)
   //FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalPixelString);
   //FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(getUnsafeLedsArray(), NUM_LEDS);
     tft.init();
-    tft.setRotation(1); // Landscape
+    tft.setRotation(0);
     tft.fillScreen(TFT_BLACK);
 
-    // 2. Turn on Backlight (Crucial for CYD!)
     pinMode(TFT_BL, OUTPUT);
     digitalWrite(TFT_BL, LOW);
 
@@ -438,7 +437,7 @@ void LAMP::startOTAUpdate()
   setMode(LAMPMODE::MODE_OTA);
 
   effects.directMoveBy(EFF_MATRIX); // принудительное включение режима "Матрица" для индикации перехода в режим обновления по воздуху
-  myLamp.clear();
+  FastLED.clear();
   changePower(true);
   sendString(String(PSTR("- OTA UPDATE ON -")).c_str(), CRGB::Green);
   otaManager.startOtaUpdate();
@@ -1275,14 +1274,12 @@ void LAMP::showWarning(
 void LAMP::show() {
 tft.startWrite(); // Починаємо транзакцію SPI
 
-    const int mWidth = 24;
-    const int mHeight = 32;
     const int ledSize = 10; // 320/16 = 20, 240/12 = 20
 
-    for (int y = 0; y < mHeight; y++) {
-        for (int x = 0; x < mWidth; x++) {
+    for (int y = 0; y < HEIGHT; y++) {
+        for (int x = 0; x < WIDTH; x++) {
             // Отримуємо колір
-            CRGB pixel = leds[x + (y * mWidth)];
+            CRGB pixel = leds[x + (y * WIDTH)];
             uint16_t color = tft.color565(pixel.r, pixel.g, pixel.b);
 
             // Малюємо квадрат ПРЯМО на екран, без спрайту
@@ -1296,5 +1293,4 @@ tft.startWrite(); // Починаємо транзакцію SPI
 
 void LAMP::clear(){
   memset(leds, 0, sizeof(leds));
-  show();
 }

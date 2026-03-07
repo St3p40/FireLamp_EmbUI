@@ -96,7 +96,7 @@ void Led_Stream::handleE131Packet(e131_packet_t* p, const IPAddress &clientIP, b
         uint16_t count = min(ledsPerUni, remainingLeds);
         ledStream->fillLeds((CRGB*)&e131_data[ledStream->getDMXAddress()], count,  lastUniLedQt);
         if (uni == ledStream->getUniCt() && myLamp.isDirect())
-            FastLED.show();
+            myLamp.show();
     }
 }
 
@@ -215,8 +215,8 @@ Led_Stream::Led_Stream(const STREAM_TYPE type){
     }
     if (myLamp.isDirect()){
         myLamp.effectsTimer(T_DISABLE);
-        FastLED.clear();
-        FastLED.show();
+        myLamp.clear();
+        myLamp.show();
     }
 #ifdef EXT_STREAM_BUFFER
     else
@@ -289,7 +289,7 @@ void Led_Stream::fillBuff() {
         else {
             memcpy(getUnsafeLedsArray(), bufLeds, NUM_LEDS);
         }
-        FastLED.show();
+        myLamp.show();
     }
     else {
         if (myLamp.isMapping()){
@@ -333,7 +333,7 @@ void Led_Stream::fillBuff(const uint8_t *col){
                 leds[i/3] = (CRGB&)col[i];
             }
         }
-        FastLED.show();
+        myLamp.show();
     }
     else {
         if (myLamp.isMapping()) {
@@ -386,8 +386,8 @@ void Led_Stream::clearStreamObj(){
 void Led_Stream::clearBuff(){
     if (ledStream){
         if (myLamp.isDirect()){
-            FastLED.clear();
-            FastLED.show();
+            myLamp.clear();
+            myLamp.show();
         }
         else {
 #ifdef EXT_STREAM_BUFFER

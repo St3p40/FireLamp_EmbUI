@@ -48,8 +48,8 @@ MP3PLAYERDEVICE *mp3 = nullptr;
 
 
 void setup() {
-    //Serial.begin(115200);
-    Serial.begin(460800);
+    Serial.begin(115200);
+    //Serial.begin(460800);
 
 #ifdef WIFI_IS_OFF_AT_BOOT // https://github.com/esp8266/Arduino/issues/8593
     enableWiFiAtBootTime();

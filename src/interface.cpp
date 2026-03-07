@@ -3014,7 +3014,7 @@ void set_streaming_drirect(Interface *interf, JsonObject *data){
 #endif
             myLamp.effectsTimer(T_DISABLE);
             FastLED.clear();
-            LAMP.show();
+            myLamp.show();
         }
         else {
             myLamp.effectsTimer(T_ENABLE);

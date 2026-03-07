@@ -201,6 +201,7 @@ private:
     uint16_t storedEffect = (uint16_t)EFF_ENUM::EFF_NONE;
     uint8_t storedBright;
     CRGB rgbColor = CRGB::White; // дефолтный цвет для RGB-режима
+    TFT_eSPI tft = TFT_eSPI();
 
 #ifdef MIC_EFFECTS
     MICWORKER *mw = nullptr;
@@ -261,6 +262,8 @@ public:
     void setRefreshEffList(bool flag) { lampState.isEffListRefresh = flag; }
     bool isRefreshEffList() { return lampState.isEffListRefresh; }
     void setcurLimit(uint16_t val) {curLimit = val;}
+    void show();
+    void clear();
     uint16_t getcurLimit() {return curLimit;}
     LAMPSTATE &getLampState() {return lampState;}
     LList<UIControl*>&getEffControls() { LList<UIControl*>&controls = effects.getControls(); return controls; }
@@ -751,8 +754,8 @@ public:
         lamp->setBrightness(lamp->getNormalizedLampBrightness(), false, false);
         if (!lamp->isLampOn()) {
             lamp->effectsTimer(T_DISABLE);
-            FastLED.clear();
-            FastLED.show();
+            lamp->clear();
+            lamp->show();
         } else if(lamp->getMode()==LAMPMODE::MODE_DEMO)
             lamp->demoTimer(T_ENABLE);     // вернуть демо-таймер
     }
@@ -772,7 +775,7 @@ public:
             ALARMTASK::getInstance()->startmillis = millis();
             memset(ALARMTASK::getInstance()->dawnColorMinus,0,sizeof(dawnColorMinus));
             ALARMTASK::getInstance()->dawnCounter = 0;
-            FastLED.clear();
+            lamp->clear();
             //brightness(BRIGHTNESS, false);
             lamp->setBrightness(BRIGHTNESS, false, false);
             // величина рассвета 0-255

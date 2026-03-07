@@ -47,11 +47,18 @@ void LAMP::lamp_init(const uint16_t curlimit)
 
   //FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
   //FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalPixelString);
-  FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(getUnsafeLedsArray(), NUM_LEDS);
+  //FastLED.addLeds<WS2812B, LAMP_PIN, COLOR_ORDER>(getUnsafeLedsArray(), NUM_LEDS);
+    tft.init();
+    tft.setRotation(1); // Landscape
+    tft.fillScreen(TFT_BLACK);
+
+    // 2. Turn on Backlight (Crucial for CYD!)
+    pinMode(TFT_BL, OUTPUT);
+    digitalWrite(TFT_BL, LOW);
 
   brightness(0, false);                          // начинаем с полностью потушеной матрицы 1-й яркости
   if (curlimit > 0){
-    FastLED.setMaxPowerInVoltsAndMilliamps(5, curlimit); // установка максимального тока БП
+    //FastLED.setMaxPowerInVoltsAndMilliamps(5, curlimit); // установка максимального тока БП
   }
   FastLED.clearData();
   //FastLED.clear();                                            // очистка матрицы
@@ -235,7 +242,7 @@ void LAMP::effectsTick(){
 void LAMP::frameShow(const uint32_t ticktime){
   if ( !LEDFader::getInstance() && !isLampOn() && !isAlarm() ) return;
 
-  FastLED.show();
+  show();
 
   // откладываем пересчет эффекта на время для желаемого FPS, либо
   // на минимальный интервал в следующем loop()
@@ -330,7 +337,7 @@ void LAMP::changePower(bool flag) // флаг включения/выключе�
     setcurLimit(CURRENT_LIMIT == 0U ? (NUM_LEDS * 60) : CURRENT_LIMIT);
 #endif
 #endif
-    FastLED.setMaxPowerInVoltsAndMilliamps(5, curLimit); // установка максимального тока БП, более чем актуально))). Проверил, без этого куска - ограничение по току не работает :)
+    //FastLED.setMaxPowerInVoltsAndMilliamps(5, curLimit); // установка максимального тока БП, более чем актуально))). Проверил, без этого куска - ограничение по току не работает :)
 }
 
 #ifdef MP3PLAYER
@@ -431,7 +438,7 @@ void LAMP::startOTAUpdate()
   setMode(LAMPMODE::MODE_OTA);
 
   effects.directMoveBy(EFF_MATRIX); // принудительное включение режима "Матрица" для индикации перехода в режим обновления по воздуху
-  FastLED.clear();
+  myLamp.clear();
   changePower(true);
   sendString(String(PSTR("- OTA UPDATE ON -")).c_str(), CRGB::Green);
   otaManager.startOtaUpdate();
@@ -972,10 +979,12 @@ void LAMP::brightness(const uint8_t _brt, bool natural){
     if ( _cur == _brt) return;
 
     if (_brt) {
-      FastLED.setBrightness(natural ? dim8_video(_brt) : _brt);
+      analogWrite(TFT_BL, _brt);
+      FastLED.setBrightness(_brt);
     } else {
-      FastLED.setBrightness(0); // полностью гасим лапу если нужна 0-я яркость
-      FastLED.show();
+      analogWrite(TFT_BL,0); // полностью гасим лапу если нужна 0-я яркость
+      FastLED.setBrightness(0);
+      //show();
     }
 }
 
@@ -1039,8 +1048,8 @@ void LAMP::switcheffect(EFFSWITCH action, bool fade, uint16_t effnb, bool skip) 
 
   //LOG(printf_P,PSTR(">>>>>>>>>>>isEffClearing==%d\n"),isEffClearing);
   if(flags.isEffClearing || !effects.getEn()){ // для EFF_NONE или для случая когда включена опция - чистим матрицу
-    FastLED.clear();
-    FastLED.show();
+    myLamp.clear();
+    myLamp.show();
   }
 
   effects.moveSelected();
@@ -1241,7 +1250,7 @@ void LAMP::showWarning(
     }
 
     if(!lampState.isWarning){
-      FastLED.clear();
+      clear();
     }
     
     warningTask = new WarningTask(warn_color, warn_duration, warn_blinkHalfPeriod, msg, blinkHalfPeriod, TASK_ONCE
@@ -1255,10 +1264,37 @@ void LAMP::showWarning(
   }
   else {
     lampState.isWarning = false;
-    FastLED.clear();
+    clear();
     if(warningTask)
       warningTask->cancel();
     warningTask = nullptr;
   }
 }
 
+
+void LAMP::show() {
+tft.startWrite(); // Починаємо транзакцію SPI
+
+    const int mWidth = 24;
+    const int mHeight = 32;
+    const int ledSize = 10; // 320/16 = 20, 240/12 = 20
+
+    for (int y = 0; y < mHeight; y++) {
+        for (int x = 0; x < mWidth; x++) {
+            // Отримуємо колір
+            CRGB pixel = leds[x + (y * mWidth)];
+            uint16_t color = tft.color565(pixel.r, pixel.g, pixel.b);
+
+            // Малюємо квадрат ПРЯМО на екран, без спрайту
+            tft.fillRect(y * ledSize, x * ledSize, ledSize, ledSize, color);
+        }
+    }
+
+    tft.endWrite(); // Завершуємо транзакцію
+}
+
+
+void LAMP::clear(){
+  memset(leds, 0, sizeof(leds));
+  show();
+}

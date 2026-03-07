@@ -61,6 +61,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include <GyverButton.h>
 #include <FastLED.h>
+#include <TFT_eSPI.h>
 
 //-----------------------------------
 //#define ESP_USE_BUTTON                                      // если строка не закомментирована, должна быть подключена кнопка (иначе ESP может регистрировать "фантомные" нажатия и некорректно устанавливать яркость)

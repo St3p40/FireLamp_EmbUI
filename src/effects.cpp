@@ -130,7 +130,7 @@ String EffectWhiteColorStripe::setDynCtrl(UIControl*_val){
 
 bool EffectWhiteColorStripe::whiteColorStripeRoutine(CRGB *leds, EffectWorker *param)
 {
-  FastLED.clear();
+  myLamp.clear();
 
 #ifdef MIC_EFFECTS
   byte _scale = isMicOn() ? (256.0/getMicMapMaxPeak()+0.3)*scale : scale;
@@ -437,7 +437,7 @@ EVERY_N_SECONDS(1){
           }
           else {
             modeColor = 0;
-            FastLED.clear();
+            myLamp.clear();
           }          
         }
         break;
@@ -1000,7 +1000,7 @@ bool EffectBBalls::run(CRGB *ledarr, EffectWorker *opt){
 }
 
 void EffectBBalls::regen(){
-  FastLED.clear();
+  myLamp.clear();
   randomSeed(millis());
   bballsNUM_BALLS =  map(_scale, 1, 16, 1, bballsMaxNUM_BALLS);
   for (int i = 0 ; i < bballsNUM_BALLS ; i++) {          // Initialize variables
@@ -1391,7 +1391,7 @@ bool EffectComet::run(CRGB *ledarr, EffectWorker *opt){
 
 bool EffectComet::smokeRoutine(CRGB *leds, EffectWorker *param) {
   // if(isDebug()){
-  //   FastLED.clear(); // для отладки чистим матрицу, чтобы показать перемещение точек
+  //   myLamp.clear(); // для отладки чистим матрицу, чтобы показать перемещение точек
   // }
   count ++;
   if (colorId == 1) {
@@ -1437,7 +1437,7 @@ bool EffectComet::smokeRoutine(CRGB *leds, EffectWorker *param) {
 bool EffectComet::firelineRoutine(CRGB *leds, EffectWorker *param) {
   // if(!isDebug()) 
     fadeToBlackBy(leds, NUM_LEDS, map(blur, 1, 64, 20, 5)); 
-  // else FastLED.clear();
+  // else myLamp.clear();
 
   count ++;
   if (colorId == 1) {
@@ -1468,7 +1468,7 @@ bool EffectComet::fractfireRoutine(CRGB *leds, EffectWorker *param) {
 
   // if(!isDebug()) 
     fadeToBlackBy(leds, NUM_LEDS, map(blur, 1, 64, 20, 5)); 
-  // else FastLED.clear();
+  // else myLamp.clear();
 
   float beat = (float)beatsin88(5 * speedy, 50, 100) / 100 ;
   count ++;
@@ -1496,7 +1496,7 @@ bool EffectComet::fractfireRoutine(CRGB *leds, EffectWorker *param) {
 bool EffectComet::flsnakeRoutine(CRGB *leds, EffectWorker *param) {
   // if(!isDebug()) 
     EffectMath::dimAll(blur); 
-  // else FastLED.clear();
+  // else myLamp.clear();
   
   count ++;
   if (colorId == 1 or colorId == 255) {
@@ -1540,7 +1540,7 @@ bool EffectComet::rainbowCometRoutine(CRGB *leds, EffectWorker *param)
   if (blur < 64) fadeToBlackBy(leds, NUM_LEDS, map(blur, 1, 64, 32, 0));
 
   // if(isDebug()){
-  //   FastLED.clear(); // для отладки чистим матрицу, чтобы показать перемещение точек
+  //   myLamp.clear(); // для отладки чистим матрицу, чтобы показать перемещение точек
   // }
   CRGB _eNs_color;
   if (colorId == 255) {
@@ -1579,7 +1579,7 @@ bool EffectComet::rainbowComet3Routine(CRGB *leds, EffectWorker *param)
   if (count%2 == 0) hue++;
 
   // if(isDebug()){
-  //   FastLED.clear(); // для отладки чистим матрицу, чтобы показать перемещение точек
+  //   myLamp.clear(); // для отладки чистим матрицу, чтобы показать перемещение точек
   // }
 
   CHSV color;
@@ -1808,7 +1808,7 @@ String EffectDrift::setDynCtrl(UIControl*_val){
 
 bool EffectDrift::run(CRGB *ledarr, EffectWorker *opt){
   if (!flag)
-    FastLED.clear();
+    myLamp.clear();
   else
     fadeToBlackBy(ledarr, NUM_LEDS, beatsin88(350. * EffectMath::fmap((float)speed, 1., 255., 1., 5.), 512, 4096) / 256);
 
@@ -1924,7 +1924,7 @@ bool EffectTwinkles::twinklesRoutine(CRGB *leds, EffectWorker *param)
   if (curPalette == nullptr) {
     return false;
   }
-  FastLED.clear();
+  myLamp.clear();
   uint16_t it = 0;
   while(it<curtnum){
     TTWINKLE *el = &twinkles[it];
@@ -2302,7 +2302,7 @@ void EffectRingsLock::ringsSet(){
   if (curPalette == nullptr) {
     return;
   }
-  //FastLED.clear();
+  //myLamp.clear();
 
   ringNb = (float)HEIGHT / ringWidth + ((HEIGHT % ringWidth == 0U) ? 0U : 1U)%HEIGHT; // количество колец
   upRingHue = ringWidth - (ringWidth * ringNb - HEIGHT) / 2U; // толщина верхнего кольца. может быть меньше нижнего
@@ -2322,7 +2322,7 @@ void EffectRingsLock::ringsSet(){
 bool EffectRingsLock::ringsRoutine(CRGB *leds, EffectWorker *param)
 {
   uint8_t h, x, y;
-  FastLED.clear();
+  myLamp.clear();
 
   for (uint8_t i = 0; i < ringNb; i++)
   {
@@ -2429,7 +2429,7 @@ void EffectCube2d::cubesize() {
     return;
   }
 
-  FastLED.clear();
+  myLamp.clear();
 
   cntY = ceil((float)HEIGHT / (float)(sizeY + 1U));
 	fieldY = (sizeY + 1U) * cntY;
@@ -2824,7 +2824,7 @@ bool EffectTime::run(CRGB *ledarr, EffectWorker *opt){
 }
 
 void EffectTime::load(){
-  FastLED.clear();
+  myLamp.clear();
   palettesload();    // подгружаем дефолтные палитры
 
   if(((curTimePos<=(signed)LET_WIDTH*2-(LET_WIDTH/2)) || (curTimePos>=(signed)WIDTH+(LET_WIDTH/2))) )
@@ -2837,7 +2837,7 @@ void EffectTime::load(){
 
 bool EffectTime::palleteTest(CRGB *leds, EffectWorker *param)
 {
-  FastLED.clear();
+  myLamp.clear();
   float sf = 0.996078431372549+speed/255.; // смещение, для скорости 1 смещения не будет, т.к. суммарный коэф. == 1
   for(uint8_t y=0; y<HEIGHT; y++)
     for(uint8_t x=0; x<WIDTH; x++)
@@ -2849,7 +2849,7 @@ bool EffectTime::timePrintRoutine(CRGB *leds, EffectWorker *param)
 {
   if (speed==254 || speed==1 || speed==255){
     EVERY_N_SECONDS(5){
-      FastLED.clear();
+      myLamp.clear();
 
       String tmp = embui.timeProcessor.getFormattedShortTime();
       if(HEIGHT>=16){
@@ -2868,7 +2868,7 @@ bool EffectTime::timePrintRoutine(CRGB *leds, EffectWorker *param)
       }
     }
   } else {
-    //FastLED.clear();
+    //myLamp.clear();
     EVERY_N_SECONDS(5){
       isMinute=!isMinute;
     }
@@ -3166,7 +3166,7 @@ bool EffectLeapers::run(CRGB *leds, EffectWorker *param){
     randomSeed(millis());
   }
   //EffectMath::dimAll(0);
-  FastLED.clear();
+  myLamp.clear();
 
   for (unsigned i = 0; i < numParticles; i++) {
     move_leaper(&leapers[i]);
@@ -4028,7 +4028,7 @@ bool EffectOsc::run(CRGB *leds, EffectWorker *param) {
     lastrun = millis();
   }
   //fadeToBlackBy(leds, NUM_LEDS, 200);
-  FastLED.clear();
+  myLamp.clear();
 
   if (scale == 1) {
     byte micPick = (isMicOn()? getMicMaxPeak() : random8(200));
@@ -4250,7 +4250,7 @@ bool EffectButterfly::run(CRGB *leds, EffectWorker *param)
   if (wings && isColored)
     fadeToBlackBy(leds, NUM_LEDS, 200);
   else
-    FastLED.clear();
+    myLamp.clear();
 
   float maxspeed;
   uint8_t tmp;
@@ -4448,7 +4448,7 @@ void EffectPatterns::drawPicture_XY() {
   float vx, vy, f;
   vx = modff(xsin, &f);
   vy = modff(ysin, &f);
-  //FastLED.clear();
+  //myLamp.clear();
   EffectMath::dimAll(127);
 
   for (int16_t x = -1; x < (int)WIDTH+1; x++)
@@ -4532,7 +4532,7 @@ bool EffectPatterns::patternsRoutine(CRGB *leds, EffectWorker *param)
 //===== Ефект Стрілки ==========================//
 // https://github.com/vvip-68/GyverPanelWiFi/
 void EffectArrows::load(){
-    FastLED.clear();
+    myLamp.clear();
     arrow_complete = false;
     arrow_mode_orig = _scale-1;
     arrow_mode = arrow_mode_orig == 0 ? random8(1,5) : arrow_mode_orig;
@@ -4564,7 +4564,7 @@ bool EffectArrows::run(CRGB *leds, EffectWorker *param) {
     }
   }
 
-  FastLED.clear();
+  myLamp.clear();
 
   CHSV color;
   // движение стрелки - cлева направо
@@ -5080,7 +5080,7 @@ void EffectSnake::Snake::draw(CRGB colors[SNAKE_LENGTH], int snakenb, bool subpi
   for (int i = 0; i < len; i++) // (int)SNAKE_LENGTH
   {
     if(isDebug){ // тест сабпикселя
-      FastLED.clear(); 
+      myLamp.clear(); 
     }
 
     if (subpix){
@@ -5242,7 +5242,7 @@ void EffectTest::regen() {
 }
 
 bool EffectTest::run(CRGB *leds, EffectWorker *param) {
-  FastLED.clear(); 
+  myLamp.clear(); 
   int8_t dx = 0, dy = 0;
   for (uint8_t i = 0; i < map(SnakeNum, 1, 10, 2, MAX_SNAKES); i++)
   {
@@ -5462,7 +5462,7 @@ void EffectPopcorn::reload(){
 bool EffectPopcorn::run(CRGB *leds, EffectWorker *param) {
   randomSeed(micros());
   if (blurred) fadeToBlackBy(leds, NUM_LEDS, 30. * speedFactor);
-  else FastLED.clear();
+  else myLamp.clear();
   float popcornGravity = 0.1 * speedFactor;
 
   for (uint8_t r = 0; r < numRockets; r++) {
@@ -6003,7 +6003,7 @@ bool EffectOscilator::run(CRGB *leds, EffectWorker *opt) {
   // расчёт химической реакции и отрисовка мира
   uint16_t colorCount[3] = {0U, 0U, 0U};
   hue++;
-  FastLED.clear();
+  myLamp.clear();
   for (uint8_t x = 0; x < WIDTH; x++) {
       for (uint8_t y = 0; y < HEIGHT; y++) {
           if (oscillatingWorld[x][y].red){
@@ -6197,7 +6197,7 @@ bool EffectWrain::run(CRGB *leds, EffectWorker *opt) {
     {
     case 1:
     case 5:
-      FastLED.clear();
+      myLamp.clear();
       break;
     case 2:
     case 6:
@@ -6635,7 +6635,7 @@ bool EffectCircles::run(CRGB *leds, EffectWorker *opt) {
   _video = isMicOn() ? constrain(getMicMaxPeak() * EffectMath::fmap(gain, 1.0f, 255.0f, 1.25f, 5.0f), 48U, 255U) : 255;
 #endif
   randomSeed(millis());
-  FastLED.clear();
+  myLamp.clear();
   for (uint8_t i = 0; i < count; i++) {
     circles[i].bpm += speedFactor;
     if (circles[i].radius() < 0.001) {
@@ -7294,7 +7294,7 @@ String EffectStarShips::setDynCtrl(UIControl*_val){
 
 void EffectStarShips::load() {
   palettesload();
-  FastLED.clear();
+  myLamp.clear();
 }
 
 void EffectStarShips::MoveX(uint8_t am = 128, int8_t amplitude = 1, float shift = 0) {
@@ -7558,7 +7558,7 @@ bool EffectVU::run(CRGB *leds, EffectWorker *opt) {
   }
 #endif
 */
-  FastLED.clear();
+  myLamp.clear();
   // Process the FFT data into bar heights
   for (byte band = 0; band < NUM_BANDS; band++) {
     // Scale the bars for the display

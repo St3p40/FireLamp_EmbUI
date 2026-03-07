@@ -40,8 +40,11 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 #include "EmbUI.h"
 #include <FastLED.h>
+#include <TFT_eSPI.h>
 // TaskScheduler
 extern Scheduler ts;
+
+#define INLINE inline __attribute__((always_inline))
 
 //-----------------------------------------------
 

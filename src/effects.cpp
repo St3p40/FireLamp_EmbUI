@@ -7823,18 +7823,18 @@ bool EffectFire2021::run(CRGB *leds, EffectWorker *param) {
 // https://editor.soulmatelights.com/gallery/1471-puzzles-subpixel
 // (c) Stepko 10.12.21
 String EffectPuzzles::setDynCtrl(UIControl*_val) {
-  if(_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.05, 0.5);
+  if(_val->getId()==1) speedFactor = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 1, 128);
   else if(_val->getId()==3) {
     PSizeX = EffectCalc::setDynCtrl(_val).toInt();
     PSizeY = PSizeX;
     regen();
   }
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
+  else EffectCalc::setDynCtrl(_val).toInt();
   return String();
 }
 
 void EffectPuzzles::load() {
-  palettesload();    // подгружаем палитры
+  palettesload();
   regen();
 
 }
@@ -7851,20 +7851,20 @@ void EffectPuzzles::regen() {
 
   byte n = 0;
   for (byte x = 0; x < PCols; x++) {
-    for (byte y = 0; y < PRows; y++) { 
+    for (byte y = 0; y < PRows; y++) {
       n++;
-      puzzle[x][y] = (255/ (PCols*PRows)) * n; 
+      puzzle[x][y] = (255/ (PCols*PRows)) * n;
     }
   }
   z_dot[0] = random(0, PCols);
   z_dot[1] = random(0, PRows);
-
+  puzzle[z_dot[0]][z_dot[1]] = 0;
 }
 
 void EffectPuzzles::draw_square(byte x1, byte y1, byte x2, byte y2, byte col) {
   for (byte x = x1; x < x2; x++) {
     for (byte y = y1; y < y2; y++) {
-      if (col == 0) { EffectMath::getPixel(x, y) = CRGB(0, 0, 0); } 
+      if (col == 0) { EffectMath::getPixel(x, y) = CRGB(0, 0, 0); }
       else if ((x == x1 || x == x2 - 1) || (y == y1 || y == y2 - 1))
         EffectMath::getPixel(x, y) = ColorFromPalette(*curPalette, col);
       else EffectMath::getPixel(x, y) = CHSV(0, 0, 96);
@@ -7872,17 +7872,19 @@ void EffectPuzzles::draw_square(byte x1, byte y1, byte x2, byte y2, byte col) {
   }
 }
 
-void EffectPuzzles::draw_squareF(float x1, float y1, float x2, float y2, byte col) {
-  for (float x = x1; x < x2; x++) {
-    for (float y = y1; y < y2; y++) {
-      if ((x == x1 || x == x2 - 1) || (y == y1 || y == y2 - 1))
-        EffectMath::drawPixelXYF(x, y, ColorFromPalette(*curPalette, col));
-      else EffectMath::drawPixelXYF(x, y, CHSV(0, 0, 96));
+void EffectPuzzles::draw_wu_square(uint32_t x1, uint32_t y1, uint32_t x2, uint32_t y2, byte col) {
+  uint32_t Lx = x2 - x1;
+  uint32_t Ly = y2 - y1;
+  for (uint32_t x = 0; x < Lx; x+=256) {
+    for (uint32_t y = 0; y < Ly; y+=256) {
+      if (col == 0) { EffectMath::getPixel(x, y) = CRGB(0, 0, 0); } else if ((x == 0 || x == Lx - 256) || (y == 0 || y == Ly - 256))
+        EffectMath::wu_pixel(x1 + x, y1 + y, ColorFromPalette(*curPalette, col));
+      else EffectMath::wu_pixel(x1 + x, y1 + y, CHSV(0, 0, 96));
     }
   }
 }
 
-bool EffectPuzzles::run(CRGB *leds, EffectWorker *param) { 
+bool EffectPuzzles::run(CRGB *leds, EffectWorker *param) {
   for (byte x = 0; x < PCols; x++) {
     for (byte y = 0; y < PRows; y++) {
       draw_square(x * PSizeX, y * PSizeY, (x + 1) * PSizeX, (y + 1) * PSizeY, puzzle[x][y]);
@@ -7906,15 +7908,16 @@ bool EffectPuzzles::run(CRGB *leds, EffectWorker *param) {
       step = 1;
       break;
     case 1:
-     color = puzzle[z_dot[0] + move[0]][z_dot[1] + move[1]];
+      color = puzzle[z_dot[0] + move[0]][z_dot[1] + move[1]];
       puzzle[z_dot[0] + move[0]][z_dot[1] + move[1]] = 0;
       step = 2;
       break;
     case 2:
-      draw_squareF(((z_dot[0] + move[0]) * PSizeX) + shift[0], ((z_dot[1] + move[1]) * PSizeY) + shift[1], ((z_dot[0] + move[0] + 1) * PSizeX) + shift[0], (z_dot[1] + move[1] + 1) * PSizeY + shift[1], color);
+      draw_wu_square((((z_dot[0] + move[0]) * PSizeX) << 8) + shift[0], (((z_dot[1] + move[1]) * PSizeY) << 8) + shift[1],
+       (((z_dot[0] + move[0] + 1) * PSizeX) << 8) + shift[0], (((z_dot[1] + move[1] + 1) * PSizeY) << 8) + shift[1], color);
       shift[0] -= (move[0] * speedFactor);
       shift[1] -= (move[1] * speedFactor);
-      if ((fabs(shift[0]) >= WIDTH / PCols) || (fabs(shift[1]) >= HEIGHT / PRows)) {
+      if ((abs(shift[0]) >= (WIDTH / PCols) << 8) || (abs(shift[1]) >= (HEIGHT / PRows) << 8)) {
         shift[0] = 0;
         shift[1] = 0;
         puzzle[z_dot[0]][z_dot[1]] = color;
@@ -7933,9 +7936,9 @@ bool EffectPuzzles::run(CRGB *leds, EffectWorker *param) {
 //===== Ефект Кольорові драже ==================//
 // (c)stepko
 String EffectPile::setDynCtrl(UIControl*_val) {
-  if(_val->getId()==1) speed = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 20, 200);
+  if(_val->getId()==1) speedFactor = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 20, 200) * speedfactor;
   else if(_val->getId()==2) _scale = EffectCalc::setDynCtrl(_val).toInt();
-  else EffectCalc::setDynCtrl(_val).toInt(); 
+  else EffectCalc::setDynCtrl(_val).toInt();
   return String();
 }
 
@@ -7944,7 +7947,7 @@ void EffectPile::load() {
 }
 
 void EffectPile::changeFrame() {
-  memcpy(F[0], F[1], WIDTH * HEIGHT);																						  
+  memcpy(F[0], F[1], WIDTH * HEIGHT);
   uint8_t temp = map8(random(256), _scale, 255U);
   if (pcnt >= map8(temp, 2U, HEIGHT - 3U)) {
     temp = HEIGHT + 1U - pcnt;
@@ -7964,16 +7967,16 @@ pcnt = 0;
       else if (F[1][x][y] && F[1][x][y - 1] && !F[1][x + 1][y - 1]  && !(x == EffectMath::getmaxWidthIndex()) && y) {F[1][x + 1][y - 1] = F[1][x][y]; F[1][x][y] = 0; }
        else if (F[1][x][y] && F[1][x][y - 1] && !F[1][x - 1][y - 1] && x && y) {F[1][x - 1][y - 1] = F[1][x][y]; F[1][x][y] = 0; }
         else if (pcnt < y) pcnt = y;
-    }									
+    }
   }
   if (!(random(255) % 6)) F[1][WIDTH/2 - (random(-2, WIDTH%2 ? 3 : 4))][EffectMath::getmaxHeightIndex() ] = random(16, 255);
 }
 
 bool EffectPile::run(CRGB *leds, EffectWorker *param) {
-  shift += speed;
-  if (shift >= 255) {
+  shift += speedFactor;
+  while (shift > 255) {
     changeFrame();
-    shift%=256;
+    shift-=256;
   }
   for (byte x = 0; x < WIDTH; x++) {
     for (byte y = 0; y < HEIGHT; y++) {

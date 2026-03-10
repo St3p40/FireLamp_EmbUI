@@ -2092,8 +2092,8 @@ class EffectPuzzles : public EffectCalc {
 private:
     byte PSizeX = 4;
     byte PSizeY = 4;
-    float Ecols = (WIDTH / PSizeX);
-    float Erows = (HEIGHT / PSizeY);
+    int Ecols = (WIDTH / PSizeX);
+    int Erows = (HEIGHT / PSizeY);
     bool Ca = (WIDTH % PSizeX)? 1 : 0;
     bool Ra = (HEIGHT % PSizeY)? 1 : 0;
     uint8_t PCols = round(Ecols) + Ca;
@@ -2104,11 +2104,11 @@ private:
     byte z_dot[2];
     byte step;
     int8_t move[2];
-    float shift[2] = { 0, 0 };
+    int shift[2] = { 0, 0 };
     bool XorY;
 
     void draw_square(byte x1, byte y1, byte x2, byte y2, byte col);
-    void draw_squareF(float x1, float y1, float x2, float y2, byte col);
+    void draw_wu_square(uint32_t x1, uint32_t y1, uint32_t x2, uint32_t y2, byte col);
     void regen();
 
     String setDynCtrl(UIControl*_val) override;
@@ -2119,17 +2119,18 @@ public:
 };
 
 //===== Ефект Кольорові драже ==================//
-// (c)stepko																									   
+// (c)stepko
 class EffectPile : public EffectCalc {
 private:
     uint8_t pcnt = 0U, _scale;
     String setDynCtrl(UIControl*_val) override;
     void changeFrame();
     byte F[2][WIDTH][HEIGHT];
+    uint16_t speedFactor;
     uint16_t shift;
 public:
     void load() override;
-    
+
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 

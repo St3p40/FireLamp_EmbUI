@@ -153,7 +153,7 @@ _LAMPFLAGS(){
     isDebug = false; // флаг отладки
     isFaderON = true; // признак того, что используется фейдер для смены эффектов
     isEffClearing = false; // нужно ли очищать эффекты при переходах с одного на другой
-    isGlobalBrightness = false; // признак использования глобальной яркости для всех режимов
+    isGlobalBrightness = true; // признак использования глобальной яркости для всех режимов
     isEventsHandled = true;
     isMicOn = true; // глобальное испльзование микрофона
     numInList = false;

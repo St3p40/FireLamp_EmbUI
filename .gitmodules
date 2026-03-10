@@ -1,0 +1,3 @@
+[submodule "lib/embButton"]
+	path = lib/embButton
+	url = https://github.com/st3p40/embButton

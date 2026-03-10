@@ -7823,7 +7823,7 @@ bool EffectFire2021::run(CRGB *leds, EffectWorker *param) {
 // https://editor.soulmatelights.com/gallery/1471-puzzles-subpixel
 // (c) Stepko 10.12.21
 String EffectPuzzles::setDynCtrl(UIControl*_val) {
-  if(_val->getId()==1) speedFactor = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 1, 128);
+  if(_val->getId()==1) speedFactor = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 1, 128) * speedfactor;
   else if(_val->getId()==3) {
     PSizeX = EffectCalc::setDynCtrl(_val).toInt();
     PSizeY = PSizeX;
@@ -7847,7 +7847,7 @@ void EffectPuzzles::regen() {
   PCols = round(Ecols) + Ca;
   PRows = round(Erows) + Ra;
   step = 0;
-  puzzle.resize(PCols, std::vector<uint8_t>(PRows, 0));
+  puzzle = std::vector< std::vector<uint8_t> >(PCols, std::vector<uint8_t>(PRows));
 
   byte n = 0;
   for (byte x = 0; x < PCols; x++) {
@@ -7917,7 +7917,7 @@ bool EffectPuzzles::run(CRGB *leds, EffectWorker *param) {
        (((z_dot[0] + move[0] + 1) * PSizeX) << 8) + shift[0], (((z_dot[1] + move[1] + 1) * PSizeY) << 8) + shift[1], color);
       shift[0] -= (move[0] * speedFactor);
       shift[1] -= (move[1] * speedFactor);
-      if ((abs(shift[0]) >= (WIDTH / PCols) << 8) || (abs(shift[1]) >= (HEIGHT / PRows) << 8)) {
+      if ( abs(shift[0]) >= PSizeX << 8 || abs(shift[1]) >= PSizeY << 8 ) {
         shift[0] = 0;
         shift[1] = 0;
         puzzle[z_dot[0]][z_dot[1]] = color;

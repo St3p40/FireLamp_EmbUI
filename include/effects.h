@@ -2098,7 +2098,7 @@ private:
     bool Ra = (HEIGHT % PSizeY)? 1 : 0;
     uint8_t PCols = round(Ecols) + Ca;
     uint8_t PRows = round(Erows) + Ra;
-    float speedFactor = 0.1;
+    int speedFactor = 0.1;
     std::vector<std::vector<uint8_t>> puzzle;
     byte color;
     byte z_dot[2];

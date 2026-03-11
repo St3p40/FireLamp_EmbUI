@@ -902,7 +902,11 @@ void block_effects_param(Interface *interf, JsonObject *data){
                     }
                     if(isinterf) interf->json_section_end();
                     if(isinterf) {
-                    interf->file(FPSTR(TCONST_00F2), FPSTR(TCONST_00F2), "Upload animation");
+                    interf->raw_html(FPSTR(TCONST_00F2), String(F(
+                        "<form method=\"POST\" action=\"/anim_upload\" enctype=\"multipart/form-data\" class=\"pure-form pure-g mr\">\n"
+        "    <input type=\"file\" name=\"file\" class=\"pure-u-2-3\">\n"
+        "    <input type=\"submit\" value=\"Upload to animations\" class=\"pure-u-1-3 pure-button pure-button-primary\">\n"
+        "</form>")));
                     interf->button_confirm(FPSTR(TCONST_00F3), "Delete selected animation");
                     }
 #ifdef EMBUI_USE_MQTT
@@ -3508,7 +3512,6 @@ void create_parameters(){
     embui.section_handle_add(FPSTR(TCONST_007A), show_settings_other);
     embui.section_handle_add(FPSTR(TCONST_004B), set_settings_other);
 
-        embui.section_handle_add(FPSTR(TCONST_00F2), upload_file);
     embui.section_handle_add(FPSTR(TCONST_00F3), delete_file);
 
     #ifdef OPTIONS_PASSWORD

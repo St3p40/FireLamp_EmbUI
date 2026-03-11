@@ -147,6 +147,32 @@ void setup() {
 #else
   embui.server.addHandler(new SPIFFSEditor(LittleFS, F("esp32"), F("esp32")));
 #endif
+    embui.server.on("/anim_upload", HTTP_POST,
+    [](AsyncWebServerRequest *request) {
+        request->redirect("/");
+    },
+    [](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+        static File uploadFile;
+
+        if (!index) {
+            if (!LittleFS.exists("/animations")) {
+                LittleFS.mkdir("/animations");
+            }
+            String path = "/animations/" + filename;
+            LOG(printf_P, PSTR("Upload Start: %s\n"), path.c_str());
+            uploadFile = LittleFS.open(path, "w");
+        }
+
+        if (uploadFile) {
+            uploadFile.write(data, len);
+        }
+
+        if (final) {
+            if (uploadFile) uploadFile.close();
+            LOG(println,"Upload Finished!");
+        }
+    }
+);
 
   sync_parameters();        // падение есп32 не воспоизводится, kDn
 

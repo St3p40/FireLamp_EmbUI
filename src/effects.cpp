@@ -8575,6 +8575,15 @@ String EffectPlayer::setDynCtrl(UIControl*_val){
     blur = EffectCalc::setDynCtrl(_val).toInt() == 1;
   }
   else if(_val->getId()==4) { loadFile(String(F("/animations/"))+_val->getVal()); }
+  else if(_val->getId()==5) {
+    String filename = String(F("/animations/")) + rgbFile.name();
+        if (rgbFile && !rgbFile.isDirectory()) {
+        rgbFile.close();
+        LOG(println, F("RGBPlayer: Previous file was closed"));
+    }
+    LittleFS.remove(filename);
+    _val->setVal(String(F("0")));
+  }
   /* else if(_val->getId()==5) mode = EffectCalc::setDynCtrl(_val).toInt();*/
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
@@ -8628,7 +8637,7 @@ void EffectPlayer::drawFrame () {
     for (uint16_t y = 0; y < (maxSize * MULTIPLIC); y+= resizeY) {
         for (uint16_t x = 0; x < (maxSize * MULTIPLIC); x+= resizeX) {
             uint16_t index = ((x / MULTIPLIC * resizeX) / MULTIPLIC) + ((y/MULTIPLIC * resizeY) / MULTIPLIC) * frameWidth;
-            if (codec332) 
+            if (codec332)
                 EffectMath::getPixel(((x - corrX) /MULTIPLIC), (HEIGHT- 1) - (y - corrY) / MULTIPLIC) = EffectMath::rgb332_To_CRGB(frameBuf[index]);
             else {
                 index *= 2;
@@ -8650,7 +8659,7 @@ bool EffectPlayer::loadFile(String filename) {
         rgbFile.close();
         LOG(println, F("RGBPlayer: Previous file was closed"));
     }
-    codec332 = filename.indexOf(F("332")) > 0; 
+    codec332 = filename.indexOf(F("332")) > 0;
     LOG(printf_P, PSTR("RGBPlayer: Start. File rgb%d mode.\n"), (codec332 ? 332U: 565U));
     rgbFile = LittleFS.open(filename, "r");
     if (rgbFile && !rgbFile.isDirectory() && rgbFile.size() >= (3 + WIDTH * HEIGHT)) {
@@ -8658,7 +8667,6 @@ bool EffectPlayer::loadFile(String filename) {
         rgbFile.read(&frameHeight, 1);
         rgbFile.read(&frames, 1);
         LOG(printf_P, PSTR("RGBPlayer: File %s loaded. It has %d frames. \nRGBPlayer: Image size %dX%d.\n"), filename.c_str(), frames, frameWidth, frameHeight);
-    
         calc();
     } else {
         LOG(println, F("File not found or wrong format!"));
@@ -8670,7 +8678,7 @@ bool EffectPlayer::loadFile(String filename) {
 bool EffectPlayer::run(CRGB *leds, EffectWorker *param) {
   if (dryrun(5.0))
     return false;
-    
+
   if (codec332) getFromFile_332(frame);
   else getFromFile_565(frame);
   drawFrame();

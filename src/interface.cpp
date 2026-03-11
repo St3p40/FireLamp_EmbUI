@@ -901,6 +901,10 @@ void block_effects_param(Interface *interf, JsonObject *data){
                         }
                     }
                     if(isinterf) interf->json_section_end();
+                    if(isinterf) {
+                    interf->file(FPSTR(TCONST_00F2), FPSTR(TCONST_00F2), "Upload animation");
+                    interf->button_confirm(FPSTR(TCONST_00F3), "Delete selected animation");
+                    }
 #ifdef EMBUI_USE_MQTT
                     embui.publish(String(FPSTR(TCONST_008B)) + ctrlId, controls[i]->getVal(), true);
 #endif
@@ -3311,6 +3315,20 @@ bool notfound_handle(AsyncWebServerRequest *request, const String& req)
     return true;
 }
 
+void upload_file(Interface *interf, JsonObject *data) {
+
+}
+
+void delete_file(Interface *interf, JsonObject *data) {
+    LList<UIControl*>& controls = myLamp.effects.getControls();
+// Create a control with new value
+UIControl ctrl(5, CONTROL_TYPE::CHECKBOX, "Delete", "1");
+// Set it directly on the effect worker
+if (myLamp.effects.worker) {
+    myLamp.effects.worker->setDynCtrl(&ctrl);
+}
+}
+
 /**
  * Набор конфигурационных переменных и обработчиков интерфейса
  */
@@ -3489,6 +3507,9 @@ void create_parameters(){
 
     embui.section_handle_add(FPSTR(TCONST_007A), show_settings_other);
     embui.section_handle_add(FPSTR(TCONST_004B), set_settings_other);
+
+        embui.section_handle_add(FPSTR(TCONST_00F2), upload_file);
+    embui.section_handle_add(FPSTR(TCONST_00F3), delete_file);
 
     #ifdef OPTIONS_PASSWORD
     embui.section_handle_add(FPSTR(TCONST_0093), set_opt_pass);

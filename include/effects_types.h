@@ -311,6 +311,9 @@ static const char TCONST_00EF[] PROGMEM = "folder";
 static const char TCONST_00F0[] PROGMEM = "curEff";
 static const char TCONST_00F1[] PROGMEM = "refresh";
 
+static const char TCONST_00F2[] PROGMEM = "anim_upload";
+static const char TCONST_00F3[] PROGMEM = "anim_delete";
+
 /** набор служебных текстовых констант (HTTP/MQTT запросы)
  */
 

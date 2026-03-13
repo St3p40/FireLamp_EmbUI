@@ -8608,22 +8608,22 @@ void EffectPlayer::calc() {
     LOG(printf_P, PSTR("RGBPlayer: Framebuffer size is %d bytes.\n"), newBufSize);
 }
 
-void EffectPlayer::getFromFile_332(uint8_t frame) {
-    uint32_t index = (frameWidth * frameHeight) * frame + 3;
+void EffectPlayer::getFromFile_332(int frame) {
+    int index = (frameWidth * frameHeight) * frame + 3;
     rgbFile.seek(index, SeekSet);
 
-    for(uint16_t i = 0; i < frameWidth * frameHeight; i++) {
+    for(int i = 0; i < frameWidth * frameHeight; i++) {
         uint8_t data;
         rgbFile.read(&data, 1);
         frameBuf[i] = data;
     }
 }
 
-void EffectPlayer::getFromFile_565(uint8_t frame) {
-    uint32_t index = (frameWidth * frameHeight) * frame * 2 + 3;
+void EffectPlayer::getFromFile_565(int frame) {
+    int index = (frameWidth * frameHeight) * frame * 2 + 3;
     rgbFile.seek(index, SeekSet);
 
-    for(uint16_t i = 0; i < frameWidth * frameHeight; i ++) {
+    for(int i = 0; i < frameWidth * frameHeight; i ++) {
         uint8_t data0;
         rgbFile.read(&data0, 1);
         frameBuf[i*2] = data0;
@@ -8636,7 +8636,7 @@ void EffectPlayer::getFromFile_565(uint8_t frame) {
 void EffectPlayer::drawFrame () {
     for (uint16_t y = 0; y < (maxSize * MULTIPLIC); y+= resizeY) {
         for (uint16_t x = 0; x < (maxSize * MULTIPLIC); x+= resizeX) {
-            uint16_t index = ((x / MULTIPLIC * resizeX) / MULTIPLIC) + ((y/MULTIPLIC * resizeY) / MULTIPLIC) * frameWidth;
+            int index = ((x / MULTIPLIC * resizeX) / MULTIPLIC) + ((y/MULTIPLIC * resizeY) / MULTIPLIC) * frameWidth;
             if (codec332)
                 EffectMath::getPixel(((x - corrX) /MULTIPLIC), (HEIGHT- 1) - (y - corrY) / MULTIPLIC) = EffectMath::rgb332_To_CRGB(frameBuf[index]);
             else {
@@ -8665,7 +8665,8 @@ bool EffectPlayer::loadFile(String filename) {
     if (rgbFile && !rgbFile.isDirectory() && rgbFile.size() >= (3 + WIDTH * HEIGHT)) {
         rgbFile.read(&frameWidth, 1);
         rgbFile.read(&frameHeight, 1);
-        rgbFile.read(&frames, 1);
+
+        frames = (rgbFile.size() - 3) / (frameWidth * frameHeight * (!codec332 + 1));
         LOG(printf_P, PSTR("RGBPlayer: File %s loaded. It has %d frames. \nRGBPlayer: Image size %dX%d.\n"), filename.c_str(), frames, frameWidth, frameHeight);
         calc();
     } else {

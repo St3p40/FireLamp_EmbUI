@@ -2413,8 +2413,9 @@ class EffectGhostRider : public EffectCalc {
 #define MULTIPLIC 256
 class EffectPlayer : public EffectCalc {
     private:
-        uint8_t frameWidth, frameHeight, frames, frame = 0; 
-        uint16_t maxSize; 
+        uint8_t frameWidth, frameHeight;
+        int frames, frame = 0;
+        uint16_t maxSize;
         int16_t corrX, corrY;
         uint16_t resizeX, resizeY;
         uint8_t* frameBuf = nullptr;
@@ -2425,12 +2426,12 @@ class EffectPlayer : public EffectCalc {
         bool blur;
 
         void calc();
-        void getFromFile_332(uint8_t frame);
-        void getFromFile_565(uint8_t frame);
+        void getFromFile_332(int frame);
+        void getFromFile_565(int frame);
         void drawFrame();
         bool loadFile(String filename);
         String setDynCtrl(UIControl*_val) override;
-    
+
     public:
         void load() override;
         bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;

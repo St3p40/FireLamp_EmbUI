@@ -8590,7 +8590,7 @@ String EffectPlayer::setDynCtrl(UIControl*_val){
 }
 
 void EffectPlayer::load() {
-  //String tmp = F("/animations/Спираль.565");  // тут загружаємо файл с ФС. Який попередньо був прописаний в конфіг.
+  //String tmp = F("/animations/_.565");
 }
 
 void EffectPlayer::calc() {
@@ -8599,7 +8599,7 @@ void EffectPlayer::calc() {
     resizeY = ((float)frameHeight / maxSize) * MULTIPLIC;
     corrX = ((maxSize - WIDTH) / 2) * MULTIPLIC;
     corrY = ((maxSize - HEIGHT) / 2) * MULTIPLIC;
-    uint16_t newBufSize = frameWidth * frameHeight * (codec332 ? 1 : 2);
+    uint16_t newBufSize = frameWidth * frameHeight * bbp;
     if (bufSize < newBufSize) {
         delete [] frameBuf;
         frameBuf = new uint8_t[newBufSize];
@@ -8609,7 +8609,7 @@ void EffectPlayer::calc() {
 }
 
 void EffectPlayer::getFromFile_332(int frame) {
-    int index = (frameWidth * frameHeight) * frame + 3;
+    int index = (frameWidth * frameHeight) * frame + header_size;
     rgbFile.seek(index, SeekSet);
 
     for(int i = 0; i < frameWidth * frameHeight; i++) {
@@ -8620,7 +8620,7 @@ void EffectPlayer::getFromFile_332(int frame) {
 }
 
 void EffectPlayer::getFromFile_565(int frame) {
-    int index = (frameWidth * frameHeight) * frame * 2 + 3;
+    int index = (frameWidth * frameHeight) * frame * 2 + header_size;
     rgbFile.seek(index, SeekSet);
 
     for(int i = 0; i < frameWidth * frameHeight; i ++) {
@@ -8633,16 +8633,41 @@ void EffectPlayer::getFromFile_565(int frame) {
     }
 }
 
+void EffectPlayer::getFromFile_888(int frame) {
+    int index = (frameWidth * frameHeight) * frame * 3 + header_size;
+    rgbFile.seek(index, SeekSet);
+
+    for(int i = 0; i < frameWidth * frameHeight; i++) {
+        uint8_t data0;
+        rgbFile.read(&data0, 1);
+        frameBuf[i*2] = data0;
+        uint8_t data1;
+        rgbFile.read(&data1, 1);
+        frameBuf[i*2 + 1] = data1;
+        uint8_t data2;
+        rgbFile.read(&data2, 1);
+        frameBuf[i*2 + 2] = data2;
+    }
+}
+
 void EffectPlayer::drawFrame () {
     for (uint16_t y = 0; y < (maxSize * MULTIPLIC); y+= resizeY) {
         for (uint16_t x = 0; x < (maxSize * MULTIPLIC); x+= resizeX) {
             int index = ((x / MULTIPLIC * resizeX) / MULTIPLIC) + ((y/MULTIPLIC * resizeY) / MULTIPLIC) * frameWidth;
-            if (codec332)
-                EffectMath::getPixel(((x - corrX) /MULTIPLIC), (HEIGHT- 1) - (y - corrY) / MULTIPLIC) = EffectMath::rgb332_To_CRGB(frameBuf[index]);
-            else {
-                index *= 2;
-                uint16_t result = ((uint16_t)frameBuf[index] << 8) | (uint16_t)frameBuf[index + 1];
+            switch (bbp) {
+                case 1:
+                    EffectMath::getPixel(((x - corrX) /MULTIPLIC), (HEIGHT- 1) - (y - corrY) / MULTIPLIC) = EffectMath::rgb332_To_CRGB(frameBuf[index]);
+                    break;
+                case 2:
+                    index *= 2;
+                    uint16_t result = ((uint16_t)frameBuf[index] << 8) | (uint16_t)frameBuf[index + 1];
                 EffectMath::getPixel(((x - corrX) /MULTIPLIC), (HEIGHT- 1) - (y - corrY) / MULTIPLIC) = EffectMath::rgb565_To_CRGB(result);
+                    break;
+                /*case 3:
+                    index *= 3;
+                    EffectMath::getPixel(((x - corrX) /MULTIPLIC), (HEIGHT- 1) - (y - corrY) / MULTIPLIC) = CRGB(frameBuf[index], frameBuf[index + 1], frameBuf[index + 2]);
+                    break;
+                    */
             }
         }
     }
@@ -8650,7 +8675,7 @@ void EffectPlayer::drawFrame () {
 }
 
 bool EffectPlayer::loadFile(String filename) {
-    if (!LittleFS.exists(filename)) {                                // якщо він відсутній, то загружаємо тестовий, який гарантовано має бути в ФС
+    if (!LittleFS.exists(filename)) {
       LOG(println, filename);
       filename = F("/animations/Candle.565");
     }
@@ -8659,14 +8684,47 @@ bool EffectPlayer::loadFile(String filename) {
         rgbFile.close();
         LOG(println, F("RGBPlayer: Previous file was closed"));
     }
-    codec332 = filename.indexOf(F("332")) > 0;
-    LOG(printf_P, PSTR("RGBPlayer: Start. File rgb%d mode.\n"), (codec332 ? 332U: 565U));
+    bbp = filename.indexOf(F("565")) > 0 ? 2 : filename.indexOf(F("332")) > 0 ? 1 : 0;
     rgbFile = LittleFS.open(filename, "r");
-    if (rgbFile && !rgbFile.isDirectory() && rgbFile.size() >= (3 + WIDTH * HEIGHT)) {
-        rgbFile.read(&frameWidth, 1);
-        rgbFile.read(&frameHeight, 1);
+    if (rgbFile && !rgbFile.isDirectory() && rgbFile.size() >= (header_size + WIDTH * HEIGHT * bbp)) {
+      if(!bbp) // new format
+      {
+        uint16_t header = 0;
+        rgbFile.read((uint8_t *)&header, 2);
+        if(header == 0x4162) // "bA"
+        {
+          header_size = 8;
+          rgbFile.read((uint8_t *)&header, 2);
+          switch (header)
+          {
+            case 0x3162: bbp = 1; break;
+            case 0x3262: bbp = 2; break;
+            case 0x3362: bbp = 3; break;
+            default:
+              LOG(printf_P, PSTR("RGBPlayer: File type %d isn't implemented!\n"), header);
+              rgbFile.close();
+              return false;
+          }
+        }
+          else {
+            LOG(printf_P, PSTR("RGBPlayer: Wrong file format signature!, 0x4162 expected, 0x%04X found.\n"), header);
+              rgbFile.close();
+              return false;
+          }
+          rgbFile.read((uint8_t *)&frameWidth, 2);
+          rgbFile.read((uint8_t *)&frameHeight, 2);
 
-        frames = (rgbFile.size() - 3) / (frameWidth * frameHeight * (!codec332 + 1));
+      }
+      else
+      {
+        LOG(printf_P, PSTR("RGBPlayer: Reading old format.\n"));
+        header_size = 3;
+        rgbFile.read((uint8_t *)&frameWidth, 1);
+        rgbFile.read((uint8_t *)&frameHeight, 1);
+      }
+      LOG(printf_P, PSTR("RGBPlayer: Start. File rgb%d mode.\n"), (bbp == 1 ? 332U : bbp == 2 ? 565U : 888U));
+
+        frames = (rgbFile.size() - header_size) / (frameWidth * frameHeight * bbp);
         LOG(printf_P, PSTR("RGBPlayer: File %s loaded. It has %d frames. \nRGBPlayer: Image size %dX%d.\n"), filename.c_str(), frames, frameWidth, frameHeight);
         calc();
     } else {
@@ -8680,8 +8738,17 @@ bool EffectPlayer::run(CRGB *leds, EffectWorker *param) {
   if (dryrun(5.0))
     return false;
 
-  if (codec332) getFromFile_332(frame);
-  else getFromFile_565(frame);
+  switch(bbp) {
+    case 1:
+      getFromFile_332(frame);
+      break;
+    case 2:
+      getFromFile_565(frame);
+      break;
+    case 3:
+      getFromFile_888(frame);
+      break;
+  }
   drawFrame();
   frame++;
   if (frame >= frames)

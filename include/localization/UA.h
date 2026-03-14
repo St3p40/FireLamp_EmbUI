@@ -125,7 +125,7 @@ static const char TEFF_076[] PROGMEM = "Міраж";
 static const char TEFF_077[] PROGMEM = "Калейдоскоп";
 static const char TEFF_078[] PROGMEM = "Примарний вершник";
 static const char TEFF_250[] PROGMEM = "Годинник";
-static const char TEFF_251[] PROGMEM = "Програвач RGB 332/565";
+static const char TEFF_251[] PROGMEM = "Програвач зображень";
 static const char TEFF_254[] PROGMEM = "Частотний аналізатор";
 static const char TEFF_255[] PROGMEM = "Осцилограф";
 

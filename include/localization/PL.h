@@ -125,7 +125,7 @@ static const char TEFF_076[] PROGMEM = "Miraż";
 static const char TEFF_077[] PROGMEM = "Kalejdoskop";
 static const char TEFF_078[] PROGMEM = "Ghost Rider";
 static const char TEFF_250[] PROGMEM = "Zegar";
-static const char TEFF_251[] PROGMEM = "Odtwarzacz RGB 332/565";
+static const char TEFF_251[] PROGMEM = "Odtwarzacz obrazów";
 static const char TEFF_254[] PROGMEM = "Analizator częstotliwości";
 static const char TEFF_255[] PROGMEM = "Oscyloskop";
 

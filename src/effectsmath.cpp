@@ -854,7 +854,7 @@ CRGB EffectMath::rgb332_To_CRGB(uint8_t value) {
 // преобразовать цвет из 16 битного формата rgb565 в 24 битный
 CRGB EffectMath::rgb565_To_CRGB(uint16_t value) {
   // gamma correction для expandColor
-  static const uint8_t
+ /* static const uint8_t
   gamma5[] PROGMEM = {
     0x00, 0x01, 0x02, 0x03, 0x05, 0x07, 0x09, 0x0b,
     0x0e, 0x11, 0x14, 0x18, 0x1d, 0x22, 0x28, 0x2e,
@@ -877,6 +877,11 @@ CRGB EffectMath::rgb565_To_CRGB(uint16_t value) {
   CRGB color =  ((uint32_t)pgm_read_dword(&gamma5[ value >> 11       ]) << 16) |
                 ((uint32_t)pgm_read_dword(&gamma6[(value >> 5) & 0x3F]) <<  8) |
                 pgm_read_dword(&gamma5[ value       & 0x1F]);
+  return color;*/
+  CRGB color;
+  color.r = (value & 0xF800) >> 8;
+  color.g = (value & 0x07E0) >> 3;
+  color.b = (value & 0x001F) << 3;
   return color;
 }
 

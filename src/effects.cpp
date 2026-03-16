@@ -8640,13 +8640,13 @@ void EffectPlayer::getFromFile_888(int frame) {
     for(int i = 0; i < frameWidth * frameHeight; i++) {
         uint8_t data0;
         rgbFile.read(&data0, 1);
-        frameBuf[i*2] = data0;
+        frameBuf[i*3] = data0;
         uint8_t data1;
         rgbFile.read(&data1, 1);
-        frameBuf[i*2 + 1] = data1;
+        frameBuf[i*3 + 1] = data1;
         uint8_t data2;
         rgbFile.read(&data2, 1);
-        frameBuf[i*2 + 2] = data2;
+        frameBuf[i*3 + 2] = data2;
     }
 }
 
@@ -8654,21 +8654,21 @@ void EffectPlayer::drawFrame () {
     for (uint16_t y = 0; y < (maxSize * MULTIPLIC); y+= resizeY) {
         for (uint16_t x = 0; x < (maxSize * MULTIPLIC); x+= resizeX) {
             int index = ((x / MULTIPLIC * resizeX) / MULTIPLIC) + ((y/MULTIPLIC * resizeY) / MULTIPLIC) * frameWidth;
-            switch (bbp) {
+            CRGB result;
+            switch(bbp) {
                 case 1:
-                    EffectMath::getPixel(((x - corrX) /MULTIPLIC), (HEIGHT- 1) - (y - corrY) / MULTIPLIC) = EffectMath::rgb332_To_CRGB(frameBuf[index]);
+                    result = EffectMath::rgb332_To_CRGB(frameBuf[index]);
                     break;
                 case 2:
                     index *= 2;
-                    uint16_t result = ((uint16_t)frameBuf[index] << 8) | (uint16_t)frameBuf[index + 1];
-                EffectMath::getPixel(((x - corrX) /MULTIPLIC), (HEIGHT- 1) - (y - corrY) / MULTIPLIC) = EffectMath::rgb565_To_CRGB(result);
+                    result= EffectMath::rgb565_To_CRGB(((uint16_t)frameBuf[index] << 8) | (uint16_t)frameBuf[index + 1]);
                     break;
-                /*case 3:
+                case 3:
                     index *= 3;
-                    EffectMath::getPixel(((x - corrX) /MULTIPLIC), (HEIGHT- 1) - (y - corrY) / MULTIPLIC) = CRGB(frameBuf[index], frameBuf[index + 1], frameBuf[index + 2]);
+                    result = CRGB(frameBuf[index], frameBuf[index + 1], frameBuf[index + 2]);
                     break;
-                    */
             }
+            EffectMath::getPixel(((x - corrX) /MULTIPLIC), (HEIGHT- 1) - (y - corrY) / MULTIPLIC) = result;
         }
     }
     if (blur) EffectMath::blur2d(64);
@@ -8739,15 +8739,9 @@ bool EffectPlayer::run(CRGB *leds, EffectWorker *param) {
     return false;
 
   switch(bbp) {
-    case 1:
-      getFromFile_332(frame);
-      break;
-    case 2:
-      getFromFile_565(frame);
-      break;
-    case 3:
-      getFromFile_888(frame);
-      break;
+    case 1: getFromFile_332(frame); break;
+    case 2: getFromFile_565(frame); break;
+    case 3: getFromFile_888(frame); break;
   }
   drawFrame();
   frame++;

@@ -459,16 +459,17 @@ public:
 // Subpixel ver by Stepko
 class EffectDrift : public EffectCalc {
 private:
-	const byte maxDim_steps = 256 / maxDim;
-	uint8_t dri_phase;
-	float _dri_speed;
-	uint8_t _dri_delta;
-	byte driftType = 0;
+    const byte maxDim_steps = 256 / maxDim;
+    uint8_t dri_phase;
+    float _dri_speed;
+    uint8_t _dri_delta;
+    byte driftType = 0;
     bool flag = false;
 
-	String setDynCtrl(UIControl*_val) override;
-	bool incrementalDriftRoutine(CRGB *leds, EffectWorker *param);
-	bool incrementalDriftRoutine2(CRGB *leds, EffectWorker *param);
+    String setDynCtrl(UIControl*_val) override;
+    bool incrementalDriftRoutine(CRGB *leds, EffectWorker *param);
+    bool incrementalDriftRoutine2(CRGB *leds, EffectWorker *param);
+    bool incrementalDriftRoutineRose(CRGB *leds, EffectWorker *param);
 
 public:
     void load() override;
@@ -2364,11 +2365,10 @@ class EffectGhostRider : public EffectCalc {
 };
 #ifdef RGB_PLAYER
 
-//===== Програвач 332/556 файлів ===============//
+// Image player
 // https://editor.soulmatelights.com/gallery/1684-pgm-player-with-resize
-// (c) Kostyantyn Matviyevskyy aka kostyamat, file format and decoder\encoder (c) Stepko and Sutaburosu
+// (c) Kostyantyn Matviyevskyy aka kostyamat, file format and decoder\encoder (c) St3p40(aka Stepko) and Sutaburosu
 // 27.01.2022
-// License GPL v.3 as a part of the FireLamp_EmbUI project
 #define MULTIPLIC 256
 class EffectPlayer : public EffectCalc {
     private:
@@ -2394,7 +2394,6 @@ class EffectPlayer : public EffectCalc {
         String setDynCtrl(UIControl*_val) override;
 
     public:
-        void load() override;
         bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
         ~EffectPlayer() {
             delete [] frameBuf;

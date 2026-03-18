@@ -1690,20 +1690,20 @@ bool EffectSwirl::swirlRoutine(CRGB *leds, EffectWorker *param)
   return true;
 }
 
-//===== Ефект Дрифт ============================//
+// Effect Drift
 // https://github.com/pixelmatix/aurora/blob/master/PatternIncrementalDrift.h
 // Copyright(c) 2014 Jason Coon
-// Subpixel ver by Stepko
+// Subpixel ver by St3p40
+// Drift Rose by St3p40
 void EffectDrift::load(){
-  palettesload();    // подгружаем дефолтные палитры
+  palettesload();
 }
 
-// !++
 String EffectDrift::setDynCtrl(UIControl*_val){
   if(_val->getId()==1) _dri_speed = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1., 255., 256., 2560.);
   else if(_val->getId()==4) driftType = EffectCalc::setDynCtrl(_val).toInt();
   else if(_val->getId()==5) flag = EffectCalc::setDynCtrl(_val).toInt() == 1;
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
+  else EffectCalc::setDynCtrl(_val).toInt();
   return String();
 }
 
@@ -1713,21 +1713,20 @@ bool EffectDrift::run(CRGB *ledarr, EffectWorker *opt){
   else
     fadeToBlackBy(ledarr, NUM_LEDS, beatsin88(350. * EffectMath::fmap((float)speed, 1., 255., 1., 5.), 512, 4096) / 256);
 
-  
   _dri_delta = beatsin8(1U);
 
-  dri_phase++;    // это примерно каждый кадр и есть
+  dri_phase++;
 
   switch (driftType)
   {
-  case 0:
-    return incrementalDriftRoutine(*&ledarr, &*opt);
-    break;
-  case 1:
+  case 2:
     return incrementalDriftRoutine2(*&ledarr, &*opt);
     break;
+  case 3:
+    return incrementalDriftRoutineRose(*&ledarr, &*opt);
+    break;
   default:
-    return false;
+    return incrementalDriftRoutine(*&ledarr, &*opt);
   }
 }
 
@@ -1737,9 +1736,9 @@ bool EffectDrift::incrementalDriftRoutine(CRGB *leds, EffectWorker *param)
     return false;
   }
 
-  for (uint8_t i = 1; i < maxDim; i++) { // возможно, стоит здесь использовать const MINLENGTH
-	int16_t x = beatsin16((float)(maxDim - i) * _dri_speed, (maxDim - 2 - i)*128, (maxDim + i)*128, 0, (64U + dri_phase)*256); // используем константы центра матрицы из эффекта Кометы
-    int16_t y = beatsin16((float)(maxDim - i) * _dri_speed, (maxDim - 2 - i)*128, (maxDim + i)*128, 0, dri_phase*256);       // используем константы центра матрицы из эффекта Кометы
+  for (uint8_t i = 1; i < maxDim; i++) {
+	  int16_t x = beatsin16((float)(maxDim - i) * _dri_speed, (maxDim - 2 - i)*128, (maxDim + i)*128, 0, (64U + dri_phase)*256);
+    int16_t y = beatsin16((float)(maxDim - i) * _dri_speed, (maxDim - 2 - i)*128, (maxDim + i)*128, 0, dri_phase*256);
     EffectMath::wu_pixel(x-width_adj * 256, y-height_adj * 256, ColorFromPalette(*curPalette, (i - 1U) * maxDim_steps + _dri_delta));
   }
   EffectMath::blur2d(beatsin8(3U, 2, 50));
@@ -1767,11 +1766,28 @@ bool EffectDrift::incrementalDriftRoutine2(CRGB *leds, EffectWorker *param)
     {
       x = beatsin16((maxDim - i) * _dri_speed, (maxDim - 1 - i)*256, (i + 1U)*256, 0, 256*dri_phase);
       y = beatsin16((maxDim - i) * _dri_speed, (maxDim - 1 - i)*256, (i + 1U)*256, 0, 256*(64U + dri_phase));
-      color = ColorFromPalette(*curPalette, ~(i * maxDim_steps + _dri_delta)); 
+      color = ColorFromPalette(*curPalette, ~(i * maxDim_steps + _dri_delta));
     }
     EffectMath::wu_pixel(x-width_adj*256, y-height_adj*256, color);
   }
   EffectMath::blur2d(beatsin8(3U, 5, 100));
+  return true;
+}
+
+bool EffectDrift::incrementalDriftRoutineRose(CRGB *leds, EffectWorker *param)
+{
+  if (curPalette == nullptr) {
+    return false;
+  }
+
+  for (uint8_t i = 1; i < maxDim * 2; i++) {
+    uint16_t radius = (beatsin16((float)(i * (_dri_speed / 1280.)), 0, maxDim << 8)-(maxDim << 7));
+    float angle = radians(i * map(i, 1, maxDim * 2, 0, 360) + dri_phase);
+    uint32_t x = ((WIDTH << 7) + (sin(angle) * radius));
+    uint32_t y = ((HEIGHT << 7) + (cos(angle)  * radius));
+    EffectMath::wu_pixel(x, y, ColorFromPalette(*curPalette, (i - 1U) * maxDim_steps + _dri_delta));
+  }
+  EffectMath::blur2d(beatsin8(3U, 2, 50));
   return true;
 }
 
@@ -8504,9 +8520,9 @@ bool EffectGhostRider::run(CRGB *ledarr, EffectWorker *opt){
 
 #ifdef RGB_PLAYER
 
-//===== Програвач 332/556 файлів ===============//
+// Image player
 // https://editor.soulmatelights.com/gallery/1684-pgm-player-with-resize
-// (c) Kostyantyn Matviyevskyy aka kostyamat, file format and decoder\encoder (c) Stepko and Sutaburosu
+// (c) Kostyantyn Matviyevskyy aka kostyamat, file format and decoder\encoder (c) St3p40(aka Stepko) and Sutaburosu
 // 27.01.2022
 // License GPL v.3 as a part of the FireLamp_EmbUI project
 String EffectPlayer::setDynCtrl(UIControl*_val){
@@ -8528,10 +8544,6 @@ String EffectPlayer::setDynCtrl(UIControl*_val){
   /* else if(_val->getId()==5) mode = EffectCalc::setDynCtrl(_val).toInt();*/
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
-}
-
-void EffectPlayer::load() {
-  //String tmp = F("/animations/_.565");
 }
 
 void EffectPlayer::calc() {
@@ -8617,8 +8629,8 @@ void EffectPlayer::drawFrame () {
 
 bool EffectPlayer::loadFile(String filename) {
     if (!LittleFS.exists(filename)) {
-      LOG(println, filename);
-      filename = F("/animations/Candle.565");
+      LOG(println, filename + F(" not found!"));
+      //filename = F("/animations/Candle.565");
     }
 
     if (rgbFile && !rgbFile.isDirectory()) {

@@ -75,9 +75,9 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed, const boo
   case EFF_ENUM::EFF_SPIRO :
     worker = std::unique_ptr<EffectSpiro>(new EffectSpiro());
     break;
-  case EFF_ENUM::EFF_METABALLS :
-    worker = std::unique_ptr<EffectMetaBalls>(new EffectMetaBalls());
-    break;
+//  case EFF_ENUM::EFF_METABALLS :
+//    worker = std::unique_ptr<EffectMetaBalls>(new EffectMetaBalls());
+//    break;
   case EFF_ENUM::EFF_SINUSOID :
     worker = std::unique_ptr<EffectSinusoid3>(new EffectSinusoid3());
     break;

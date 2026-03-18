@@ -1154,72 +1154,6 @@ switch (type) {
   return true;
 }
 
-//===== Ефект Метасфери ========================//
-/*
- Metaballs proof of concept by Stefan Petrick 
- https://gist.github.com/StefanPetrick/170fbf141390fafb9c0c76b8a0d34e54
-*/
-String EffectMetaBalls::setDynCtrl(UIControl*_val){
-  if(_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.5, 2);
-  else if(_val->getId()==2) scale = EffectCalc::setDynCtrl(_val).toInt();
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  return String();
-}
-
-void EffectMetaBalls::load(){
-palettesload();}
-
-bool EffectMetaBalls::run(CRGB *leds, EffectWorker *param)
-{
-  // get some 3 random moving points
-  unsigned long t = millis() * speedFactor;
-  // get some 3 random moving points
-  uint8_t x1 = beatsin88(23 * 256 * speedFactor, 0, EffectMath::getmaxWidthIndex());
-  uint8_t y1 = beatsin88(28 * 256 * speedFactor, 0, EffectMath::getmaxHeightIndex());
-
-  uint8_t x2 = inoise8(t, 25355, 685) / hormap;
-  uint8_t y2 = inoise8(t, 355, 11685) / vermap;
-
-  uint8_t x3 = inoise8(t, 55355, 6685) / hormap;
-  uint8_t y3 = inoise8(t, 25355, 22685) / vermap;
-
-  for (uint8_t y = 0; y < HEIGHT; y++) {
-    for (uint8_t x = 0; x < WIDTH; x++) {
-
-      // calculate distances of the 3 points from actual pixel
-      // and add them together with weightening
-      // calculate distances of the 3 points from actual pixel
-      // and add them together with weightening
-      uint8_t  dx =  abs(x - x1);
-      uint8_t  dy =  abs(y - y1);
-      uint8_t dist = 2 * EffectMath::sqrt((dx * dx) + (dy * dy));
-
-      dx =  abs(x - x2);
-      dy =  abs(y - y2);
-      dist += EffectMath::sqrt((dx * dx) + (dy * dy));
-
-      dx =  abs(x - x3);
-      dy =  abs(y - y3);
-      dist += EffectMath::sqrt((dx * dx) + (dy * dy));
-
-      // inverse result
-      byte color = scale*4 / (dist==0?1:dist);
-
-      // map color between thresholds
-      if (color > 0 and color < 60) {
-        EffectMath::drawPixelXY(x, y, ColorFromPalette(*curPalette, color * 9));
-      } else {
-        EffectMath::drawPixelXY(x, y, ColorFromPalette(*curPalette, 0));
-      }
-      // show the 3 points, too
-      EffectMath::drawPixelXY(x1, y1, CRGB(255, 255, 255));
-      EffectMath::drawPixelXY(x2, y2, CRGB(255, 255, 255));
-      EffectMath::drawPixelXY(x3, y3, CRGB(255, 255, 255));
-    }
-  }
-  return true;
-}
-
 //===== Ефект Спіраль ==========================//
 // https://github.com/pixelmatix/aurora/blob/sm3.0-64x64/PatternSpiro.h
 // Copyright (c) 2014 Jason Coon
@@ -2872,8 +2806,9 @@ bool EffectTime::timePrintRoutine(CRGB *leds, EffectWorker *param)
   return true;
 }
 
-//===== Ефект Пікассо ==========================//
+// Effect Picasso, Effect Metasphere
 // (c) obliterator
+// Recreated Stefan Petrick's Metaballs proof of concept by St3p40
 void EffectPicasso::generate(bool reset){
   double minSpeed = 0.2, maxSpeed = 0.8;
   unsigned num = map(scale, 0U, 255U, 6U, sizeof(particles) / sizeof(*particles));
@@ -3005,8 +2940,12 @@ bool EffectPicasso::metaBallsRoutine(CRGB *leds, EffectWorker *param){
       float sum = 0;
       for (unsigned i = 0; i < numParticles; i += 2) {
         Particle *p1 = (Particle *)&particles[i];
-        if ((unsigned)abs(x - p1->position_x) > tr || (unsigned)abs(y - p1->position_y) > tr) continue;
-        float d = EffectMath::distance(x, y, p1->position_x, p1->position_y);
+        if (effId == 2){
+            sum += EffectMath::distance(x, y, p1->position_x, p1->position_y);
+        }
+        else {
+          if ((unsigned)abs(x - p1->position_x) > tr || (unsigned)abs(y - p1->position_y) > tr) continue;
+          float d = EffectMath::distance(x, y, p1->position_x, p1->position_y);
         if (d < 2) {
           // дополнительно подсвечиваем сердцевину
           sum += EffectMath::mapcurve(d, 0, 2, 255, mx, EffectMath::InQuad);
@@ -3017,9 +2956,23 @@ bool EffectPicasso::metaBallsRoutine(CRGB *leds, EffectWorker *param){
 
         if (sum >= 255) { sum = 255; break; }
       }
+      }
+      if(effId == 2){
+        sum = map(numParticles, 6, 20, 512, 1024) / (sum==0?1:sum);
+        if (sum > 0 and sum < 60)
+          sum *= 9;
+        else
+          sum = 0;
+      }
       CRGB color = myPal->GetColor((uint8_t)sum, 255);
       EffectMath::drawPixelXY(x, y, color);
       }
+  }
+  if(effId == 2){
+    for (unsigned i = 0; i < numParticles; i += 2) {
+      Particle *p1 = (Particle *)&particles[i];
+      EffectMath::drawPixelXYF(p1->position_x, p1->position_y, CRGB::White);
+    }
   }
 
   return true;

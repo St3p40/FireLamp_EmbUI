@@ -73,22 +73,6 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-//===== Ефект Метасфери ========================//
-/*
- Metaballs proof of concept by Stefan Petrick
- https://gist.github.com/StefanPetrick/170fbf141390fafb9c0c76b8a0d34e54
-*/
-class EffectMetaBalls : public EffectCalc {
-private:
-	float speedFactor;
-	const float hormap = (256 / WIDTH);
-    const float vermap = (256 / HEIGHT);
-	String setDynCtrl(UIControl*_val) override;
-    void load() override;
-public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
-};
-
 //===== Ефект Синусоїд =========================//
 /*
  Sinusoid3 by Stefan Petrick
@@ -643,8 +627,9 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-//===== Ефект Пікассо ==========================//
+// Effect Picasso, Effect Metaballs //
 // (c) obliterator
+// Recreated Stefan Petrick's Metaballs proof of concept by St3p40
 class EffectPicasso : public EffectCalc {
     typedef struct Particle{
         float position_x = 0;

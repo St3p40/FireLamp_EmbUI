@@ -1695,12 +1695,13 @@ bool EffectSwirl::swirlRoutine(CRGB *leds, EffectWorker *param)
 // Copyright(c) 2014 Jason Coon
 // Subpixel ver by St3p40
 // Drift Rose by St3p40
+// TODO: change beatsin to sin analog
 void EffectDrift::load(){
   palettesload();
 }
 
 String EffectDrift::setDynCtrl(UIControl*_val){
-  if(_val->getId()==1) _dri_speed = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1., 255., 256., 2560.);
+  if(_val->getId()==1) _dri_speed = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1., 255., 0.1, 10.);
   else if(_val->getId()==4) driftType = EffectCalc::setDynCtrl(_val).toInt();
   else if(_val->getId()==5) flag = EffectCalc::setDynCtrl(_val).toInt() == 1;
   else EffectCalc::setDynCtrl(_val).toInt();
@@ -1719,9 +1720,6 @@ bool EffectDrift::run(CRGB *ledarr, EffectWorker *opt){
 
   switch (driftType)
   {
-  case 2:
-    return incrementalDriftRoutine2(*&ledarr, &*opt);
-    break;
   case 3:
     return incrementalDriftRoutineRose(*&ledarr, &*opt);
     break;
@@ -1735,42 +1733,19 @@ bool EffectDrift::incrementalDriftRoutine(CRGB *leds, EffectWorker *param)
   if (curPalette == nullptr) {
     return false;
   }
-
+  uint16_t t = millis();
   for (uint8_t i = 1; i < maxDim; i++) {
-	  int16_t x = beatsin16((float)(maxDim - i) * _dri_speed, (maxDim - 2 - i)*128, (maxDim + i)*128, 0, (64U + dri_phase)*256);
-    int16_t y = beatsin16((float)(maxDim - i) * _dri_speed, (maxDim - 2 - i)*128, (maxDim + i)*128, 0, dri_phase*256);
-    EffectMath::wu_pixel(x-width_adj * 256, y-height_adj * 256, ColorFromPalette(*curPalette, (i - 1U) * maxDim_steps + _dri_delta));
+    int32_t angle = t * (maxDim - i) * _dri_speed;
+	  int32_t x = (WIDTH << 7) + (sin16(angle) >> 8) * i;
+    int32_t y = (HEIGHT << 7) + (cos16(angle) >> 8) * i;
+    EffectMath::wu_pixel(x, y, ColorFromPalette(*curPalette, (i - 1U) * maxDim_steps + _dri_delta));
+    if(driftType == 2){
+      x = (WIDTH << 7) + (cos16(angle + (i * 256 / maxDim)) >> 8) * i;
+      y = (HEIGHT << 7) + (sin16(angle + (i * 256 / maxDim)) >> 8) * i;
+      EffectMath::wu_pixel(x, y, ColorFromPalette(*curPalette, (i - 1U) * maxDim_steps + _dri_delta));
+    }
   }
   EffectMath::blur2d(beatsin8(3U, 2, 50));
-  return true;
-}
-
-bool EffectDrift::incrementalDriftRoutine2(CRGB *leds, EffectWorker *param)
-{
-  if (curPalette == nullptr) {
-    return false;
-  }
-
-  for (uint8_t i = 0; i < maxDim; i++)
-  {
-    int16_t x = 0;
-    int16_t y = 0;
-    CRGB color;
-    if (i < maxDim / 2U)
-    {
-      x = beatsin16((i + 1) * _dri_speed, (i + 1U)*256, (maxDim- 1 - i)*256, 0, 256*(64U + dri_phase));
-      y = beatsin16((i + 1) * _dri_speed, (i + 1U)*256, (maxDim - 1 - i)*256, 0, 256*dri_phase);
-      color = ColorFromPalette(*curPalette, i * maxDim_steps * 2U + _dri_delta);
-    }
-    else
-    {
-      x = beatsin16((maxDim - i) * _dri_speed, (maxDim - 1 - i)*256, (i + 1U)*256, 0, 256*dri_phase);
-      y = beatsin16((maxDim - i) * _dri_speed, (maxDim - 1 - i)*256, (i + 1U)*256, 0, 256*(64U + dri_phase));
-      color = ColorFromPalette(*curPalette, ~(i * maxDim_steps + _dri_delta));
-    }
-    EffectMath::wu_pixel(x-width_adj*256, y-height_adj*256, color);
-  }
-  EffectMath::blur2d(beatsin8(3U, 5, 100));
   return true;
 }
 
@@ -1779,10 +1754,10 @@ bool EffectDrift::incrementalDriftRoutineRose(CRGB *leds, EffectWorker *param)
   if (curPalette == nullptr) {
     return false;
   }
-
+  uint16_t t = millis();
   for (uint8_t i = 1; i < maxDim * 2; i++) {
-    uint16_t radius = (beatsin16((float)(i * (_dri_speed / 1280.)), 0, maxDim << 8)-(maxDim << 7));
-    float angle = radians(i * map(i, 1, maxDim * 2, 0, 360) + dri_phase);
+    uint16_t radius = map(sin16(t * i * (_dri_speed / 4.)), -32768, 32767, -(maxDim << 7), maxDim << 7);
+    float angle = radians(map(i, 1, maxDim * 2, 0, 360));
     uint32_t x = ((WIDTH << 7) + (sin(angle) * radius));
     uint32_t y = ((HEIGHT << 7) + (cos(angle)  * radius));
     EffectMath::wu_pixel(x, y, ColorFromPalette(*curPalette, (i - 1U) * maxDim_steps + _dri_delta));
@@ -3440,8 +3415,8 @@ void EffectAquarium::nTest(uint8_t bri)
       uint8_t n2 = noise[0][x][y + 1];
       int8_t xl = n0 - n1;
       int8_t yl = n0 - n2;
-      uint16_t xa = (x * 255) + ((xl * ((n0 + n1) << 1)) >> 3);
-      uint16_t ya = (y * 255) + ((yl * ((n0 + n2) << 1)) >> 3);
+      uint16_t xa = (x << 8) + ((xl * ((n0 + n1) << 1)) >> 3);
+      uint16_t ya = (y << 8) + ((yl * ((n0 + n2) << 1)) >> 3);
       wu(xa, ya);
     }
   }
@@ -3457,7 +3432,7 @@ void EffectAquarium::nTest(uint8_t bri)
 
 void EffectAquarium::fillNoise()
 {
-  uint8_t dataSmoothing = 200 - (_speed * 4);
+  uint8_t dataSmoothing = 200 - (_speed << 2);
   for (uint8_t i = 0; i < WIDTH + 1; i++)
   {
     uint32_t ioffset = _scale * i;
@@ -8013,7 +7988,7 @@ bool EffectDNA::run(CRGB *leds, EffectWorker *param) {
       EffectMath::drawPixelXYF(x1, y1, CHSV(~sin1, 255, brightBack));
     flag = !flag; 
   }
-  blur2d(leds, WIDTH, HEIGHT, 64);
+  EffectMath::blur2d(leds, WIDTH, HEIGHT, 64);
 
   return true;
 }
@@ -8514,7 +8489,7 @@ bool EffectGhostRider::run(CRGB *ledarr, EffectWorker *opt){
     rider.angleSpeed = ((2 * random(255)%2) - 1) * (random(255) % 10);
     rider.vSpeed = random(128, 255);
   }
-  blur2d(leds, WIDTH, HEIGHT, 32);
+  EffectMath::blur2d(leds, WIDTH, HEIGHT, 32);
   return true;
 }
 

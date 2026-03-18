@@ -782,39 +782,6 @@ bool EffectLighterTracers::run(CRGB *ledarr, EffectWorker *opt){
   return (var)? lighterTracersRoutine(*&ledarr, &*opt) : lighterRoutine(*&ledarr, &*opt);
 }
 
-//===== Ефект Пейнтбол =========================//
-String EffectLightBalls::setDynCtrl(UIControl*_val){
-  if(_val->getId()==1) speedFactor = (float)EffectCalc::setDynCtrl(_val).toInt()*EffectCalc::getSpeedFactor() /255.0 +0.1;
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  return String();
-}
-
-bool EffectLightBalls::run(CRGB *leds, EffectWorker *param)
-{
-
-  // Apply some blurring to whatever's already on the matrix
-  // Note that we never actually clear the matrix, we just constantly
-  // blur it repeatedly.  Since the blurring is 'lossy', there's
-  // an automatic trend toward black -- by design.
-  EffectMath::blur2d(leds, WIDTH, HEIGHT, dim8_raw(beatsin8(3,64,100)));
-
-  // Use two out-of-sync sine waves
-  uint16_t  i = beatsin16( 79 * speedFactor, 0, 255); //91
-  uint16_t  j = beatsin16( 67 * speedFactor, 0, 255); //109
-  uint16_t  k = beatsin16( 53 * speedFactor, 0, 255); //73
-  uint16_t  m = beatsin16( 97 * speedFactor, 0, 255); //123
-
-  // The color of each point shifts over time, each at a different speed.
-  uint16_t ms = millis() / (scale /16 + 1);
-
-  EffectMath::getPixel( highByte(i * paintWidth) + BORDERTHICKNESS, highByte(j * paintHeight) + BORDERTHICKNESS) += CHSV( ms / 29, 200U, 255U);
-  EffectMath::getPixel( highByte(j * paintWidth) + BORDERTHICKNESS, highByte(k * paintHeight) + BORDERTHICKNESS) += CHSV( ms / 41, 200U, 255U);
-  EffectMath::getPixel( highByte(k * paintWidth) + BORDERTHICKNESS, highByte(m * paintHeight) + BORDERTHICKNESS) += CHSV( ms / 37, 200U, 255U);
-  EffectMath::getPixel( highByte(m * paintWidth) + BORDERTHICKNESS, highByte(i * paintHeight) + BORDERTHICKNESS) += CHSV( ms / 53, 200U, 255U);
-
-  return true;
-}
-
 //===== Ефект Блукаючий кубик ==================//
 String EffectBall::setDynCtrl(UIControl*_val) {
   if(_val->getId()==1) {
@@ -5591,7 +5558,7 @@ void EffectSmokeballs::shiftUp(){
 
 //===== Ефект Клітинки-ялинки ==================//
 // Cell (C)Elliott Kember from Soulmate-IDE examples
-// Spider, Spruce, Lines (c)stepko
+// Spider, Spruce, Lines, Color frizzles (c)stepko
 // Flowering (c)Taras Yuzov
 void EffectCell::cell(CRGB *leds) {
   speedFactor = EffectMath::fmap((float)speed, 1., 255., .33*EffectCalc::speedfactor, 3.*EffectCalc::speedfactor);
@@ -5608,7 +5575,7 @@ void EffectCell::cell(CRGB *leds) {
     }
   }
   EffectMath::nightMode(leds); // пригасим немного, чтобы видить структуру, и убрать пересветы
-} 
+}
 // !++ Тут лучше все оставить как есть, пускай в теле эффекта скорость пересчитывает
 String EffectCell::setDynCtrl(UIControl*_val) {
   if(_val->getId()==1) speed = EffectCalc::setDynCtrl(_val).toInt();
@@ -5623,10 +5590,10 @@ bool EffectCell::run(CRGB *leds, EffectWorker *opt){
   if (_scale == 0) {
     EVERY_N_SECONDS(60) {
       effId ++;
-      if (effId == 7)
+      if (effId == 9)
         effId = 1;
     }
-  } else effId = constrain(_scale, 1, 7);
+  } else effId = constrain(_scale, 1, 9);
 
   switch (effId)
   {
@@ -5647,6 +5614,12 @@ bool EffectCell::run(CRGB *leds, EffectWorker *opt){
   case 7:
     flower(leds);
     break;
+  case 8:
+    frizzles(leds);
+    break;
+  case 9:
+    paintball(leds);
+    break;
   default:
     break;
   }
@@ -5660,7 +5633,7 @@ void EffectCell::spruce(CRGB *leds) {
   if (effId == 3) z = triwave8(hue);
   else z = beatsin8(1, 1, 255);
   for (uint8_t i = 0; i < minDim; i++) {
-    x = beatsin16(i * (map(speed, 1, 255, 3, 20)), 
+    x = beatsin16(i * (map(speed, 1, 255, 3, 20)),
                      i * 2, 
                      (minDim * 4 - 2) - (i * 2 + 2));
     if (effId == 2) 
@@ -5703,7 +5676,36 @@ void EffectCell::flower(CRGB *leds) {
       uint8_t radius = sin8(pow((minDim/2)-0.5-i,2)+pow((minDim/2)-0.5-j,2));
       EffectMath::drawPixelXY(i, j, CHSV(map(radius,maxDim/2,-3,125,255), 255,sin8(map(radius+(maxDim/2),-timer,maxDim/2,255,110)+x)));
     }
-  } 
+  }
+}
+
+void EffectCell::frizzles(CRGB *leds) {
+  float _speed = EffectMath::fmap(speed, 1, 255, 0.25, 3);
+
+  for(int i = 8; i > 0; i--)
+    EffectMath::drawPixelXY(beatsin8(12. * _speed + i * _speed, 0, EffectMath::getmaxWidthIndex()), beatsin8(15. * _speed + i * _speed, 0, EffectMath::getmaxHeightIndex()), CHSV(beatsin8(12. * _speed, 0, 255), scale > 127 ? 255 - i*8 : 255, scale > 127 ? 127 + i*8 : 255));
+  EffectMath::blur2d(leds, WIDTH, HEIGHT, 16);
+}
+
+void EffectCell::paintball(CRGB *leds) {
+   float speedFactor = EffectMath::fmap(speed, 1, 255, 0.1, 1);
+    const uint8_t paintWidth = WIDTH - 2;
+	  const uint8_t paintHeight = HEIGHT - 2;
+   EffectMath::blur2d(leds, WIDTH, HEIGHT, dim8_raw(beatsin8(3,64,100)));
+
+  // Use two out-of-sync sine waves
+  uint16_t  i = beatsin16( 79 * speedFactor, 0, 255); //91
+  uint16_t  j = beatsin16( 67 * speedFactor, 0, 255); //109
+  uint16_t  k = beatsin16( 53 * speedFactor, 0, 255); //73
+  uint16_t  m = beatsin16( 97 * speedFactor, 0, 255); //123
+
+  // The color of each point shifts over time, each at a different speed.
+  uint16_t ms = millis() / 100;
+
+  EffectMath::getPixel( highByte(i * paintWidth) + 1, highByte(j * paintHeight) + 1) += CHSV( ms / 29, 200U, 255U);
+  EffectMath::getPixel( highByte(j * paintWidth) + 1, highByte(k * paintHeight) + 1) += CHSV( ms / 41, 200U, 255U);
+  EffectMath::getPixel( highByte(k * paintWidth) + 1, highByte(m * paintHeight) + 1) += CHSV( ms / 37, 200U, 255U);
+  EffectMath::getPixel( highByte(m * paintWidth) + 1, highByte(i * paintHeight) + 1) += CHSV( ms / 53, 200U, 255U);
 }
 
 //===== Ефект Тіксі Ленд =======================//
@@ -6982,20 +6984,6 @@ String EffectMaze::setDynCtrl(UIControl*_val){
    _speed = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 20, 147);   // установить скорость
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
-}
-
-//===== Ефект В'юнкі кольори ===================//
-// https://wokwi.com/arduino/projects/283705656027906572
-// (c) Stepko
-bool EffectFrizzles::run(CRGB *leds, EffectWorker *opt) {
-  _speed = EffectMath::fmap(speed, 1, 255, 0.25, 3);
-  if (scale <= 127) _scale = EffectMath::fmap(scale, 1, 255, 1, 8);
-  else _scale = EffectMath::fmap(scale, 1, 255, 8, 1);
-
-  for(float i= (float)8 * _scale; i> 0; i--)
-    EffectMath::drawPixelXY(beatsin8(12. * _speed + i * _speed, 0, EffectMath::getmaxWidthIndex()), beatsin8(15. * _speed + i * _speed, 0, EffectMath::getmaxHeightIndex()), CHSV(beatsin8(12. * _speed, 0, 255), scale > 127 ? 255 - i*8 : 255, scale > 127 ? 127 + i*8 : 255));
-  EffectMath::blur2d(leds, WIDTH, HEIGHT, 16);
-  return true;
 }
 
 //===== Ефект Північне Сяйво ===================//

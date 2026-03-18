@@ -147,20 +147,6 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-//===== Ефект Пейнтбол =========================//
-class EffectLightBalls : public EffectCalc {
-private:
-	#define BORDERTHICKNESS       (1U)   // глубина бордюра для размытия яркой частицы: 0U - без границы (резкие края); 1U - 1 пиксель (среднее размытие) ; 2U - 2 пикселя (глубокое размытие)
-	const uint8_t paintWidth = WIDTH - BORDERTHICKNESS * 2;
-	const uint8_t paintHeight = HEIGHT - BORDERTHICKNESS * 2;
-	float speedFactor;
-
-	String setDynCtrl(UIControl*_val) override;
-
-public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
-};
-
 //===== Ефект Пульс ============================//
 // Stefan Petrick's PULSE Effect
 class EffectPulse : public EffectCalc {
@@ -1415,7 +1401,7 @@ class EffectSmokeballs: public EffectCalc {
 
 //===== Ефект Клітинки-ялинки ==================//
 // Cell (C)Elliott Kember from Soulmate-IDE examples
-// Spider, Spruce, Lines (c)stepko
+// Spider, Spruce, Lines, Color frizzles (c)stepko
 // Flowering (c)Taras Yuzov
 class EffectCell: public EffectCalc {
   private:
@@ -1437,6 +1423,8 @@ class EffectCell: public EffectCalc {
     void spruce(CRGB *leds);
     void vals(CRGB *leds);
     void flower(CRGB *leds);
+    void frizzles(CRGB *leds);
+    void paintball(CRGB *leds);
   public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
     String setDynCtrl(UIControl*_val) override;
@@ -1715,20 +1703,6 @@ private:
 public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 
-}; 
-
-//===== Ефект В'юнкі кольори ===================//
-// https://wokwi.com/arduino/projects/283705656027906572
-// (c) Stepko
-class EffectFrizzles : public EffectCalc {
-private:
-    float _speed;
-    float _scale;
-    //String setDynCtrl(UIControl*_val) override;
-
-public:
-    //void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
 //===== Ефект Північне Сяйво ===================//

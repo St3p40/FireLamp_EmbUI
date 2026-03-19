@@ -165,5 +165,6 @@ Platformio сам завантажить необхідні бібіотеки �
 
 ## Суміжні ресурси
 - Репозиторій фреймворку для створення WebUI для контролерів ESP8266\ESP32 https://github.com/DmytroKorniienko/EmbUI
+- Репозиторій універсальної бібліотеки кнопки https://github.com/St3p40/EmbButton
 - Репозиторій формату BNA (інформація, програвання і конвертування з GIF) https://github.com/St3p40/BitmapArrayFile
 - Репозиторій з додатковими ресурсами проекта https://github.com/kostyamat/FireLamp_EmbUI-animations

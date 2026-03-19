@@ -120,7 +120,7 @@ void setup() {
 
 #ifdef ESP_USE_BUTTON
 #ifdef SHOWSYSCONFIG
-    myButtons = new Buttons(embui.param(FPSTR(TCONST_0097)).toInt(), PULL_MODE, NORM_OPEN);
+    myButtons = new Buttons(embui.param(FPSTR(TCONST_0097)).toInt(), PULL_MODE, 1);
 #else
     myButtons = new Buttons(BTN_PIN, PULL_MODE, NORM_OPEN);
 #endif

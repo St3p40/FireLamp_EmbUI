@@ -6,6 +6,11 @@
 #include "ts.h"
 #include "LList.h"
 
+#define EmbBtnStepTimer				// Adds extra timer for "1" every N milliseconds during long press
+#define EmbBtnEndClicksAfterHolding // Previous library didn't read clicks after hold without ending click strike
+#define EmbBtnCheckButtonAsValue    // It is better for this project
+#include "embButton.h"
+
 typedef enum _button_action {
 	BA_NONE,
 	BA_BRIGHT,
@@ -84,12 +89,14 @@ class Buttons {
 	uint8_t pullmode; // подтяжка
 	uint8_t state; // тип (нормально открытый/закрытый)
 
+	char btnread = 0;
+
 	byte clicks = 0;
 	Task *tButton = nullptr;      // планировщик кнопки
 	Task *tClicksClear = nullptr; // очистка кол-ва нажатий, после таймаута
 	LList<ButtonAction*> buttons;
 
-	void resetStates() { clicks=0; holding=false; holded=false; touch.resetStates();}
+	void resetStates() { clicks=0; holding=false; holded=false; /*touch.resetStates()*/;}
 
 	void isrPress();
 	void isrEnable();	// enable "press" interrupt
@@ -98,8 +105,8 @@ class Buttons {
   public:
 	bool getpinTransition() { return pinTransition; }
 	void setpinTransition(bool val) { pinTransition = val; }
-	int getPressTransitionType() {return pullmode==LOW_PULL ? RISING : FALLING;}
-	int getReleaseTransitionType() {return pullmode!=LOW_PULL ? RISING : FALLING;}
+	int getPressTransitionType() {return pullmode==1 ? RISING : FALLING;}
+	int getReleaseTransitionType() {return pullmode!=1 ? RISING : FALLING;}
 
 	// Enable/Disable button handling
 	void setButtonOn(bool flag);
@@ -113,14 +120,14 @@ class Buttons {
 	void clear();
 
 
-	Buttons(uint8_t _pin=BTN_PIN, uint8_t _pullmode=PULL_MODE, uint8_t _state=NORM_OPEN);
+	Buttons(uint8_t _pin=BTN_PIN, uint8_t _pullmode=PULL_MODE, uint8_t _state=1);
 
 	~Buttons(){ setButtonOn(false); }
 
 	int loadConfig(const char *cfg = nullptr);
 	void saveConfig(const char *cfg = nullptr);
 
-	GButton touch;
+	embButton_t touch = {0};
 	void buttonTick(); // "дергатель" проверки гайвер-кнопки
 };
 #endif

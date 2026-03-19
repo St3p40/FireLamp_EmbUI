@@ -59,7 +59,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define __SFSTR(s) #s
 //#define SF(...) #__VA_ARGS__
 
-#include <GyverButton.h>
 #include <FastLED.h>
 #ifdef DLAMP_USE_TFT
 #include <TFT_eSPI.h>

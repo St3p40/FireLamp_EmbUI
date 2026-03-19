@@ -165,7 +165,7 @@ String ButtonAction::getName(){
 		return buffer;
 };
 
-Buttons::Buttons(uint8_t _pin, uint8_t _pullmode, uint8_t _state): buttons(), touch(_pin, _pullmode, _state){
+Buttons::Buttons(uint8_t _pin, uint8_t _pullmode, uint8_t _state): buttons() {
 	pin = _pin;
 	pullmode = _pullmode;
 	state = _state;
@@ -175,20 +175,21 @@ Buttons::Buttons(uint8_t _pin, uint8_t _pullmode, uint8_t _state): buttons(), to
 	pinTransition = true;
 	onoffLampState = myLamp.isLampOn();
 
+	touch.millisFunc=millis;
+	touch.buttonCheck=&btnread;
+
 	clicks = 0;
 
-	if (pullmode == LOW_PULL)
+	if (pullmode == 1)
 		pinMode(pin, INPUT);
 	else
 		pinMode(pin, INPUT_PULLUP);
 
-	touch.setType(pullmode);
-	touch.setTickMode(MANUAL);    // мы сами говорим когда опрашивать пин
-	touch.setStepTimeout(BUTTON_STEP_TIMEOUT);
-	touch.setClickTimeout(BUTTON_CLICK_TIMEOUT);
-	touch.setTimeout(BUTTON_TIMEOUT);
-	touch.setDebounce(BUTTON_DEBOUNCE);   // т.к. работаем с прерываниями, может пригодиться для железной кнопки
-	touch.resetStates();
+	touch.stepTime = BUTTON_STEP_TIMEOUT;
+	touch.releaseTime = BUTTON_CLICK_TIMEOUT;
+	touch.holdTime = BUTTON_TIMEOUT;
+	touch.debounceTime = BUTTON_DEBOUNCE;   // т.к. работаем с прерываниями, может пригодиться для железной кнопки
+	//touch.resetStates();
 
 	//attachInterrupt(pin, std::bind(&Buttons::isrPress,this), pullmode!=LOW_PULL ? RISING : FALLING );
 	//isrEnable();
@@ -197,12 +198,14 @@ Buttons::Buttons(uint8_t _pin, uint8_t _pullmode, uint8_t _state): buttons(), to
 void Buttons::buttonTick(){
 	if (!buttonEnabled) return;
 
-	touch.tick();
+	btnread = digitalRead(pin) ^ (!pullmode ^ !state);
+
+	embButtonTick(&touch);
 	bool reverse = false;
 
-	if ((holding = touch.isHolded())) {
+	if ((holding = touch.isHold)) {
 		// начало удержания кнопки
-		byte tstclicks = touch.getHoldClicks();
+		byte tstclicks = touch.clicks - 1;
 		if(!tClicksClear || (tstclicks && tstclicks!=clicks)) // нажатия после удержания не сбрасываем!!! они сбросятся по tClicksClear или по смене кол-ва нажатий до удержания
 			clicks=tstclicks;
 		if(!tClicksClear){
@@ -216,12 +219,12 @@ void Buttons::buttonTick(){
 			tReverseTimeout->cancel();
 		}
 		LOG(printf_P, PSTR("start hold - buttonEnabled=%d, onoffLampState=%d, holding=%d, holded=%d, clicks=%d, reverse=%d\n"), buttonEnabled, onoffLampState, holding, holded, clicks, reverse);
-	} else if ((holding = touch.isStep())) {
+	} else if ((holding = touch.step)) {
 		// кнопка удерживается
 		if(tClicksClear)
 			tClicksClear->restartDelayed(); // отсрочиваем сброс нажатий
-	} else if (!touch.hasClicks() || !(clicks = touch.getClicks())) {
-		if( (!touch.isHold() && holded) )	{ // кнопку уже не трогают
+	} else if (!touch.endClicks || !(clicks = (touch.endClicks && !touch.lastPressType) ? touch.clicks : 0)) {
+		if( (!touch.state == EMB_BTN_STATE_HELD && holded) )	{ // кнопку уже не трогают
 			LOG(println,F("Сброс состояния кнопки после окончания удержания"));
 			resetStates();
 			onoffLampState = myLamp.isLampOn(); // сменить статус после удержания
@@ -234,7 +237,7 @@ void Buttons::buttonTick(){
 		// здесь баг, этот выход часто перехватывает "одиночные" нажатия и превращает их в "клик"
 		return;
 	}
-	
+
 	if (myLamp.isAlarm()) {
 		// нажатие во время будильника
 		ALARMTASK::stopAlarm();
@@ -245,7 +248,7 @@ void Buttons::buttonTick(){
 		onoffLampState=myLamp.isLampOn(); // обновить статус, если не удерживается и это однократное нажатие
 		LOG(printf_P, PSTR("onetime click - buttonEnabled=%d, onoffLampState=%d, holding=%d, holded=%d, clicks=%d, reverse=%d\n"), buttonEnabled, onoffLampState, holding, holded, clicks, reverse);
 	}
-	
+
 	ButtonAction btn(onoffLampState, holding, clicks, true); // myLamp.isLampOn() - анализироваться будет состояние на начало нажимания кнопки
 	for (int i = 0; i < buttons.size(); i++) {
 		if (btn == *buttons[i]) {
@@ -253,7 +256,7 @@ void Buttons::buttonTick(){
 			if (!buttons[i]->activate(buttons[i]->flags, reverse)) {
 				//LOG(println,buttons[i]->action); // отладка
 				// действие не подразумевает повтора
-				if(buttons[i]->flags.onetime && touch.isHold()){ // в процессе удержания
+				if(buttons[i]->flags.onetime && touch.state==EMB_BTN_STATE_HELD){ // в процессе удержания
 					buttons[i]->flags.onetime|=3; // установить старший бит сработавшего действия
 				}
 			}
@@ -356,7 +359,7 @@ void IRAM_ATTR Buttons::isrPress() {
 
 void Buttons::isrEnable(){
 	LOG(println,F("Button switch to isr"));
-	attachInterrupt(pin, std::bind(&Buttons::isrPress,this), pullmode==LOW_PULL ? RISING : FALLING );
+	attachInterrupt(pin, std::bind(&Buttons::isrPress,this), pullmode==1 ? RISING : FALLING );
 	if(tButton)
 		tButton->cancel();
 	tButton = new Task(500, 4, std::bind(&Buttons::buttonTick, this), &ts, true, nullptr, [this](){TASK_RECYCLE; tButton=nullptr;});	// "ленивый" опрос 4 раза в течение 2 секунд

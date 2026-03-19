@@ -2255,7 +2255,7 @@ private:
     uint8_t count = 3;
     uint8_t hue;
     const uint8_t DEV = 5;
-    const float R = (float)NUM_LEDS/128;
+    const float R = (float)NUM_LEDS/256.;
 
     struct{
         float x;

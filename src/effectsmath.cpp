@@ -562,8 +562,8 @@ void EffectMath::drawLineF(float x1, float y1, float x2, float y2, const CRGB &c
   float deltaY = fabs(y2 - y1);
   float error = deltaX - deltaY;
 
-  float signX = x1 < x2 ? 0.5 : -0.5;
-  float signY = y1 < y2 ? 0.5 : -0.5;
+  float signX = x1 < x2 ? 1. : -1.;
+  float signY = y1 < y2 ? 1. : -1.;
 
   while (x1 != x2 || y1 != y2) { // (true) - а я то думаю - "почему функция часто вызывает вылет по вачдогу?" А оно вон оно чё, Михалычь!
     if ((signX > 0. && x1 > x2 + signX) || (signX < 0. && x1 < x2 + signX))

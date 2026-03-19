@@ -8213,7 +8213,7 @@ bool EffectRadialFire::run(CRGB *leds, EffectWorker *param) {
 String EffectSplashBals::setDynCtrl(UIControl*_val){
   if(_val->getId()==1) {
     speed = EffectCalc::setDynCtrl(_val).toInt();
-    speedFactor = EffectMath::fmap(speed, 1, 255, 1, 3) * speedfactor;
+    speedFactor = EffectMath::fmap(speed, 1, 255, 0.1, 1.5) * speedfactor;
   } else if(_val->getId()==3) {count = EffectCalc::setDynCtrl(_val).toInt();
   } /* else if(_val->getId()==5) mode = EffectCalc::setDynCtrl(_val).toInt();*/
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)

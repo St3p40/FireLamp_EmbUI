@@ -73,19 +73,20 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-//===== Ефект Синусоїд =========================//
+// Effect Sinusoid
 /*
  Sinusoid3 by Stefan Petrick
  read more about the concept: https://www.youtube.com/watch?v=mubH-w_gwdA
 */
-//Sinusoid I,II,IV recreation by Stepko
+//Sinusoid I,II,IV recreation + XOR circles by Stepko
 class EffectSinusoid3 : public EffectCalc {
 private:
 	const uint8_t semiHeightMajor =  HEIGHT / 2 + (HEIGHT % 2);
 	const uint8_t semiWidthMajor =  WIDTH / 2  + (WIDTH % 2);
 	float e_s3_speed;
 	float e_s3_size;
-	uint8_t _scale;
+    float xorScale;
+	uint16_t _scale;
 	uint8_t type;
 
 	String setDynCtrl(UIControl*_val) override;
@@ -453,10 +454,11 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-//===== Ефект Дрифт ============================//
+// Effect Drift
 // https://github.com/pixelmatix/aurora/blob/master/PatternIncrementalDrift.h
 // Copyright(c) 2014 Jason Coon
-// Subpixel ver by Stepko
+// Subpixel ver (v2) by St3p40
+// Drift Rose by St3p40
 class EffectDrift : public EffectCalc {
 private:
     const byte maxDim_steps = 256 / maxDim;

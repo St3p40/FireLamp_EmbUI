@@ -1043,23 +1043,26 @@ bool EffectBBalls::bBallsRoutine(CRGB *leds, EffectWorker *param)
   return true;
 }
 
-//===== Ефект Синусоїд =========================//
+// Effect Sinusoid
 /*
  Sinusoid3 by Stefan Petrick
  read more about the concept: https://www.youtube.com/watch?v=mubH-w_gwdA
 */
-//Sinusoid I,II,IV recreation by Stepko
+//Sinusoid I,II,IV recreation + XOR circles by Stepko
 String EffectSinusoid3::setDynCtrl(UIControl*_val){
-  if(_val->getId()==1) e_s3_speed = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.033, 1) * EffectCalc::speedfactor;
-  else if(_val->getId()==2) _scale = map8(EffectCalc::setDynCtrl(_val).toInt(),50,150);
+  if(_val->getId()==1) e_s3_speed = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.033, 1) * EffectCalc::speedfactor * (16. / (float)maxDim);
+  else if(_val->getId()==2) {
+    _scale = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 6400, 19200) * (16. / (float)maxDim);
+    xorScale = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 2., 8.) * (16. / (float)maxDim); // this effect actually was made and supported for 16x16 matrix. 16 / maxDim set values to make effect look the same as for 16x16.
+  }
   else if(_val->getId()==3) e_s3_size = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 3, 9);
   else if(_val->getId()==4) type = EffectCalc::setDynCtrl(_val).toInt();
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
+  else EffectCalc::setDynCtrl(_val).toInt();
   return String();
 }
 
 bool EffectSinusoid3::run(CRGB *leds, EffectWorker *param) {
-  float time_shift = millis()&0xFFFFF; // на больших значениях будет страннео поведение, поэтому уменьшаем точность, хоть и будет иногда срыв картинки, но в 18 минут, так что - хрен с ним
+  float time_shift = millis()&0xFFFFF; // making lower accuracy to have more stable picture. It can flicker once every 18 minutes... Anyways
 struct {
     float X;
     float Y;
@@ -1068,21 +1071,27 @@ struct {
   sshft[0].Y = float(e_s3_size * (cos16(e_s3_speed * 72.0874 * time_shift))) / 32767.0;
   sshft[1].X = float(e_s3_size * (sin16(e_s3_speed * 134.3447 * time_shift))) / 32767.0;
   sshft[1].Y = float(e_s3_size * (cos16(e_s3_speed * 170.3884 * time_shift))) / 32767.0;
-  sshft[2].X = float(e_s3_size * (sin16(e_s3_speed * 68.8107 * time_shift))) / 32767.0;
-  sshft[2].Y = float(e_s3_size * (cos16(e_s3_speed * 65.534 * time_shift))) / 32767.0;
+  if(type == 2) {                                         // Only for III
+    sshft[2].X = float(e_s3_size * (sin16(e_s3_speed * 68.8107 * time_shift))) / 32767.0;
+    sshft[2].Y = float(e_s3_size * (cos16(e_s3_speed * 65.534 * time_shift))) / 32767.0;
+  }
+  float shift = (float(time_shift * e_s3_speed));          // It is for II, IV and XOR Circles
+  float shift1 = (float(0.003 * shift));                   // It is better to calсulate them once than in every iteration
+  float shift2 = (float(0.004 * shift));
+  float shift3 = (float(100 * shift));
 switch (type) {
     case 0: //Sinusoid I
       for (uint8_t y = 0; y < HEIGHT; y++) {
         for (uint8_t x = 0; x < WIDTH; x++) {
-          CRGB color;
+          CRGB color = 0;
           float cx = (y - semiHeightMajor) + sshft[0].X; // the 8 centers the middle on a 16x16
           float cy = (x - semiWidthMajor) + sshft[0].Y;
-          int8_t v = 127 * (1 + sin16(127 * _scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy)))) / 32767.0);
+          int8_t v = 127 * (1 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy)))) / 32767.0);
           color.r = ~v;
-          
+
           cx = (y - semiHeightMajor) + sshft[1].X;
           cy = (x - semiWidthMajor) + sshft[1].Y;
-          v = 127 * (1 + sin16(127 * _scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy)))) / 32767.0);
+          v = 127 * (1 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy)))) / 32767.0);
           color.b = ~v;
           EffectMath::drawPixelXY(x, y, color);
         }
@@ -1091,18 +1100,18 @@ switch (type) {
     case 1: //it's maybe sinusoid II
       for (uint8_t y = 0; y < HEIGHT; y++) {
         for (uint8_t x = 0; x < WIDTH; x++) {
-		  CRGB color;
-          float cx = (y - semiHeightMajor) + sshft[0].X; // the 8 centers the middle on a 16x16
+		  CRGB color = 0;
+          float cx = (y - semiHeightMajor) + sshft[0].X;
           float cy = (x - semiWidthMajor) + sshft[0].Y;
-          int8_t v = 127 * (float(0.002 * time_shift * e_s3_speed) + sin16(127 * _scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy)))) / 32767.0);
+          int8_t v = 127 * (shift1 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy)))) / 32767.0);
           color.r = ~v;
-          
+
           cx = (y - semiHeightMajor) + sshft[1].X;
           cy = (x - semiWidthMajor) + sshft[1].Y;
-          v = 127 * (((float)(0.003 * time_shift * e_s3_speed)) + sin16(127 * _scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy)))) / 32767.0);
+          v = 127 * (shift2 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy)))) / 32767.0);
           color.r = (uint8_t(~v)>color.r)?~v:color.r;
-		  color.g = uint8_t(~v)/2;
-		  EffectMath::drawPixelXY(x, y, color);
+		      color.g = uint8_t(~v)/2;
+		      EffectMath::drawPixelXY(x, y, color);
         }
       }
       break;
@@ -1112,17 +1121,17 @@ switch (type) {
           CRGB color;
           float cx = (y - semiHeightMajor) + sshft[0].X;
           float cy = (x - semiWidthMajor) + sshft[0].Y;
-          int8_t v = 127 * (1 + sin16(127 * _scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy)))) / 32767.0);
+          int8_t v = 127 * (1 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy)))) / 32767.0);
           color.r = ~v;
-          
-         cx = (y - semiHeightMajor) + sshft[1].X;
+
+          cx = (y - semiHeightMajor) + sshft[1].X;
           cy = (x - semiWidthMajor) + sshft[1].Y;
-          v = 127 * (1 + sin16(127 * _scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy)))) / 32767.0);
+          v = 127 * (1 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy)))) / 32767.0);
           color.g = ~v;
-          
+
           cx = (y - semiHeightMajor) + sshft[2].X;
           cy = (x - semiWidthMajor) + sshft[2].Y;
-          v = 127 * (1 + sin16(127 * _scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy)))) / 32767.0);
+          v = 127 * (1 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy)))) / 32767.0);
           color.b = ~v;
           EffectMath::drawPixelXY(x, y, color);
         }
@@ -1134,19 +1143,33 @@ switch (type) {
           CRGB color;
           float cx = (y - semiHeightMajor) + sshft[0].X;
           float cy = (x - semiWidthMajor) + sshft[0].Y;
-          int8_t v = 127 * (1 + sin16(127 * _scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))) + (time_shift * e_s3_speed * 100)) / 32767.0);
+          int8_t v = 127 * (1 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))) + shift3) / 32767.0);
           color.r = ~v;
-          
-         cx = (y - semiHeightMajor) + sshft[1].X;
+
+          cx = (y - semiHeightMajor) + sshft[1].X;
           cy = (x - semiWidthMajor) + sshft[1].Y;
-          v = 127 * (1 + sin16(127 * _scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))) + (time_shift * e_s3_speed * 100)) / 32767.0);
+          v = 127 * (1 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))) + shift3) / 32767.0);
           color.g = ~v;
-          
-          cx = (y - semiHeightMajor); // + float(e_s3_size * (sin16(e_s3_speed * 134.3447 * time_shift))) / 32767.0;
-          cy = (x - semiWidthMajor); // + float(e_s3_size * (cos16(e_s3_speed * 170.3884 * time_shift))) / 32767.0;
-          v = 127 * (1 + sin16(127 * _scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))) + (time_shift * e_s3_speed * 100)) / 32767.0);
+
+          cx = (y - semiHeightMajor);
+          cy = (x - semiWidthMajor);
+          v = 127 * (1 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))) + shift3) / 32767.0);
           color.b = ~v;
           EffectMath::drawPixelXY(x, y, color);
+        }
+      }
+      break;
+    case 4: //XOR circles
+      for (uint8_t y = 0; y < HEIGHT; y++) {
+        for (uint8_t x = 0; x < WIDTH; x++) {
+          float cx = (y - semiHeightMajor) + sshft[0].X;
+          float cy = (x - semiWidthMajor) + sshft[0].Y;
+          uint8_t v = EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))) * xorScale; // bit different way to draw circles, that's why another "scale"
+
+          cx = (y - semiHeightMajor) + sshft[1].X;
+          cy = (x - semiWidthMajor) + sshft[1].Y;
+          uint8_t a = EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))) * xorScale;
+          EffectMath::drawPixelXY(x, y, CHSV(shift1, 255, (((a ^ v) >> 4) & 1) * 255));
         }
       }
       break;
@@ -1693,9 +1716,8 @@ bool EffectSwirl::swirlRoutine(CRGB *leds, EffectWorker *param)
 // Effect Drift
 // https://github.com/pixelmatix/aurora/blob/master/PatternIncrementalDrift.h
 // Copyright(c) 2014 Jason Coon
-// Subpixel ver by St3p40
+// Subpixel ver (v2) by St3p40
 // Drift Rose by St3p40
-// TODO: change beatsin to sin analog
 void EffectDrift::load(){
   palettesload();
 }

@@ -711,7 +711,7 @@ static const uint8_t gamma_exp[] PROGMEM = {
 
 
 #define BALLS_AMOUNT           (7U)                 // максимальное количество "шариков"
-#define LIGHTERS_AM            (32U)                // светлячки
+#define LIGHTERS_AM            (64U)                // светлячки
 #define NUM_LAYERS             (1U)                 // The coordinates for 3 16-bit noise spaces.
 #define NUM_LAYERS2            (2U)                 // The coordinates for 3 16-bit noise spaces.
 #define AVAILABLE_BOID_COUNT   (10U)                // стая, кол-во птиц

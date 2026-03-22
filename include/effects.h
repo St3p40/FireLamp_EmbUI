@@ -254,6 +254,7 @@ protected:
     uint16_t lightersIdx;
     struct{
     float SpeedX, SpeedY;
+    float Turn;
     uint8_t Color;
     float PosX, PosY;
     uint8_t Light;
@@ -972,18 +973,8 @@ public:
 
 //===== Ефект Метелики =========================//
 // (с) SottNick
-class EffectButterfly : public EffectCalc {
+class EffectButterfly : public EffectLighters{
 private:
-    struct
-    {
-        float PosX;
-        float PosY;
-        float SpeedX;
-        float SpeedY;
-        float Turn;
-        uint8_t Color;
-        uint8_t Brightness;
-    }butterfly[BUTTERFLY_MAX_COUNT];
     uint8_t deltaValue;
     uint8_t deltaHue;
     uint8_t hue;

@@ -723,7 +723,7 @@ bool EffectLighterTracers::lighterTracersRoutine(CRGB *leds, EffectWorker *param
       lighter[j].PosY = EffectMath::getmaxHeightIndex();
       lighter[j].SpeedY = -lighter[j].SpeedY;
     }
-    
+
     EffectMath::drawPixelXYF(lighter[j].PosX, lighter[j].PosY, CHSV(lighter[j].Color, 200U, 255));
   }
   EffectMath::blur2d(leds, WIDTH, HEIGHT, 5);
@@ -4107,13 +4107,13 @@ void EffectButterfly::load()
 {
   for (uint8_t i = 0U; i < BUTTERFLY_MAX_COUNT; i++)
   {
-    butterfly[i].PosX = random8(WIDTH);
-    butterfly[i].PosY = random8(HEIGHT);
-    butterfly[i].SpeedX = 0;
-    butterfly[i].SpeedY = 0;
-    butterfly[i].Turn = 0;
-    butterfly[i].Color = (isColored) ? random8() : 0U;
-    butterfly[i].Brightness = 255U;
+    lighter[i].PosX = random8(WIDTH);
+    lighter[i].PosY = random8(HEIGHT);
+    lighter[i].SpeedX = 0;
+    lighter[i].SpeedY = 0;
+    lighter[i].Turn = 0;
+    lighter[i].Color = (isColored) ? random8() : 0U;
+    lighter[i].Light = 255U;
   }
 }
 
@@ -4128,7 +4128,7 @@ String EffectButterfly::setDynCtrl(UIControl*_val) {
 
     for (uint8_t i = 0U; i < BUTTERFLY_MAX_COUNT; i++)
     {
-      butterfly[i].Color = (isColored) ? random8() : 0U;
+      lighter[i].Color = (isColored) ? random8() : 0U;
     }
   }
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
@@ -4159,122 +4159,122 @@ bool EffectButterfly::run(CRGB *leds, EffectWorker *param)
     step = 0U;
   for (uint8_t i = 0U; i < deltaValue; i++)
   {
-    butterfly[i].PosX += butterfly[i].SpeedX * speedFactor;
-    butterfly[i].PosY += butterfly[i].SpeedY * speedFactor;
+    lighter[i].PosX += lighter[i].SpeedX * speedFactor;
+    lighter[i].PosY += lighter[i].SpeedY * speedFactor;
 
-    if (butterfly[i].PosX < 0)
-      butterfly[i].PosX = (float)EffectMath::getmaxWidthIndex() + butterfly[i].PosX;
-    if (butterfly[i].PosX > EffectMath::getmaxWidthIndex())
-     butterfly[i].PosX = butterfly[i].PosX + 1 - WIDTH;
+    if (lighter[i].PosX < 0)
+      lighter[i].PosX = (float)EffectMath::getmaxWidthIndex() + lighter[i].PosX;
+    if (lighter[i].PosX > EffectMath::getmaxWidthIndex())
+     lighter[i].PosX = lighter[i].PosX + 1 - WIDTH;
 
-    if (butterfly[i].PosY < 0)
+    if (lighter[i].PosY < 0)
     {
-      butterfly[i].PosY = -butterfly[i].PosY;
-      butterfly[i].SpeedY = -butterfly[i].SpeedY;
-      //butterflysSpeedX[i] = -butterflysSpeedX[i];
+      lighter[i].PosY = -lighter[i].PosY;
+      lighter[i].SpeedY = -lighter[i].SpeedY;
+      //lightersSpeedX[i] = -lightersSpeedX[i];
     }
-    if (butterfly[i].PosY > EffectMath::getmaxHeightIndex())
+    if (lighter[i].PosY > EffectMath::getmaxHeightIndex())
     {
-      butterfly[i].PosY = (HEIGHT << 1U) - 2U - butterfly[i].PosY;
-      butterfly[i].SpeedY = -butterfly[i].SpeedY;
-      //butterflysSpeedX[i] = -butterflysSpeedX[i];
+      lighter[i].PosY = (HEIGHT << 1U) - 2U - lighter[i].PosY;
+      lighter[i].SpeedY = -lighter[i].SpeedY;
+      //lightersSpeedX[i] = -lightersSpeedX[i];
     }
 
     //проворот траектории
-    maxspeed = fabs(butterfly[i].SpeedX)+fabs(butterfly[i].SpeedY); // максимальная суммарная скорость
-    if (maxspeed == fabs(butterfly[i].SpeedX + butterfly[i].SpeedY))
+    maxspeed = fabs(lighter[i].SpeedX)+fabs(lighter[i].SpeedY); // максимальная суммарная скорость
+    if (maxspeed == fabs(lighter[i].SpeedX + lighter[i].SpeedY))
       {
-          if (butterfly[i].SpeedX > 0) // правый верхний сектор вектора
+          if (lighter[i].SpeedX > 0) // правый верхний сектор вектора
           {
-            butterfly[i].SpeedX += butterfly[i].Turn;
-            if (butterfly[i].SpeedX > maxspeed) // если вектор переехал вниз
+            lighter[i].SpeedX += lighter[i].Turn;
+            if (lighter[i].SpeedX > maxspeed) // если вектор переехал вниз
               {
-                butterfly[i].SpeedX = maxspeed + maxspeed - butterfly[i].SpeedX;
-                butterfly[i].SpeedY  = butterfly[i].SpeedX - maxspeed;
+                lighter[i].SpeedX = maxspeed + maxspeed - lighter[i].SpeedX;
+                lighter[i].SpeedY  = lighter[i].SpeedX - maxspeed;
               }
             else
-              butterfly[i].SpeedY = maxspeed - fabs(butterfly[i].SpeedX);
+              lighter[i].SpeedY = maxspeed - fabs(lighter[i].SpeedX);
           }
           else                           // левый нижний сектор
           {
-            butterfly[i].SpeedX -= butterfly[i].Turn;
-            if (butterfly[i].SpeedX + maxspeed < 0) // если вектор переехал вверх
+            lighter[i].SpeedX -= lighter[i].Turn;
+            if (lighter[i].SpeedX + maxspeed < 0) // если вектор переехал вверх
               {
-                butterfly[i].SpeedX = 0 - butterfly[i].SpeedX - maxspeed - maxspeed;
-                butterfly[i].SpeedY = maxspeed - fabs(butterfly[i].SpeedX);
+                lighter[i].SpeedX = 0 - lighter[i].SpeedX - maxspeed - maxspeed;
+                lighter[i].SpeedY = maxspeed - fabs(lighter[i].SpeedX);
               }
             else
-              butterfly[i].SpeedY = fabs(butterfly[i].SpeedX) - maxspeed;
+              lighter[i].SpeedY = fabs(lighter[i].SpeedX) - maxspeed;
           }
       }
     else //левый верхний и правый нижний секторы вектора
       {
-          if (butterfly[i].SpeedX > 0) // правый нижний сектор
+          if (lighter[i].SpeedX > 0) // правый нижний сектор
           {
-            butterfly[i].SpeedX -= butterfly[i].Turn;
-            if (butterfly[i].SpeedX > maxspeed) // если вектор переехал наверх
+            lighter[i].SpeedX -= lighter[i].Turn;
+            if (lighter[i].SpeedX > maxspeed) // если вектор переехал наверх
               {
-                butterfly[i].SpeedX = maxspeed + maxspeed - butterfly[i].SpeedX;
-                butterfly[i].SpeedY = maxspeed - butterfly[i].SpeedX;
+                lighter[i].SpeedX = maxspeed + maxspeed - lighter[i].SpeedX;
+                lighter[i].SpeedY = maxspeed - lighter[i].SpeedX;
               }
             else
-              butterfly[i].SpeedY = fabs(butterfly[i].SpeedX) - maxspeed;
+              lighter[i].SpeedY = fabs(lighter[i].SpeedX) - maxspeed;
           }
           else                           // левый верхний сектор
           {
-            butterfly[i].SpeedX += butterfly[i].Turn;
-            if (butterfly[i].SpeedX + maxspeed < 0) // если вектор переехал вниз
+            lighter[i].SpeedX += lighter[i].Turn;
+            if (lighter[i].SpeedX + maxspeed < 0) // если вектор переехал вниз
               {
-                butterfly[i].SpeedX = 0 - butterfly[i].SpeedX - maxspeed - maxspeed;
-                butterfly[i].SpeedY = 0 - butterfly[i].SpeedX - maxspeed;
+                lighter[i].SpeedX = 0 - lighter[i].SpeedX - maxspeed - maxspeed;
+                lighter[i].SpeedY = 0 - lighter[i].SpeedX - maxspeed;
               }
             else
-              butterfly[i].SpeedY = maxspeed - fabs(butterfly[i].SpeedX);
+              lighter[i].SpeedY = maxspeed - fabs(lighter[i].SpeedX);
           }
       }
 
-    if (butterfly[i].Brightness == 255U)
+    if (lighter[i].Light == 255U)
     {
       if (step == i && random8(2U) == 0U)//(step == 0U && ((pcnt + i) & 0x01))
       {
-        butterfly[i].Brightness = random8(220U,244U);
-        butterfly[i].SpeedX = (float)random8(101U) / 20.0f + 1.0f;
-        if (random8(2U) == 0U) butterfly[i].SpeedX = -butterfly[i].SpeedX;
-        butterfly[i].SpeedY = (float)random8(101U) / 20.0f + 1.0f;
-        if (random8(2U) == 0U) butterfly[i].SpeedY = -butterfly[i].SpeedY;
+        lighter[i].Light = random8(220U,244U);
+        lighter[i].SpeedX = (float)random8(101U) / 20.0f + 1.0f;
+        if (random8(2U) == 0U) lighter[i].SpeedX = -lighter[i].SpeedX;
+        lighter[i].SpeedY = (float)random8(101U) / 20.0f + 1.0f;
+        if (random8(2U) == 0U) lighter[i].SpeedY = -lighter[i].SpeedY;
         // проворот траектории
-        //butterflysTurn[i] = (float)random8((fabs(butterflysSpeedX[i])+fabs(butterflysSpeedY[i]))*2.0+2.0) / 40.0f;
-        butterfly[i].Turn = (float)random8((fabs(butterfly[i].SpeedX)+fabs(butterfly[i].SpeedY))*20.0f+2.0f) / 200.0f;
-        if (random8(2U) == 0U) butterfly[i].Turn = -butterfly[i].Turn;
+        //lightersTurn[i] = (float)random8((fabs(lightersSpeedX[i])+fabs(lightersSpeedY[i]))*2.0+2.0) / 40.0f;
+        lighter[i].Turn = (float)random8((fabs(lighter[i].SpeedX)+fabs(lighter[i].SpeedY))*20.0f+2.0f) / 200.0f;
+        if (random8(2U) == 0U) lighter[i].Turn = -lighter[i].Turn;
       }
     }
     else
     {
       if (step == i)
-        butterfly[i].Brightness++;
-      tmp = 255U - butterfly[i].Brightness;
-      if (tmp == 0U || ((uint16_t)(butterfly[i].PosX * tmp) % tmp == 0U && (uint16_t)(butterfly[i].PosY * tmp) % tmp == 0U))
+        lighter[i].Light++;
+      tmp = 255U - lighter[i].Light;
+      if (tmp == 0U || ((uint16_t)(lighter[i].PosX * tmp) % tmp == 0U && (uint16_t)(lighter[i].PosY * tmp) % tmp == 0U))
       {
-        butterfly[i].PosX = round(butterfly[i].PosX);
-        butterfly[i].PosY = round(butterfly[i].PosY);
-        butterfly[i].SpeedX = 0;
-        butterfly[i].SpeedY = 0;
-        butterfly[i].Turn = 0;
-        butterfly[i].Brightness = 255U;
+        lighter[i].PosX = round(lighter[i].PosX);
+        lighter[i].PosY = round(lighter[i].PosY);
+        lighter[i].SpeedX = 0;
+        lighter[i].SpeedY = 0;
+        lighter[i].Turn = 0;
+        lighter[i].Light = 255U;
       }
     }
 
     if (wings)
-      EffectMath::drawPixelXYF(butterfly[i].PosX, butterfly[i].PosY, CHSV(butterfly[i].Color, 255U, (butterfly[i].Brightness == 255U) ? 255U : 128U + random8(2U) * 111U)); // это процедура рисования с нецелочисленными координатами. ищите её в прошивке
+      EffectMath::drawPixelXYF(lighter[i].PosX, lighter[i].PosY, CHSV(lighter[i].Color, 255U, (lighter[i].Light == 255U) ? 255U : 128U + random8(2U) * 111U)); // это процедура рисования с нецелочисленными координатами. ищите её в прошивке
     else
-      EffectMath::drawPixelXYF(butterfly[i].PosX, butterfly[i].PosY, CHSV(butterfly[i].Color, 255U, butterfly[i].Brightness)); // это процедура рисования с нецелочисленными координатами. ищите её в прошивке
+      EffectMath::drawPixelXYF(lighter[i].PosX, lighter[i].PosY, CHSV(lighter[i].Color, 255U, lighter[i].Light)); // это процедура рисования с нецелочисленными координатами. ищите её в прошивке
   }
 
   // постобработка кадра
   if (isColored){
     for (uint8_t i = 0U; i < deltaValue; i++) // ещё раз рисуем всех Мотыльков, которые "сидят на стекле"
-      if (butterfly[i].Brightness == 255U)
-        EffectMath::drawPixelXY(butterfly[i].PosX, butterfly[i].PosY, CHSV(butterfly[i].Color, 255U, butterfly[i].Brightness));
+      if (lighter[i].Light == 255U)
+        EffectMath::drawPixelXY(lighter[i].PosX, lighter[i].PosY, CHSV(lighter[i].Color, 255U, lighter[i].Light));
   }
   else {
     //теперь инверсия всей матрицы

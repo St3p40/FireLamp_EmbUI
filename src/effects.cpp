@@ -1543,36 +1543,6 @@ bool EffectComet::rainbowComet3Routine(CRGB *leds, EffectWorker *param)
   return true;
 }
 
-//===== Ефект Призмата =========================//
-// https://github.com/pixelmatix/aurora/blob/master/PatternPendulumWave.h
-// Copyright (c) 2014 Jason Coon
-// Перевів на субпіксель Kostyamat
-void EffectPrismata::load(){
-  palettesload();
-}
-
-bool EffectPrismata::run(CRGB *leds, EffectWorker *opt) {
-  EVERY_N_MILLIS(100) {
-    spirohueoffset += 1;
-  }
-
-  fadeToBlackBy(leds, NUM_LEDS, map(fadelvl, 1, 255, 130, 2)); // делаем шлейф
-
-  for (byte x = 0; x < WIDTH; x++) {
-      float y = (float)beatsin16((uint8_t)x + speedFactor, 0, EffectMath::getmaxHeightIndex()* 10) / 10.0f;
-      EffectMath::drawPixelXYF_Y(x, y, ColorFromPalette(*curPalette, ((uint16_t)x + spirohueoffset) * 4));
-    }
-  return true;
-}
-
-// !++
-String EffectPrismata::setDynCtrl(UIControl*_val){
-  if(_val->getId()==1) speedFactor = ((float)EffectCalc::setDynCtrl(_val).toInt() / 2.0);
-  else if(_val->getId()==3) fadelvl = EffectCalc::setDynCtrl(_val).toInt();
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  return String();
-}
-
 //===== Ефект Стадо та хижак ===================//
 // https://github.com/pixelmatix/aurora/blob/master/PatternFlock.h
 // Copyright (c) 2014 Jason Coon
@@ -1713,11 +1683,12 @@ bool EffectSwirl::swirlRoutine(CRGB *leds, EffectWorker *param)
   return true;
 }
 
-// Effect Drift
+// Effect Pendulum and Drift
 // https://github.com/pixelmatix/aurora/blob/master/PatternIncrementalDrift.h
+// https://github.com/pixelmatix/aurora/blob/master/PatternPendulumWave.h (idea from)
 // Copyright(c) 2014 Jason Coon
 // Subpixel ver (v2) by St3p40
-// Drift Rose by St3p40
+// Drift Rose and Pendulum(recreation) by St3p40
 void EffectDrift::load(){
   palettesload();
 }
@@ -1740,13 +1711,17 @@ bool EffectDrift::run(CRGB *ledarr, EffectWorker *opt){
 
   dri_phase++;
 
+  t = millis();
+
   switch (driftType)
   {
-  case 3:
+  case 3: case 4:
+    return incrementalDriftRoutine(*&ledarr, &*opt);
+  case 5:
     return incrementalDriftRoutineRose(*&ledarr, &*opt);
     break;
   default:
-    return incrementalDriftRoutine(*&ledarr, &*opt);
+    return pendulumWave(*&ledarr, &*opt);
   }
 }
 
@@ -1755,13 +1730,12 @@ bool EffectDrift::incrementalDriftRoutine(CRGB *leds, EffectWorker *param)
   if (curPalette == nullptr) {
     return false;
   }
-  uint16_t t = millis();
   for (uint8_t i = 1; i < maxDim; i++) {
     int32_t angle = t * (maxDim - i) * _dri_speed;
 	  int32_t x = (WIDTH << 7) + (sin16(angle) >> 8) * i;
     int32_t y = (HEIGHT << 7) + (cos16(angle) >> 8) * i;
     EffectMath::wu_pixel(x, y, ColorFromPalette(*curPalette, (i - 1U) * maxDim_steps + _dri_delta));
-    if(driftType == 2){
+    if(driftType == 4){
       x = (WIDTH << 7) + (cos16(angle + (i * 256 / maxDim)) >> 8) * i;
       y = (HEIGHT << 7) + (sin16(angle + (i * 256 / maxDim)) >> 8) * i;
       EffectMath::wu_pixel(x, y, ColorFromPalette(*curPalette, (i - 1U) * maxDim_steps + _dri_delta));
@@ -1776,13 +1750,33 @@ bool EffectDrift::incrementalDriftRoutineRose(CRGB *leds, EffectWorker *param)
   if (curPalette == nullptr) {
     return false;
   }
-  uint16_t t = millis();
   for (uint8_t i = 1; i < maxDim * 2; i++) {
     uint16_t radius = map(sin16(t * i * (_dri_speed / 4.)), -32768, 32767, -(maxDim << 7), maxDim << 7);
     float angle = radians(map(i, 1, maxDim * 2, 0, 360));
     uint32_t x = ((WIDTH << 7) + (sin(angle) * radius));
     uint32_t y = ((HEIGHT << 7) + (cos(angle)  * radius));
     EffectMath::wu_pixel(x, y, ColorFromPalette(*curPalette, (i - 1U) * maxDim_steps + _dri_delta));
+  }
+  EffectMath::blur2d(beatsin8(3U, 2, 50));
+  return true;
+}
+
+bool EffectDrift::pendulumWave(CRGB *leds, EffectWorker *param)
+{
+  if (curPalette == nullptr) {
+    return false;
+  }
+  float waveSpeed = _dri_speed * 0.2 + 0.3;
+  if(driftType == 1){
+    for (byte x = 0; x < WIDTH; x++) {
+      uint16_t y = (HEIGHT << 7) + ((sin16(t * (x + 1) * waveSpeed) >> 8) * HEIGHT);
+      EffectMath::wu_pixel(x << 8, y, ColorFromPalette(*curPalette, (x - 1U) * maxDim_steps + dri_phase));
+    }
+  } else {
+    for (byte y = 0; y < HEIGHT; y++) {
+      uint16_t x = (WIDTH << 7) + ((sin16(t * (y + 1) * waveSpeed) >> 8) * WIDTH);
+      EffectMath::wu_pixel(x, y << 8, ColorFromPalette(*curPalette, (y - 1U) * maxDim_steps + dri_phase));
+    }
   }
   EffectMath::blur2d(beatsin8(3U, 2, 50));
   return true;

@@ -361,22 +361,6 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-//===== Ефект Призмата =========================//
-// https://github.com/pixelmatix/aurora/blob/master/PatternPendulumWave.h
-// Copyright (c) 2014 Jason Coon
-// Перевів на субпіксель Kostyamat
-class EffectPrismata : public EffectCalc {
-private:
-    byte spirohueoffset = 0;
-    uint8_t fadelvl=1;
-	float speedFactor;
-    
-    String setDynCtrl(UIControl*_val) override;
-public:
-    void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
-};
-
 //===== Ефект Стадо та хижак ===================//
 // https://github.com/pixelmatix/aurora/blob/master/PatternFlock.h
 // Copyright (c) 2014 Jason Coon
@@ -454,11 +438,12 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-// Effect Drift
+// Effect Pendulum and Drift
 // https://github.com/pixelmatix/aurora/blob/master/PatternIncrementalDrift.h
+// https://github.com/pixelmatix/aurora/blob/master/PatternPendulumWave.h (idea)
 // Copyright(c) 2014 Jason Coon
 // Subpixel ver (v2) by St3p40
-// Drift Rose by St3p40
+// Drift Rose and Pendulum(recreation) by St3p40
 class EffectDrift : public EffectCalc {
 private:
     const byte maxDim_steps = 256 / maxDim;
@@ -467,11 +452,12 @@ private:
     uint8_t _dri_delta;
     byte driftType = 0;
     bool flag = false;
+    uint32_t t = 0;
 
     String setDynCtrl(UIControl*_val) override;
     bool incrementalDriftRoutine(CRGB *leds, EffectWorker *param);
-    bool incrementalDriftRoutine2(CRGB *leds, EffectWorker *param);
     bool incrementalDriftRoutineRose(CRGB *leds, EffectWorker *param);
+    bool pendulumWave(CRGB *leds, EffectWorker *param);
 
 public:
     void load() override;

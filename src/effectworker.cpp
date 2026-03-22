@@ -69,9 +69,9 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed, const boo
   case EFF_ENUM::EFF_FLOCK :
     worker = std::unique_ptr<EffectFlock>(new EffectFlock());
     break;
-  case EFF_ENUM::EFF_PRIZMATA :
-    worker = std::unique_ptr<EffectPrismata>(new EffectPrismata());
-    break;
+//  case EFF_ENUM::EFF_PRIZMATA :
+//    worker = std::unique_ptr<EffectPrismata>(new EffectPrismata());
+//    break;
   case EFF_ENUM::EFF_SPIRO :
     worker = std::unique_ptr<EffectSpiro>(new EffectSpiro());
     break;

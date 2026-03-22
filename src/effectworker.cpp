@@ -112,8 +112,6 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed, const boo
     worker = std::unique_ptr<EffectSparcles>(new EffectSparcles());
     break;
   case EFF_ENUM::EFF_EVERYTHINGFALL :
-    worker = std::unique_ptr<EffectEverythingFall>(new EffectEverythingFall());
-    break;
   case EFF_ENUM::EFF_FIRE2012 :
     worker = std::unique_ptr<EffectFire2012>(new EffectFire2012());
     break;

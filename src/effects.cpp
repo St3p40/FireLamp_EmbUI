@@ -190,49 +190,6 @@ bool EffectWhiteColorStripe::whiteColorStripeRoutine(CRGB *leds, EffectWorker *p
   return true;
 }
 
-//===== Ефект Ефектопад ========================//
-void EffectEverythingFall::load(){
-    palettesload();    // подгружаем дефолтные палитры
-}
-
-// SPARKING: What chance (out of 255) is there that a new spark will be lit?
-// Higher chance = more roaring fire.  Lower chance = more flickery fire.
-// Default 120, suggested range 50-200.
-#define SPARKINGNEW 80U // 50 // 30 // 120 // 90 // 60
-bool EffectEverythingFall::run(CRGB *ledarr, EffectWorker *opt){
-  if (dryrun(4.0))
-    return false;
-
-  uint8_t coolingnew = map (scale, 1, 255, 93, 10);
-
-  for (uint8_t x = 0; x < WIDTH; x++) {
-    // Step 1.  Cool down every cell a little
-    for (uint8_t i = 0; i < HEIGHT; i++) {
-      heat[x][i] = qsub8(heat[x][i], random(0, coolingnew));
-    }
-
-    // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-    for (unsigned int k = EffectMath::getmaxHeightIndex(); k >= 2; k--) {
-      heat[x][k] = (heat[x][k - 1] + heat[x][k - 2] + heat[x][k - 2]) / 3;
-    }
-
-    // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
-    if (random8() < SPARKINGNEW) {
-      int y = random(2);
-      heat[x][y] = qadd8(heat[x][y], random(160, 255));
-    }
-
-    // Step 4.  Map from heat cells to LED colors
-    for (uint8_t j = 0; j < HEIGHT; j++) {
-      // Scale the heat value from 0-255 down to 0-240
-      // for best results with color palettes.
-      byte colorindex = scale8(heat[x][(uint8_t)j], 240);
-      nblend(EffectMath::getPixel(x, EffectMath::getmaxHeightIndex() - j), ColorFromPalette(*curPalette, colorindex /*, heat[x][j]*/), 50);
-    }
-  }
-  return true;
-}
-
 //===== Ефект Пульс ============================//
 // Stefan Petrick's PULSE Effect
 // !++
@@ -1985,26 +1942,30 @@ bool EffectWaves::wavesRoutine(CRGB *leds, EffectWorker *param) {
   return true;
 }
 
-//===== Ефект Вогонь 2012 ======================//
+// Effect Fire2012
+// "Effect everythingFall"
 // based on FastLED example Fire2012WithPalette
 // https://github.com/FastLED/FastLED/blob/master/examples/Fire2012WithPalette/Fire2012WithPalette.ino
 // Updated by SottNick 17.04.2020
 void EffectFire2012::load(){
-  // собираем свой набор палитр для эффекта
-  palettes.reserve(NUMPALETTES);
-  palettes.push_back(&PotassiumFireColors_p);
-  palettes.push_back(&SodiumFireColors_p);
-  palettes.push_back(&LithiumFireColors_p);
-  palettes.push_back(&RubidiumFireColors_p);
-  palettes.push_back(&NormalFire_p);
-  palettes.push_back(&HeatColors2_p);
-  palettes.push_back(&WoodFireColors_p);
-  palettes.push_back(&CopperFireColors_p);
-  palettes.push_back(&AlcoholFireColors_p);
-  palettes.push_back(&WhiteBlackColors_p);
 
-  usepalettes = true; // активируем "переключатель" палитр
-  scale2pallete();    // выбираем палитру согласно "шкале"
+  if(effect == EFF_EVERYTHINGFALL){
+    palettesload();
+  } else {
+    palettes.reserve(NUMPALETTES);
+    palettes.push_back(&PotassiumFireColors_p);
+    palettes.push_back(&SodiumFireColors_p);
+    palettes.push_back(&LithiumFireColors_p);
+    palettes.push_back(&RubidiumFireColors_p);
+    palettes.push_back(&NormalFire_p);
+    palettes.push_back(&HeatColors2_p);
+    palettes.push_back(&WoodFireColors_p);
+    palettes.push_back(&CopperFireColors_p);
+    palettes.push_back(&AlcoholFireColors_p);
+    palettes.push_back(&WhiteBlackColors_p);
+    usepalettes = true; // активируем "переключатель" палитр
+    scale2pallete();    // выбираем палитру согласно "шкале"
+  };
 
   // Add entropy to random number generator; we use a lot of it.
   random16_add_entropy(millis());
@@ -2037,33 +1998,46 @@ bool EffectFire2012::fire2012Routine(CRGB *leds, EffectWorker *opt) {
 #else
   #define FIRE_BASE HEIGHT / 6 + 1
 #endif
-
+  uint8_t coolingnew = map (scale, 1, 255, 93, 10);
   // Loop for each column individually
   for (uint8_t x = 0; x < WIDTH; x++)
   {
     // Step 1.  Cool down every cell a little
     for (uint8_t i = 0; i < HEIGHT; i++)
     {
-      noise3d[0][x][i] = qsub8(noise3d[0][x][i], random(0, ((cooling * 10) / HEIGHT) + 2));
+      heat[x][i] = qsub8(heat[x][i], (effect == EFF_EVERYTHINGFALL)? coolingnew : random(0, ((cooling * 10) / HEIGHT) + 2));
     }
 
     // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-    for (uint8_t k = HEIGHT; k > 1; k--)
+    for (uint8_t k = HEIGHT - (effect == EFF_EVERYTHINGFALL); k > 1; k--)
     {
-      noise3d[0][x][wrapY(k)] = (noise3d[0][x][k - 1] + noise3d[0][x][wrapY(k - 2)] + noise3d[0][x][wrapY(k - 2)]) / 3;
+      heat[x][wrapY(k)] = (heat[x][k - 1] + heat[x][wrapY(k - 2)] + heat[x][wrapY(k - 2)]) / 3;
     }
 
     // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
-    if (random(255) < sparking)
-    {
-      int j = random(FIRE_BASE);
-      noise3d[0][x][j] = qadd8(noise3d[0][x][j], random(96, 255)); // 196, 255
+    if(effect == EFF_EVERYTHINGFALL){
+      if (random8() < 80) {
+        int y = random(2);
+        heat[x][y] = qadd8(heat[x][y], random(160, 255));
+      }
     }
+    else
+     {
+      if (random8() < sparking)
+      {
+        int j = random(FIRE_BASE);
+        heat[x][j] = qadd8(heat[x][j], random(96, 255)); // 196, 255
+      }
+     }
 
     // Step 4.  Map from heat cells to LED colors
     for (uint8_t y = 0; y < HEIGHT; y++)
     {
-      nblend(EffectMath::getPixel(x, y), ColorFromPalette(*curPalette, ((noise3d[0][x][y] * 0.7) + (noise3d[0][wrapX(x + 1)][y] * 0.3))), fireSmoothing);
+      if(effect == EFF_EVERYTHINGFALL){
+        byte colorindex = scale8(heat[x][(uint8_t)y], 240);
+        nblend(EffectMath::getPixel(x, EffectMath::getmaxHeightIndex() - y), ColorFromPalette(*curPalette, colorindex /*, heat[x][j]*/), 50);
+      } else
+        nblend(EffectMath::getPixel(x, y), ColorFromPalette(*curPalette, ((heat[x][y] * 0.7) + (heat[wrapX(x + 1)][y] * 0.3))), fireSmoothing);
     }
   }
   return true;

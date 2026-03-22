@@ -216,17 +216,11 @@ public:
     String setDynCtrl(UIControl*_val) override;
 };
 
-//===== Ефект Ефектопад ========================//
-class EffectEverythingFall : public EffectCalc {
-private:
-    byte heat[WIDTH][HEIGHT];
-
-public:
-    void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
-};
-
-//===== Ефект Вогонь 2012 ======================//
+// Effect Fire2012
+// "Effect everythingFall"
+// based on FastLED example Fire2012WithPalette
+// https://github.com/FastLED/FastLED/blob/master/examples/Fire2012WithPalette/Fire2012WithPalette.ino
+// Updated by SottNick 17.04.2020
 // based on FastLED example Fire2012WithPalette
 // https://github.com/FastLED/FastLED/blob/master/examples/Fire2012WithPalette/Fire2012WithPalette.ino
 // Updated by SottNick 17.04.2020
@@ -244,7 +238,7 @@ private:
   // Lower = more blending and smoother flames. Higher = less blending and flickery flames
     uint8_t _scale = 1;
     const uint8_t fireSmoothing = 60U; // 90
-    uint8_t noise3d[NUM_LAYERS][WIDTH][HEIGHT];
+    uint8_t heat[WIDTH][HEIGHT];
     bool fire2012Routine(CRGB *leds, EffectWorker *param);
     String setDynCtrl(UIControl*_val) override;
 public:

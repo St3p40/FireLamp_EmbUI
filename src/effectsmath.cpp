@@ -652,10 +652,10 @@ void EffectMath::drawCircleF(float x0, float y0, float radius, const CRGB &color
 
 void EffectMath::fill_circleF(float cx, float cy, float radius, CRGB col) {
   int8_t rad = radius;
-  for (float y = -radius; y < radius; y += (fabs(y) < rad ? 1 : 0.2)) {
-    for (float x = -radius; x < radius; x += (fabs(x) < rad ? 1 : 0.2)) {
-      if (x * x + y * y < radius * radius)
-        EffectMath::drawPixelXYF(cx + x, cy + y, col, 0);
+  for (int16_t y = -radius; y < radius; y += 1) {
+    for (int16_t x = -radius; x < radius; x += 1) {
+      if (x * x + y * y < (radius * radius))
+        EffectMath::drawPixelXYF(cx + x, cy + y, col, 0, true);
     }
   }
 }

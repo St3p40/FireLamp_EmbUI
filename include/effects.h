@@ -1592,37 +1592,6 @@ public:
     void load() override;
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 
-}; 
-
-//===== Ефект Бенгальські вогні ================//
-// https://wokwi.com/arduino/projects/289797125785520649
-// (c)Stepko
-// 06.02.2021
-class EffectBengalL : public EffectCalc {
-private:
-    #define sparksNum  WIDTH*4
-    struct{
-        float PosX, PosY;
-        float SpeedX, SpeedY;
-        uint8_t Color;
-        float Sat;
-        float Fade;
-    }spark[sparksNum];
-    uint16_t gPosX, gPosY;
-    bool centerRun = true;
-    byte period = 10;
-    byte _x = WIDTH/2;
-    byte _y = HEIGHT/2;
-    float speedFactor;
-
-    void regen(byte id);
-    void phisics(byte id);
-    String setDynCtrl(UIControl*_val) override;
-
-
-public:
-    void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
 //===== Ефект кульки ===========================//

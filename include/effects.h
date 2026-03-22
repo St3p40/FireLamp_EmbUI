@@ -1358,15 +1358,29 @@ class EffectSmokeballs: public EffectCalc {
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
+//X-Mas tree
+//Idea by St3p40
+//Updates by kostyamat and St3p40
+class EffectXMasTree: public EffectCalc {
+  private:
+    const byte density = 50;
+    const bool glitch = abs((int)WIDTH-(int)HEIGHT) >= minDim/4;
+    uint8_t _scale = 1;
+    uint8_t effId = 1;
+    uint8_t hue;
+    float x;
+  public:
+    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
+    String setDynCtrl(UIControl*_val) override;
+};
+
 //===== Ефект Клітинки-ялинки ==================//
 // Cell (C)Elliott Kember from Soulmate-IDE examples
-// Spider, Spruce, Lines, Color frizzles (c)stepko
+// Spider, Lines, Color frizzles (c)stepko
 // Flowering (c)Taras Yuzov
 class EffectCell: public EffectCalc {
   private:
     const uint8_t Lines = 5;
-	const bool glitch = abs((int)WIDTH-(int)HEIGHT) >= minDim/4;
-	const byte density = 50;
     uint8_t Scale = 6;
     uint8_t _scale = 1;
     int16_t offsetX = 0;
@@ -1379,7 +1393,6 @@ class EffectCell: public EffectCalc {
 	float speedFactor;
     void cell(CRGB *leds);
     void spider(CRGB *leds);
-    void spruce(CRGB *leds);
     void vals(CRGB *leds);
     void flower(CRGB *leds);
     void frizzles(CRGB *leds);

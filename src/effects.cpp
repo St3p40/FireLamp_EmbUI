@@ -5490,6 +5490,42 @@ void EffectSmokeballs::shiftUp(){
   }
 }
 
+//X-Mas tree
+//Idea by St3p40
+//Updates by kostyamat and St3p40
+String EffectXMasTree::setDynCtrl(UIControl*_val) {
+  if(_val->getId()==1) speed = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 3, 20);
+  else if(_val->getId()==3) {
+    _scale = EffectCalc::setDynCtrl(_val).toInt();
+    effId = _scale ? _scale : random(_val->getMin().toInt(), _val->getMax().toInt()+1)+1;
+  } else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
+  return String();
+}
+
+bool EffectXMasTree::run(CRGB *ledarr, EffectWorker *opt) {
+  hue++;
+  fadeToBlackBy(leds, NUM_LEDS, map(speed, 1, 255, 1, 10));
+  uint8_t z;
+  if (effId == 3) z = triwave8(hue);
+  else z = beatsin8(1, 1, 255);
+  for (uint8_t i = 0; i < minDim; i++) {
+    x = beatsin16(i * (speed),
+                     i * 2,
+                     (minDim * 4 - 2) - (i * 2 + 2));
+    if (effId == 2)
+      EffectMath::drawPixelXYF_X(x/4 + height_adj, i, random8(10) == 0 ? CHSV(random8(), random8(32, 255), 255) : CHSV(100, 255, map(speed, 1, 255, 128, 100)));
+    else
+      EffectMath::drawPixelXYF_X(x/4 + height_adj, i, CHSV(hue + i * z, 255, 255));
+  }
+  if (!(WIDTH& 0x01))
+    EffectMath::getPixel(WIDTH/2 - ((millis()>>9) & 0x01 ? 1:0), minDim - 1 - ((millis()>>8) & 0x01 ? 1:0)) = CHSV(0, 255, 255);
+  else
+    EffectMath::getPixel(WIDTH/2, minDim - 1) = CHSV(0, (millis()>>9) & 0x01 ? 0 : 255, 255);
+
+  if (glitch) EffectMath::confetti(density);
+  return true;
+}
+
 //===== Ефект Клітинки-ялинки ==================//
 // Cell (C)Elliott Kember from Soulmate-IDE examples
 // Spider, Spruce, Lines, Color frizzles (c)stepko
@@ -5524,10 +5560,10 @@ bool EffectCell::run(CRGB *leds, EffectWorker *opt){
   if (_scale == 0) {
     EVERY_N_SECONDS(60) {
       effId ++;
-      if (effId == 9)
+      if (effId == 7)
         effId = 1;
     }
-  } else effId = constrain(_scale, 1, 9);
+  } else effId = constrain(_scale, 1, 7);
 
   switch (effId)
   {
@@ -5535,52 +5571,24 @@ bool EffectCell::run(CRGB *leds, EffectWorker *opt){
     cell(leds);
     break;
   case 2:
-  case 3:
-  case 4:
-    spruce(leds);
-    break;
-  case 5:
     spider(leds);
     break;
-  case 6:
+  case 3:
     vals(leds);
     break;
-  case 7:
+  case 4:
     flower(leds);
     break;
-  case 8:
+  case 5:
     frizzles(leds);
     break;
-  case 9:
+  case 6:
     paintball(leds);
     break;
   default:
     break;
   }
   return true;
-}
-
-void EffectCell::spruce(CRGB *leds) {
-  hue++;
-  fadeToBlackBy(leds, NUM_LEDS, map(speed, 1, 255, 1, 10));
-  uint8_t z;
-  if (effId == 3) z = triwave8(hue);
-  else z = beatsin8(1, 1, 255);
-  for (uint8_t i = 0; i < minDim; i++) {
-    x = beatsin16(i * (map(speed, 1, 255, 3, 20)),
-                     i * 2, 
-                     (minDim * 4 - 2) - (i * 2 + 2));
-    if (effId == 2) 
-      EffectMath::drawPixelXYF_X(x/4 + height_adj, i, random8(10) == 0 ? CHSV(random8(), random8(32, 255), 255) : CHSV(100, 255, map(speed, 1, 255, 128, 100)));
-    else
-      EffectMath::drawPixelXYF_X(x/4 + height_adj, i, CHSV(hue + i * z, 255, 255));
-  }
-  if (!(WIDTH& 0x01))
-    EffectMath::getPixel(WIDTH/2 - ((millis()>>9) & 0x01 ? 1:0), minDim - 1 - ((millis()>>8) & 0x01 ? 1:0)) = CHSV(0, 255, 255);
-  else
-    EffectMath::getPixel(WIDTH/2, minDim - 1) = CHSV(0, (millis()>>9) & 0x01 ? 0 : 255, 255);
-
-  if (glitch) EffectMath::confetti(density);
 }
 
 void EffectCell::spider(CRGB *leds) {

@@ -84,9 +84,9 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed, const boo
   case EFF_ENUM::EFF_BBALS :
     worker = std::unique_ptr<EffectBBalls>(new EffectBBalls());
     break;
-//  case EFF_ENUM::EFF_PAINTBALL :
-//    worker = std::unique_ptr<EffectLightBalls>(new EffectLightBalls());
-//    break;
+  case EFF_ENUM::EFF_PAINTBALL :
+    worker = std::unique_ptr<EffectXMasTree>(new EffectXMasTree());
+    break;
   case EFF_ENUM::EFF_PULSE :
     worker = std::unique_ptr<EffectPulse>(new EffectPulse());
     break;

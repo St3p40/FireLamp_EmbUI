@@ -527,30 +527,6 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-//===== Ефект Вогонь 2018 ======================//
-// https://gist.github.com/StefanPetrick/819e873492f344ebebac5bcd2fdd8aa8
-// https://gist.github.com/StefanPetrick/1ba4584e534ba99ca259c1103754e4c5
-// Updating by SottNick 17.04.2020
-class EffectFire2018 : public EffectCalc {
-private:
-  const uint8_t CentreY = HEIGHT / 2 + (HEIGHT % 2);
-  const uint8_t CentreX = WIDTH / 2 + (WIDTH % 2);
-  bool isLinSpeed = true;
-
-  uint32_t noise32_x[NUM_LAYERS2];
-  uint32_t noise32_y[NUM_LAYERS2];
-  uint32_t noise32_z[NUM_LAYERS2];
-  uint32_t scale32_x[NUM_LAYERS2];
-  uint32_t scale32_y[NUM_LAYERS2];
-  uint8_t fire18heat[NUM_LEDS];
-  uint8_t noise3dx[NUM_LAYERS2][WIDTH][HEIGHT];
-
-  String setDynCtrl(UIControl*_val) override;
-
-public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
-};
-
 //===== Ефект Кодовий замок ====================//
 // (c) SottNick
 class EffectRingsLock : public EffectCalc {

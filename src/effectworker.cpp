@@ -161,9 +161,9 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed, const boo
   case EFF_ENUM::EFF_BALLS :
     worker = std::unique_ptr<EffectBalls>(new EffectBalls());
     break;
-  case EFF_ENUM::EFF_FIRE2018 :
-    worker = std::unique_ptr<EffectFire2018>(new EffectFire2018());
-    break;
+//  case EFF_ENUM::EFF_FIRE2018 :
+//    worker = std::unique_ptr<EffectFire2018>(new EffectFire2018());
+//    break;
   case EFF_ENUM::EFF_RINGS :
     worker = std::unique_ptr<EffectRingsLock>(new EffectRingsLock());
     break;

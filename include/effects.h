@@ -166,15 +166,14 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-//===== Ефект Веселка ==========================//
+// Effect Rainbow
 class EffectRainbow : public EffectCalc {
 private:
-    float hue; // вещественное для малых скоростей, нужно приведение к uint8_t по месту
+    float hue; // float is for very slow speed
     float twirlFactor;
     float micCoef;
 
-    bool rainbowHorVertRoutine(bool isVertical);
-    bool rainbowDiagonalRoutine();
+    String setDynCtrl(UIControl*_val);
 
 public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;

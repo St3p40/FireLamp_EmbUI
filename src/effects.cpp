@@ -277,48 +277,31 @@ bool EffectPulse::run(CRGB *leds, EffectWorker *param) {
   return true;
 }
 
-//===== Ефект Веселка ==========================//
-//Вертикальна і горизонтальна
-bool EffectRainbow::run(CRGB *ledarr, EffectWorker *opt){
-  // коэф. влияния замаплен на скорость, 4 ползунок нафиг не нужен
-  hue += (6.0 * (speed / 255.0) + 0.05 ); // скорость смещения цвета зависит от кривизны наклна линии, коэф. 6.0 и 0.05
-#ifdef MIC_EFFECTS
-    micCoef = (getMicMapMaxPeak() > map(speed, 1, 255, 100, 10) and isMicOn() ? getMicMapMaxPeak() : 100.0)/100.0;
-    twirlFactor = EffectMath::fmap((float)scale, 85, 170, 8.3, 24);      // на сколько оборотов будет закручена матрица, [0..3]
-    twirlFactor *= getMicMapMaxPeak() > map(speed, 1, 255, 80, 10) and isMicOn() ? 1.5f * ((float)getMicMapFreq() / 255.0f) : 1.0f;
-#else
-    twirlFactor = EffectMath::fmap((float)scale, 85, 170, 8.3, 24);      // на сколько оборотов будет закручена матрица, [0..3]
-    micCoef = 1.0;
-#endif
-  if(scale<85){
-    return rainbowHorVertRoutine(false);
-  } else if (scale>170){
-    return rainbowHorVertRoutine(true);
-  } else {
-    return rainbowDiagonalRoutine();
-  }
+// Effect Rainbow
+String EffectRainbow::setDynCtrl(UIControl*_val){
+  if(_val->getId()==3) twirlFactor = radians(EffectCalc::setDynCtrl(_val).toInt());
+  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
+  return String();
 }
 
-bool EffectRainbow::rainbowHorVertRoutine(bool isVertical)
-{
-  for (uint8_t i = 0U; i < (isVertical?WIDTH:HEIGHT); i++)
-  {
-    for (uint8_t j = 0U; j < (isVertical?HEIGHT:WIDTH); j++)
-    {
-      CHSV thisColor = CHSV(((hue + i * scale) * micCoef), 255, 255);
-      EffectMath::drawPixelXY((isVertical?i:j), (isVertical?j:i), thisColor);
-    }
-  }
-  return true;
-}
-//Діагональна
-bool EffectRainbow::rainbowDiagonalRoutine()
-{
+bool EffectRainbow::run(CRGB *ledarr, EffectWorker *opt){
+
+  hue += (6.0 * (speed / 255.0) + 0.05 );
+#ifdef MIC_EFFECTS
+    micCoef = (getMicMapMaxPeak() > map(speed, 1, 255, 100, 10) and isMicOn() ? getMicMapMaxPeak() : 100.0)/100.0;
+    //twirlFactor = EffectMath::fmap((float)scale, 85, 170, 8.3, 24);      // no need
+    //twirlFactor *= getMicMapMaxPeak() > map(speed, 1, 255, 80, 10) and isMicOn() ? 1.5f * ((float)getMicMapFreq() / 255.0f) : 1.0f;
+#else
+    //twirlFactor = EffectMath::fmap((float)scale, 85, 170, 8.3, 24);
+    micCoef = 1.0;
+    float i_scale = cos(twirlFactor);
+    float j_scale = sin(twirlFactor);
+#endif
   for (uint8_t i = 0U; i < WIDTH; i++)
   {
     for (uint8_t j = 0U; j < HEIGHT; j++)
     {
-      CRGB thisColor = CHSV((uint8_t)(hue + ((float)WIDTH / (float)HEIGHT * i + j * twirlFactor) * ((float)255 / (float)EffectMath::getmaxDim())), 255, 255);
+      CRGB thisColor = CHSV((hue + ((((float)i*i_scale + (float)j*j_scale) * scale / 25.) * micCoef)) * ((float)255 / (float)EffectMath::getmaxDim()), 255, 255); //scale for 
       EffectMath::drawPixelXY(i, j, thisColor);
     }
   }

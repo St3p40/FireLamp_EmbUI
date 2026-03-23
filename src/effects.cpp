@@ -301,7 +301,7 @@ bool EffectRainbow::run(CRGB *ledarr, EffectWorker *opt){
   {
     for (uint8_t j = 0U; j < HEIGHT; j++)
     {
-      CRGB thisColor = CHSV((hue + ((((float)i*i_scale + (float)j*j_scale) * scale / 25.) * micCoef)) * ((float)255 / (float)EffectMath::getmaxDim()), 255, 255); //scale for 
+      CRGB thisColor = CHSV((hue + ((((float)i*i_scale + (float)j*j_scale) * scale / 25.) * micCoef)) * ((float)255 / (float)EffectMath::getmaxDim()), 255, 255);
       EffectMath::drawPixelXY(i, j, thisColor);
     }
   }

@@ -84,7 +84,7 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed, const boo
   case EFF_ENUM::EFF_BBALS :
     worker = std::unique_ptr<EffectBBalls>(new EffectBBalls());
     break;
-  case EFF_ENUM::EFF_PAINTBALL :
+  case EFF_ENUM::EFF_XMAS_TREE :
     worker = std::unique_ptr<EffectXMasTree>(new EffectXMasTree());
     break;
   case EFF_ENUM::EFF_PULSE :
@@ -219,9 +219,9 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed, const boo
   case EFF_ENUM::EFF_ARROWS :
     worker = std::unique_ptr<EffectArrows>(new EffectArrows());
     break;
-  case EFF_ENUM::EFF_NBALLS :
-    worker = std::unique_ptr<EffectNBals>(new EffectNBals());
-    break;
+//  case EFF_ENUM::EFF_NBALLS :
+//    worker = std::unique_ptr<EffectNBals>(new EffectNBals());
+//    break;
   case EFF_ENUM::EFF_ATTRACT :
     worker = std::unique_ptr<EffectAttract>(new EffectAttract());
     break;

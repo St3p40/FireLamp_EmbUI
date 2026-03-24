@@ -377,7 +377,7 @@ EFF_CUBE,                                     // Блукаючий кубик
 EFF_PULSE,                                    // Пульс
 EFF_EVERYTHINGFALL,                           // Ефектопад
 EFF_R_FIRE,                                   // Неопалима купина
-EFF_PAINTBALL,                                // Пейнтбол
+EFF_XMAS_TREE,                                // Ялинка
 EFF_3DNOISE,                                  // Шум 3Д
 EFF_CELL,                                     // Клітинки-ялинки
 EFF_PUZZLES,                                  // П'ятнашки
@@ -463,7 +463,7 @@ EFF_TIME = (250U)                             // Годинник(службов
  * вместо несуществующих эффектов ставим указатель на 0-ю пустышку
  */
 static const char* const T_EFFNAMEID[] PROGMEM = {
-  TEFF_000, TEFF_001, TEFF_002, TEFF_003, TEFF_004, TEFF_005, TEFF_006, TEFF_007, TEFF_008, TEFF_009, TEFF_010, TEFF_011, TEFF_012, TEFF_013, TEFF_000, TEFF_015, // 0-15
+  TEFF_000, TEFF_001, TEFF_002, TEFF_003, TEFF_004, TEFF_005, TEFF_006, TEFF_007, TEFF_008, TEFF_009, TEFF_010, TEFF_011, TEFF_012, TEFF_013, TEFF_014, TEFF_015, // 0-15
   TEFF_016, TEFF_017, TEFF_018, TEFF_019, TEFF_020, TEFF_021, TEFF_022, TEFF_023, TEFF_024, TEFF_025, TEFF_000, TEFF_000, TEFF_028, TEFF_029, TEFF_000, TEFF_031, // 16-31
   TEFF_032, TEFF_033, TEFF_034, TEFF_035, TEFF_000, TEFF_037, TEFF_038, TEFF_000, TEFF_040, TEFF_041, TEFF_000, TEFF_043, TEFF_044, TEFF_045, TEFF_046, TEFF_047, // 32 - 47
   TEFF_048, TEFF_049, TEFF_050, TEFF_051, TEFF_052, TEFF_053, TEFF_054, TEFF_055, TEFF_056, TEFF_057, TEFF_058, TEFF_059, TEFF_060, TEFF_061, TEFF_062, TEFF_063, // 48 - 63

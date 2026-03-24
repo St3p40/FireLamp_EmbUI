@@ -4548,68 +4548,6 @@ void EffectArrows::arrowSetup_mode4() {
   }
 }
 
-//===== Ефект Дикі кульки ======================//
-// https://gist.github.com/bonjurroughs/9c107fa5f428fb01d484#file-noise-balls
-String EffectNBals::setDynCtrl(UIControl*_val){
-  if(_val->getId()==1) beat1 = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 8, 128);
-  else if(_val->getId()==3) beat2 = EffectCalc::setDynCtrl(_val).toInt();
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  return String();
-}
-
-bool EffectNBals::run(CRGB *leds, EffectWorker *param) {
-  balls_timer();
-  blur(*&leds);
-  return true;
-}
-
-void EffectNBals::blur(CRGB *leds) {
-  EffectMath::blur2d(beatsin8(2, 0, 60));
-  // Use two out-of-sync sine waves
-  uint8_t  i = beatsin8( beat1, 0, EffectMath::getmaxWidthIndex());
-  uint8_t  j = beatsin8(fabs(beat1 - beat2), 0, EffectMath::getmaxHeightIndex());
-  // Also calculate some reflections
-  uint8_t ni = EffectMath::getmaxWidthIndex() - i;
-  uint8_t nj = EffectMath::getmaxHeightIndex() - j;
-  // The color of each point shifts over time, each at a different speed.
-  uint16_t ms = millis();
-
-  switch(balls){
-  case 1:
-    EffectMath::getPixel(ni, nj) += CHSV( ms / 17, 200, 255);
-    break;
-  case 3:
-    EffectMath::getPixel(ni, nj) += CHSV( ms / 17, 200, 255);
-    EffectMath::getPixel(ni, j) += CHSV( ms / 41, 200, 255);
-    break;
-  case 4:
-    EffectMath::getPixel(ni, nj) += CHSV( ms / 17, 200, 255);
-    EffectMath::getPixel(ni, j) += CHSV( ms / 41, 200, 255);
-    EffectMath::getPixel( i,nj) += CHSV( ms / 37, 200, 255);
-    EffectMath::getPixel( i, j) += CHSV( ms / 11, 200, 255);
-    break;
-  case 2:
-    EffectMath::getPixel(ni, j) += CHSV( ms / 41, 200, 255);
-    EffectMath::getPixel( i, j) += CHSV( ms / 13, 200, 255);
-    break;
-  }
-}
-
-void EffectNBals::balls_timer() {
-  uint8_t secondHand = ((millis() / 1000)) % 60;
-
-  if( lastSecond != secondHand) {
-    lastSecond = secondHand;
-
-    if(( secondHand == 30)||( secondHand == 0))  {
-      balls += 1;
-      if(balls > 4) {
-        balls = 1;
-      }
-    }
-  }
-}
-
 //===== Ефект Притягування =====================//
 // https://github.com/pixelmatix/aurora/blob/master/PatternAttract.h
 // причесав kostyamat
@@ -5293,6 +5231,7 @@ bool EffectXMasTree::run(CRGB *ledarr, EffectWorker *opt) {
 // Cell (C)Elliott Kember from Soulmate-IDE examples
 // Spider, Lines, Color frizzles (c)stepko
 // Radar, Spiro (c)Jason Coon
+// Noise balls (c)bonjurroughs
 void EffectCell::load() {
   palettesload();
 }
@@ -5353,7 +5292,10 @@ bool EffectCell::run(CRGB *leds, EffectWorker *opt){
   case 6:
     paintball(leds);
     break;
-   case 7:
+  case 7:
+    noise_balls(leds);
+    break;
+   case 8:
     spiro(leds);
     break;
   default:
@@ -5454,6 +5396,53 @@ void EffectCell::spiro(CRGB *leds) {
     EffectMath::drawPixelXYF((WIDTH / 2 + sin(t + (x * i)) * rad), (HEIGHT / 2 + cos(t + (x * i)) * rad), ColorFromPalette(*curPalette, t*10 + ((256 / a) * i)));
   }
   EffectMath::blur2d(16);
+}
+
+void EffectCell::noise_balls(CRGB *leds) {
+  uint8_t beat1 = map(speed, 1, 255, 8, 128);
+//timer
+  uint8_t secondHand = ((millis() / 1000)) % 60;
+
+  if( hue != secondHand) {
+    hue = secondHand;
+
+    if(( secondHand == 30)||( secondHand == 0))  {
+      a += 1;
+      if(a > 4) {
+        a = 1;
+      }
+    }
+  }
+//
+  EffectMath::blur2d(beatsin8(2, 0, 60));
+  // Use two out-of-sync sine waves
+  uint8_t  i = beatsin8( beat1, 0, EffectMath::getmaxWidthIndex());
+  uint8_t  j = beatsin8(fabs(beat1 - 2), 0, EffectMath::getmaxHeightIndex());
+  // Also calculate some reflections
+  uint8_t ni = EffectMath::getmaxWidthIndex() - i;
+  uint8_t nj = EffectMath::getmaxHeightIndex() - j;
+  // The color of each point shifts over time, each at a different speed.
+  uint16_t ms = millis();
+
+  switch(a){
+  case 1:
+    EffectMath::getPixel(ni, nj) += ColorFromPalette(*curPalette, ms / 17);
+    break;
+  case 3:
+    EffectMath::getPixel(ni, nj) += ColorFromPalette(*curPalette, ms / 17);
+    EffectMath::getPixel(ni, j) += ColorFromPalette(*curPalette, ms / 41);
+    break;
+  case 4:
+    EffectMath::getPixel(ni, nj) += ColorFromPalette(*curPalette, ms / 17);
+    EffectMath::getPixel(ni, j) += ColorFromPalette(*curPalette, ms / 41);
+    EffectMath::getPixel( i,nj) += ColorFromPalette(*curPalette, ms / 37);
+    EffectMath::getPixel( i, j) += ColorFromPalette(*curPalette, ms / 11);
+    break;
+  case 2:
+    EffectMath::getPixel(ni, j) += ColorFromPalette(*curPalette, ms / 41);
+    EffectMath::getPixel( i, j) += ColorFromPalette(*curPalette, ms / 13);
+    break;
+  }
 }
 
 //===== Ефект Тіксі Ленд =======================//

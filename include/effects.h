@@ -1013,25 +1013,6 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-//===== Ефект Дикі кульки ======================//
-// https://gist.github.com/bonjurroughs/9c107fa5f428fb01d484#file-noise-balls
-class EffectNBals : public EffectCalc {
-private:
-    uint8_t lastSecond = 99;
-    uint16_t speedy;// speed is set dynamically once we've started up
-    uint16_t _scale;
-    byte beat1, beat2 = 0;
-    byte balls = 4;
-    void balls_timer();
-    void blur(CRGB *leds);
-    bool nballsRoutine(CRGB *leds, EffectWorker *param);
-
-    String setDynCtrl(UIControl*_val) override;
-
-public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
-};
-
 //===== Ефект Притягування =====================//
 // https://github.com/pixelmatix/aurora/blob/master/PatternAttract.h
 // причесав kostyamat
@@ -1313,6 +1294,7 @@ class EffectXMasTree: public EffectCalc {
 // Cell (C)Elliott Kember from Soulmate-IDE examples
 // Spider, Lines, Color frizzles (c)stepko
 // Radar, Spiro (c)Jason Coon
+// Noise balls (c)bonjurroughs
 class EffectCell: public EffectCalc {
   private:
     const uint8_t Lines = 5;
@@ -1337,7 +1319,6 @@ class EffectCell: public EffectCalc {
     void paintball(CRGB *leds);
     void spiro(CRGB *leds);
     void noise_balls(CRGB *leds);
-    void fire_balls(CRGB *leds);
   public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
     String setDynCtrl(UIControl*_val) override;

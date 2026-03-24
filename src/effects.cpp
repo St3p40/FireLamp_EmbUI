@@ -293,10 +293,11 @@ bool EffectRainbow::run(CRGB *ledarr, EffectWorker *opt){
     //twirlFactor *= getMicMapMaxPeak() > map(speed, 1, 255, 80, 10) and isMicOn() ? 1.5f * ((float)getMicMapFreq() / 255.0f) : 1.0f;
 #else
     //twirlFactor = EffectMath::fmap((float)scale, 85, 170, 8.3, 24);
+#endif
     micCoef = 1.0;
     float i_scale = cos(twirlFactor);
     float j_scale = sin(twirlFactor);
-#endif
+
   for (uint8_t i = 0U; i < WIDTH; i++)
   {
     for (uint8_t j = 0U; j < HEIGHT; j++)
@@ -2631,7 +2632,7 @@ bool EffectPicasso::metaBallsRoutine(CRGB *leds, EffectWorker *param){
       float sum = 0;
       for (unsigned i = 0; i < numParticles; i += 2) {
         Particle *p1 = (Particle *)&particles[i];
-        if (effId == 2){
+        if (effId == 1){
             sum += EffectMath::distance(x, y, p1->position_x, p1->position_y);
         }
         else {
@@ -2648,7 +2649,7 @@ bool EffectPicasso::metaBallsRoutine(CRGB *leds, EffectWorker *param){
         if (sum >= 255) { sum = 255; break; }
       }
       }
-      if(effId == 2){
+      if(effId == 1){
         sum = map(numParticles, 6, 20, 512, 1024) / (sum==0?1:sum);
         if (sum > 0 and sum < 60)
           sum *= 9;
@@ -2659,7 +2660,7 @@ bool EffectPicasso::metaBallsRoutine(CRGB *leds, EffectWorker *param){
       EffectMath::drawPixelXY(x, y, color);
       }
   }
-  if(effId == 2){
+  if(effId == 1){
     for (unsigned i = 0; i < numParticles; i += 2) {
       Particle *p1 = (Particle *)&particles[i];
       EffectMath::drawPixelXYF(p1->position_x, p1->position_y, CRGB::White);

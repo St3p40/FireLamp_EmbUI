@@ -60,9 +60,9 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed, const boo
   case EFF_ENUM::EFF_TIME :
     worker = std::unique_ptr<EffectTime>(new EffectTime());
     break;
-  case EFF_ENUM::EFF_SWIRL :
-    worker = std::unique_ptr<EffectSwirl>(new EffectSwirl());
-    break;
+//  case EFF_ENUM::EFF_SWIRL :
+//    worker = std::unique_ptr<EffectSwirl>(new EffectSwirl());
+//    break;
   case EFF_ENUM::EFF_COMET :
     worker = std::unique_ptr<EffectComet>(new EffectComet());
     break;

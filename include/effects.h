@@ -398,18 +398,6 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-//===== Ефект Водоверть ========================//
-// https://gist.github.com/kriegsman/5adca44e14ad025e6d3b
-// Copyright (c) 2014 Mark Kriegsman
-class EffectSwirl : public EffectCalc {
-private:
-    bool swirlRoutine(CRGB *leds, EffectWorker *param);
-
-public:
-    void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
-};
-
 // Effect Pendulum and Drift
 // https://github.com/pixelmatix/aurora/blob/master/PatternIncrementalDrift.h
 // https://github.com/pixelmatix/aurora/blob/master/PatternPendulumWave.h (idea)
@@ -1295,6 +1283,7 @@ class EffectXMasTree: public EffectCalc {
 // Spider, Lines, Color frizzles (c)stepko
 // Radar, Spiro (c)Jason Coon
 // Noise balls (c)bonjurroughs
+// Swirl (c)Mark Kriegsman
 class EffectCell: public EffectCalc {
   private:
     const uint8_t Lines = 5;
@@ -1319,6 +1308,7 @@ class EffectCell: public EffectCalc {
     void paintball(CRGB *leds);
     void spiro(CRGB *leds);
     void noise_balls(CRGB *leds);
+    void swirl(CRGB *leds);
   public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
     String setDynCtrl(UIControl*_val) override;

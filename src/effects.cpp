@@ -1518,59 +1518,6 @@ bool EffectFlock::flockRoutine(CRGB *leds, EffectWorker *param) {
   return true;
 }
 
-//===== Ефект Водоверть ========================//
-// https://gist.github.com/kriegsman/5adca44e14ad025e6d3b
-// Copyright (c) 2014 Mark Kriegsman
-void EffectSwirl::load(){
-  palettesload();    // подгружаем дефолтные палитры
-}
-
-bool EffectSwirl::run(CRGB *ledarr, EffectWorker *opt){
-  return swirlRoutine(*&ledarr, &*opt);
-}
-
-#define e_swi_BORDER (1U)  // размытие экрана за активный кадр
-bool EffectSwirl::swirlRoutine(CRGB *leds, EffectWorker *param)
-{
-  if (curPalette == nullptr) {
-    return false;
-  }
-
-  // Apply some blurring to whatever's already on the matrix
-  // Note that we never actually clear the matrix, we just constantly
-  // blur it repeatedly.  Since the blurring is 'lossy', there's
-  // an automatic trend toward black -- by design.
-#if (WIDTH < 25)
-  byte blurAmount = beatsin8(2, 10, 180);
-  EffectMath::blur2d(blurAmount);
-#else
-  // Never mind, on my 64x96 array, the dots are just too small
-   EffectMath::blur2d(172);
-#endif
-
-  // Use two out-of-sync sine waves
-  uint8_t xi = beatsin8(27 * ((float)speed / 100.0) + 5, e_swi_BORDER, WIDTH - e_swi_BORDER); // borderWidth
-  uint8_t xj = beatsin8(41 * ((float)speed / 100.0) + 5, e_swi_BORDER, WIDTH - e_swi_BORDER);
-  uint8_t yi = beatsin8(27 * ((float)speed / 100.0) + 5, e_swi_BORDER, HEIGHT - e_swi_BORDER); // borderWidth
-  uint8_t yj = beatsin8(41 * ((float)speed / 100.0) + 5, e_swi_BORDER, HEIGHT - e_swi_BORDER);
-  // Also calculate some reflections
-  uint8_t nxi = EffectMath::getmaxWidthIndex() - xi;
-  uint8_t nyi = EffectMath::getmaxHeightIndex() -yi;
-  uint8_t nxj = EffectMath::getmaxWidthIndex() - xj;
-  uint8_t nyj = EffectMath::getmaxHeightIndex() - yj;
-
-  // The color of each point shifts over time, each at a different speed.
-  uint16_t ms = millis();
-  EffectMath::drawPixelXY(xi, yj, CRGB(EffectMath::getPixColorXY(xi, yj)) + ColorFromPalette(*curPalette, ms / 11));
-  EffectMath::drawPixelXY(xj, yi, CRGB(EffectMath::getPixColorXY(xj, yi)) + ColorFromPalette(*curPalette, ms / 13));
-  EffectMath::drawPixelXY(nxi, nyj, CRGB(EffectMath::getPixColorXY(nxi, nyj)) + ColorFromPalette(*curPalette, ms / 17));
-  EffectMath::drawPixelXY(nxj, nyi, CRGB(EffectMath::getPixColorXY(nxj, nyi)) + ColorFromPalette(*curPalette, ms / 29));
-  EffectMath::drawPixelXY(xi, nyj, CRGB(EffectMath::getPixColorXY(xi, nyj)) + ColorFromPalette(*curPalette, ms / 37));
-  EffectMath::drawPixelXY(nxi, yj, CRGB(EffectMath::getPixColorXY(nxi, yj)) + ColorFromPalette(*curPalette, ms / 41));
-
-  return true;
-}
-
 // Effect Pendulum and Drift
 // https://github.com/pixelmatix/aurora/blob/master/PatternIncrementalDrift.h
 // https://github.com/pixelmatix/aurora/blob/master/PatternPendulumWave.h (idea from)
@@ -5232,6 +5179,7 @@ bool EffectXMasTree::run(CRGB *ledarr, EffectWorker *opt) {
 // Spider, Lines, Color frizzles (c)stepko
 // Radar, Spiro (c)Jason Coon
 // Noise balls (c)bonjurroughs
+// Swirl (c)Mark Kriegsman
 void EffectCell::load() {
   palettesload();
 }
@@ -5297,6 +5245,9 @@ bool EffectCell::run(CRGB *leds, EffectWorker *opt){
     break;
    case 8:
     spiro(leds);
+    break;
+   case 9:
+    swirl(leds);
     break;
   default:
     break;
@@ -5443,6 +5394,41 @@ void EffectCell::noise_balls(CRGB *leds) {
     EffectMath::getPixel( i, j) += ColorFromPalette(*curPalette, ms / 13);
     break;
   }
+}
+
+void EffectCell::swirl(CRGB *leds)
+{
+  // Apply some blurring to whatever's already on the matrix
+  // Note that we never actually clear the matrix, we just constantly
+  // blur it repeatedly.  Since the blurring is 'lossy', there's
+  // an automatic trend toward black -- by design.
+#if (WIDTH < 25)
+  byte blurAmount = beatsin8(2, 10, 180);
+  EffectMath::blur2d(blurAmount);
+#else
+  // Never mind, on my 64x96 array, the dots are just too small
+   EffectMath::blur2d(172);
+#endif
+
+  // Use two out-of-sync sine waves
+  uint8_t xi = beatsin8(27 * ((float)speed / 100.0) + 5, 1, WIDTH - 1); // borderWidth
+  uint8_t xj = beatsin8(41 * ((float)speed / 100.0) + 5,1, WIDTH - 1);
+  uint8_t yi = beatsin8(27 * ((float)speed / 100.0) + 5, 1, HEIGHT - 1); // borderWidth
+  uint8_t yj = beatsin8(41 * ((float)speed / 100.0) + 5, 1, HEIGHT - 1);
+  // Also calculate some reflections
+  uint8_t nxi = EffectMath::getmaxWidthIndex() - xi;
+  uint8_t nyi = EffectMath::getmaxHeightIndex() -yi;
+  uint8_t nxj = EffectMath::getmaxWidthIndex() - xj;
+  uint8_t nyj = EffectMath::getmaxHeightIndex() - yj;
+
+  // The color of each point shifts over time, each at a different speed.
+  uint16_t ms = millis();
+  EffectMath::drawPixelXY(xi, yj, CRGB(EffectMath::getPixColorXY(xi, yj)) + ColorFromPalette(*curPalette, ms / 11));
+  EffectMath::drawPixelXY(xj, yi, CRGB(EffectMath::getPixColorXY(xj, yi)) + ColorFromPalette(*curPalette, ms / 13));
+  EffectMath::drawPixelXY(nxi, nyj, CRGB(EffectMath::getPixColorXY(nxi, nyj)) + ColorFromPalette(*curPalette, ms / 17));
+  EffectMath::drawPixelXY(nxj, nyi, CRGB(EffectMath::getPixColorXY(nxj, nyi)) + ColorFromPalette(*curPalette, ms / 29));
+  EffectMath::drawPixelXY(xi, nyj, CRGB(EffectMath::getPixColorXY(xi, nyj)) + ColorFromPalette(*curPalette, ms / 37));
+  EffectMath::drawPixelXY(nxi, yj, CRGB(EffectMath::getPixColorXY(nxi, yj)) + ColorFromPalette(*curPalette, ms / 41));
 }
 
 //===== Ефект Тіксі Ленд =======================//

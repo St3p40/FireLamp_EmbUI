@@ -72,9 +72,9 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed, const boo
 //  case EFF_ENUM::EFF_PRIZMATA :
 //    worker = std::unique_ptr<EffectPrismata>(new EffectPrismata());
 //    break;
-  case EFF_ENUM::EFF_SPIRO :
-    worker = std::unique_ptr<EffectSpiro>(new EffectSpiro());
-    break;
+//  case EFF_ENUM::EFF_SPIRO :
+//    worker = std::unique_ptr<EffectSpiro>(new EffectSpiro());
+//    break;
 //  case EFF_ENUM::EFF_METABALLS :
 //    worker = std::unique_ptr<EffectMetaBalls>(new EffectMetaBalls());
 //    break;
@@ -152,9 +152,9 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed, const boo
   case EFF_ENUM::EFF_WAVES :
     worker = std::unique_ptr<EffectWaves>(new EffectWaves());
     break;
-  case EFF_ENUM::EFF_RADAR :
-    worker = std::unique_ptr<EffectRadar>(new EffectRadar());
-    break;
+//  case EFF_ENUM::EFF_RADAR :
+//    worker = std::unique_ptr<EffectRadar>(new EffectRadar());
+//    break;
 //  case EFF_ENUM::EFF_BENGALL :
 //    worker = std::unique_ptr<EffectBengalL>(new EffectBengalL());
 //    break;

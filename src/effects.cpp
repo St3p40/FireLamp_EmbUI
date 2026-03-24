@@ -1117,58 +1117,6 @@ switch (type) {
   return true;
 }
 
-//===== Ефект Спіраль ==========================//
-// https://github.com/pixelmatix/aurora/blob/sm3.0-64x64/PatternSpiro.h
-// Copyright (c) 2014 Jason Coon
-// Перевів на субпіксель Stepko
-void EffectSpiro::load(){
-  palettesload();    // подгружаем дефолтные палитры
-}
-
-//!++
-String EffectSpiro::setDynCtrl(UIControl*_val) {
-  if(_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1., 255., 0.75, 3);
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  return String();
-}
-
-bool EffectSpiro::run(CRGB *leds, EffectWorker *param) {
-  // страхуемся от креша
-  if (curPalette == nullptr) {
-    return false;
-  }
-  uint8_t dim = beatsin8(16. / speedFactor, 5, 10);
-	  fadeToBlackBy(leds, NUM_LEDS, dim);
-  static float t;t +=  speedFactor * 0.05f;
-  float CalcRad = (sin(t / 2) + 1);
-  if (CalcRad <= 0.001) {
-    if(!incenter){
-		if(AM<=1 || AM >= ((WIDTH + HEIGHT) / 2)) change = !change;
-          if (change) {
-            if(AM >= 4)
-              AM *= 2;
-            else
-              AM += 1;
-          }
-          else {
-            if(AM > 4)
-              AM /= 2;
-            else
-              AM -= 1;
-          }
-		  Angle = 6.28318531 / AM;
-	}
-    incenter = 1;
-  } else incenter = 0;
-  float radX = CalcRad * spirocenterX / 2;
-  float radY = CalcRad * spirocenterY / 2;
-  for (byte i = 0; i < AM; i++) {
-    EffectMath::drawPixelXYF((spirocenterX + sin(t + (Angle * i)) * radX), (spirocenterY + cos(t + (Angle * i)) * radY), ColorFromPalette(*curPalette, t*10 + ((256 / AM) * i)));
-  }
-  EffectMath::blur2d(16);
-  return true;
-}
-	
 //===== Ефект Комети, Витаючі Вогні ++ =========//
 // Фундамент (c) Stefan Petrick
 void EffectComet::drawFillRect2_fast(int8_t x1, int8_t y1, int8_t x2, int8_t y2, CRGB color)
@@ -1801,58 +1749,6 @@ bool EffectTwinkles::twinklesRoutine(CRGB *leds, EffectWorker *param)
     it++;
   }
   EffectMath::blur2d(32);
-  return true;
-}
-
-//===== Ефект Радар ============================//
-// https://github.com/pixelmatix/aurora/blob/master/PatternRadar.h
-// Copyright(c) 2014 Jason Coon
-void EffectRadar::load(){
-  palettesload();    // подгружаем дефолтные палитры
-}
-// !++
-String EffectRadar::setDynCtrl(UIControl*_val) {
-  if(_val->getId()==4) subPix = EffectCalc::setDynCtrl(_val).toInt();
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  return String();
-}
-
-bool EffectRadar::run(CRGB *ledarr, EffectWorker *opt)
-{
-  if (curPalette == nullptr)
-    return false;
-
-  if (subPix)
-  {
-    fadeToBlackBy(leds, NUM_LEDS, 5 + (~(127+scale/2)));
-    for (float offset = 0.0f; offset < (float)maxDim /2; offset +=0.25)
-    {
-      float x = (float)EffectMath::mapsincos8(false, eff_theta, offset * 4, maxDim * 4 - offset * 4) / 4.  - width_adj_f;
-      float y = (float)EffectMath::mapsincos8(true, eff_theta, offset * 4, maxDim * 4 - offset * 4) / 4.  - height_adj_f;
-      CRGB color = ColorFromPalette(*curPalette, hue, 255 / random8(1, 12));
-      EffectMath::drawPixelXYF(x, y, color);
-    }
-  }
-  else
-  {
-    EffectMath::blur2d(beatsin8(5U, 3U, 10U));
-    EffectMath::dimAll(127+scale/2);
-
-    for (uint8_t offset = 0; offset < maxDim /2; offset++)
-    {
-      EffectMath::drawPixelXY(EffectMath::mapsincos8(false, eff_theta, offset, maxDim - offset) - width_adj,
-                              EffectMath::mapsincos8(true, eff_theta, offset, maxDim - offset) - height_adj,
-                              ColorFromPalette(*curPalette, 255U - (offset * 16U + eff_offset)));
-    }
-  }
-  //EVERY_N_MILLIS(EFFECTS_RUN_TIMER) {
-    eff_theta += 5.5 * (speed / 255.0) + 1;
-    eff_offset += 3.5 * ((255 - speed) / 255.0) + 1;
-    if (subPix) {
-    //  hue = random8();
-    hue = millis() / 16;// eff_offset;
-    }
-  //}
   return true;
 }
 
@@ -5393,10 +5289,13 @@ bool EffectXMasTree::run(CRGB *ledarr, EffectWorker *opt) {
   return true;
 }
 
-//===== Ефект Клітинки-ялинки ==================//
+// Effect Lines and Dots
 // Cell (C)Elliott Kember from Soulmate-IDE examples
-// Spider, Spruce, Lines, Color frizzles (c)stepko
-// Flowering (c)Taras Yuzov
+// Spider, Lines, Color frizzles (c)stepko
+// Radar, Spiro (c)Jason Coon
+void EffectCell::load() {
+  palettesload();
+}
 void EffectCell::cell(CRGB *leds) {
   speedFactor = EffectMath::fmap((float)speed, 1., 255., .33*EffectCalc::speedfactor, 3.*EffectCalc::speedfactor);
   offsetX = beatsin16(6. * speedFactor, -180, 180);
@@ -5406,9 +5305,9 @@ void EffectCell::cell(CRGB *leds) {
       //int16_t index = myLamp.getPixelNumber(x, y);
       //if (index < 0) break;
       int16_t hue = x * beatsin16(10. * speedFactor, 1, 10) + offsetY;
-      EffectMath::drawPixelXY(x, y, CHSV(hue, 200, sin8(x * 30 + offsetX)));
+      EffectMath::drawPixelXY(x, y, ColorFromPalette(*curPalette, hue, sin8(x * 30 + offsetX)));
       hue = y * 3 + offsetX;
-      EffectMath::getPixel(x, y) += CHSV(hue, 200, sin8(y * 30 + offsetY));
+      EffectMath::getPixel(x, y) += ColorFromPalette(*curPalette, hue, sin8(y * 30 + offsetY));
     }
   }
   EffectMath::nightMode(leds); // пригасим немного, чтобы видить структуру, и убрать пересветы
@@ -5424,13 +5323,15 @@ String EffectCell::setDynCtrl(UIControl*_val) {
 }
 
 bool EffectCell::run(CRGB *leds, EffectWorker *opt){
+  if (curPalette == nullptr)
+    return false;
   if (_scale == 0) {
     EVERY_N_SECONDS(60) {
       effId ++;
-      if (effId == 7)
+      if (effId == 11)
         effId = 1;
     }
-  } else effId = constrain(_scale, 1, 7);
+  } else effId = constrain(_scale, 1, 10);
 
   switch (effId)
   {
@@ -5444,13 +5345,16 @@ bool EffectCell::run(CRGB *leds, EffectWorker *opt){
     vals(leds);
     break;
   case 4:
-    flower(leds);
+    radar(leds);
     break;
   case 5:
     frizzles(leds);
     break;
   case 6:
     paintball(leds);
+    break;
+   case 7:
+    spiro(leds);
     break;
   default:
     break;
@@ -5464,7 +5368,7 @@ void EffectCell::spider(CRGB *leds) {
   for (uint8_t c = 0; c < Lines; c++) {
     float xx = 2. + sin8((float)(millis() & 0x7FFFFF) / speedFactor + 1000 * c * Scale) / 12.;
     float yy = 2. + cos8((float)(millis() & 0x7FFFFF) / speedFactor + 1500 * c * Scale) / 12.;
-    EffectMath::drawLineF(xx, yy, (float)WIDTH - xx - 1, (float)HEIGHT - yy - 1, CHSV(c * (256 / Lines), 200, 255));
+    EffectMath::drawLineF(xx, yy, (float)WIDTH - xx - 1, (float)HEIGHT - yy - 1, ColorFromPalette(*curPalette, c * (256 / Lines)));
   }
 }
 
@@ -5473,26 +5377,28 @@ void EffectCell::vals(CRGB *leds) {
   fadeToBlackBy(leds, NUM_LEDS, 128);
   a += 1;
   for (byte i = 0; i < 12; i++) {
-    EffectMath::drawLineF((float)beatsin88((10 + i) * speedFactor, 0, EffectMath::getmaxWidthIndex() * 2, i * i) / 2, (float)beatsin88((12 - i) * speedFactor, 0, EffectMath::getmaxHeightIndex() * 2, i * 5) / 2, (float)beatsin88((8 + i) * speedFactor, 0, EffectMath::getmaxWidthIndex() * 2, i * 20) / 2, (float)beatsin88((14 - i) * speedFactor, 0, EffectMath::getmaxHeightIndex() * 2, i * 5) / 2, CHSV(21 * i + (byte)a * i, 255, 255));
+    EffectMath::drawLineF((float)beatsin88((10 + i) * speedFactor, 0, EffectMath::getmaxWidthIndex() * 2, i * i) / 2, (float)beatsin88((12 - i) * speedFactor, 0, EffectMath::getmaxHeightIndex() * 2, i * 5) / 2, (float)beatsin88((8 + i) * speedFactor, 0, EffectMath::getmaxWidthIndex() * 2, i * 20) / 2, (float)beatsin88((14 - i) * speedFactor, 0, EffectMath::getmaxHeightIndex() * 2, i * 5) / 2, ColorFromPalette(*curPalette, 21 * i + (byte)a * i));
   }
 }
 
-void EffectCell::flower(CRGB *leds) {
-  uint32_t timer = (1+sin(radians((float)millis()/6000.0)))*12.5;
-	x += EffectMath::fmap((float)speed, 1, 255, 0.2, 6.0) * EffectCalc::speedfactor;
-  for (uint8_t i = 0; i < WIDTH; i++) {
-    for (uint8_t j = 0; j < HEIGHT; j++) {
-      uint8_t radius = sin8(pow((minDim/2)-0.5-i,2)+pow((minDim/2)-0.5-j,2));
-      EffectMath::drawPixelXY(i, j, CHSV(map(radius,maxDim/2,-3,125,255), 255,sin8(map(radius+(maxDim/2),-timer,maxDim/2,255,110)+x)));
-    }
+void EffectCell::radar(CRGB *leds){
+  fadeToBlackBy(leds, NUM_LEDS, 32);
+  int shft = millis() * EffectMath::fmap(speed,1, 255, 8, 128);
+  for (uint8_t offset = 0; offset < maxDim; offset++)
+  {
+    int x = (WIDTH << 7) + (offset * (sin16(shft) >> 8));
+    int y = (HEIGHT << 7) + (offset * (cos16(shft) >> 8));
+    CRGB color = ColorFromPalette(*curPalette, hue,  - (offset * 16U + y));
+    EffectMath::wu_pixel(x, y, color);
   }
+  hue = millis() / 16;// eff_offset;
 }
 
 void EffectCell::frizzles(CRGB *leds) {
   float _speed = EffectMath::fmap(speed, 1, 255, 0.25, 3);
 
   for(int i = 8; i > 0; i--)
-    EffectMath::drawPixelXY(beatsin8(12. * _speed + i * _speed, 0, EffectMath::getmaxWidthIndex()), beatsin8(15. * _speed + i * _speed, 0, EffectMath::getmaxHeightIndex()), CHSV(beatsin8(12. * _speed, 0, 255), scale > 127 ? 255 - i*8 : 255, scale > 127 ? 127 + i*8 : 255));
+    EffectMath::drawPixelXY(beatsin8(12. * _speed + i * _speed, 0, EffectMath::getmaxWidthIndex()), beatsin8(15. * _speed + i * _speed, 0, EffectMath::getmaxHeightIndex()), ColorFromPalette(*curPalette, beatsin8(12. * _speed, 0, 255)));
   EffectMath::blur2d(leds, WIDTH, HEIGHT, 16);
 }
 
@@ -5511,10 +5417,43 @@ void EffectCell::paintball(CRGB *leds) {
   // The color of each point shifts over time, each at a different speed.
   uint16_t ms = millis() / 100;
 
-  EffectMath::getPixel( highByte(i * paintWidth) + 1, highByte(j * paintHeight) + 1) += CHSV( ms / 29, 200U, 255U);
-  EffectMath::getPixel( highByte(j * paintWidth) + 1, highByte(k * paintHeight) + 1) += CHSV( ms / 41, 200U, 255U);
-  EffectMath::getPixel( highByte(k * paintWidth) + 1, highByte(m * paintHeight) + 1) += CHSV( ms / 37, 200U, 255U);
-  EffectMath::getPixel( highByte(m * paintWidth) + 1, highByte(i * paintHeight) + 1) += CHSV( ms / 53, 200U, 255U);
+  EffectMath::getPixel( highByte(i * paintWidth) + 1, highByte(j * paintHeight) + 1) += ColorFromPalette(*curPalette, ms / 29);
+  EffectMath::getPixel( highByte(j * paintWidth) + 1, highByte(k * paintHeight) + 1) += ColorFromPalette(*curPalette, ms / 41);
+  EffectMath::getPixel( highByte(k * paintWidth) + 1, highByte(m * paintHeight) + 1) += ColorFromPalette(*curPalette, ms / 37);
+  EffectMath::getPixel( highByte(m * paintWidth) + 1, highByte(i * paintHeight) + 1) += ColorFromPalette(*curPalette, ms / 53);
+}
+
+void EffectCell::spiro(CRGB *leds) {
+  speedFactor = EffectMath::fmap(speed, 1., 255., 0.75, 3);
+  uint8_t dim = beatsin8(16. / speedFactor, 5, 10);
+	  fadeToBlackBy(leds, NUM_LEDS, dim);
+  static float t;t +=  speedFactor * 0.05f;
+  float CalcRad = (sin(t / 2) + 1);
+  if (CalcRad <= 0.001) {
+    if(!b){
+		if(a<=1) c = 1;
+    else if (a >= ((WIDTH + HEIGHT) / 2)) c = 0;
+          if (c) {
+            if(a >= 4)
+              a *= 2;
+            else
+              a += 1;
+          }
+          else {
+            if(a > 4)
+              a /= 2;
+            else
+              a -= 1;
+          }
+		  x = 6.28318531 / a;
+	}
+    b = 1;
+  } else b = 0;
+  float rad = CalcRad * (maxDim / 4);
+  for (byte i = 0; i < a; i++) {
+    EffectMath::drawPixelXYF((WIDTH / 2 + sin(t + (x * i)) * rad), (HEIGHT / 2 + cos(t + (x * i)) * rad), ColorFromPalette(*curPalette, t*10 + ((256 / a) * i)));
+  }
+  EffectMath::blur2d(16);
 }
 
 //===== Ефект Тіксі Ленд =======================//

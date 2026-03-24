@@ -333,28 +333,6 @@ public:
     String setDynCtrl(UIControl*_val) override;
 };
 
-//===== Ефект Спіраль ==========================//
-// https://github.com/pixelmatix/aurora/blob/sm3.0-64x64/PatternSpiro.h
-// Copyright (c) 2014 Jason Coon
-// Перевів на субпіксель Stepko
-class EffectSpiro : public EffectCalc {
-private:
-  const float spirocenterX = WIDTH /2-0.5; //(!(WIDTH & 1) ? (WIDTH -1) : WIDTH) / 2;
-  const float spirocenterY = HEIGHT /2-0.5; //(!(HEIGHT & 1) ? (HEIGHT-1) : HEIGHT) / 2;
-
-  byte AM = 1;
-  bool incenter;
-float Angle;
-bool change = false;
-  float speedFactor;
-
-  String setDynCtrl(UIControl*_val) override;
-
-public:
-    void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
-};
-
 //===== Ефект Стадо та хижак ===================//
 // https://github.com/pixelmatix/aurora/blob/master/PatternFlock.h
 // Copyright (c) 2014 Jason Coon
@@ -503,24 +481,6 @@ private:
   float speedFactor;
   bool wavesRoutine(CRGB *leds, EffectWorker *param);
   String setDynCtrl(UIControl*_val) override;
-public:
-    void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
-};
-
-//===== Ефект Радар ============================//
-// https://github.com/pixelmatix/aurora/blob/master/PatternRadar.h
-// Copyright(c) 2014 Jason Coon
-class EffectRadar : public EffectCalc {
-private:
-    float eff_offset; 
-    float eff_theta;  // глобальная переменная угла для работы эффектов
-    bool subPix = false;
-    byte hue;
-    const float width_adj_f = (float)(WIDTH < HEIGHT ? (HEIGHT - WIDTH) / 2. : 0);
-    const float height_adj_f= (float)(HEIGHT < WIDTH ? (WIDTH - HEIGHT) / 2. : 0);
-    String setDynCtrl(UIControl *_val) override;
-
 public:
     void load() override;
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
@@ -1333,7 +1293,7 @@ class EffectSmokeballs: public EffectCalc {
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-//X-Mas tree
+// X-Mas tree
 //Idea by St3p40
 //Updates by kostyamat and St3p40
 class EffectXMasTree: public EffectCalc {
@@ -1349,10 +1309,10 @@ class EffectXMasTree: public EffectCalc {
     String setDynCtrl(UIControl*_val) override;
 };
 
-//===== Ефект Клітинки-ялинки ==================//
+// Effect Lines and Dots
 // Cell (C)Elliott Kember from Soulmate-IDE examples
 // Spider, Lines, Color frizzles (c)stepko
-// Flowering (c)Taras Yuzov
+// Radar, Spiro (c)Jason Coon
 class EffectCell: public EffectCalc {
   private:
     const uint8_t Lines = 5;
@@ -1364,17 +1324,24 @@ class EffectCell: public EffectCalc {
     uint8_t effId = 1;
     uint8_t hue;
     int16_t a;
+    bool b;
+    bool c;
 
 	float speedFactor;
     void cell(CRGB *leds);
     void spider(CRGB *leds);
     void vals(CRGB *leds);
-    void flower(CRGB *leds);
+    void radar(CRGB *leds);
+    void intertwinedcolors(CRGB *leds);
     void frizzles(CRGB *leds);
     void paintball(CRGB *leds);
+    void spiro(CRGB *leds);
+    void noise_balls(CRGB *leds);
+    void fire_balls(CRGB *leds);
   public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
     String setDynCtrl(UIControl*_val) override;
+    void load() override;
 };
 
 //===== Ефект Тіксі Ленд =======================//

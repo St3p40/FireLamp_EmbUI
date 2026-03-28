@@ -2198,6 +2198,7 @@ void block_settings_other(Interface *interf, JsonObject *data){
 #if !defined(MATRIXx4) and !defined(XY_EXTERN)
     interf->checkbox(FPSTR(TCONST_004C), myLamp.getLampSettings().MIRR_H ? "1" : "0", FPSTR(TINTF_03B), false);
     interf->checkbox(FPSTR(TCONST_004D), myLamp.getLampSettings().MIRR_V ? "1" : "0", FPSTR(TINTF_03C), false);
+    interf->checkbox(FPSTR(TCONST_00F4), myLamp.getLampSettings().matrixType ? "1" : "0", FPSTR(TINTF_05B), false);
 #endif
     interf->checkbox(FPSTR(TCONST_004E), myLamp.getLampSettings().isFaderON ? "1" : "0", FPSTR(TINTF_03D), false);
     interf->checkbox(FPSTR(TCONST_008E), myLamp.getLampSettings().isEffClearing ? "1" : "0", FPSTR(TINTF_083), false);
@@ -2251,6 +2252,9 @@ void set_settings_other(Interface *interf, JsonObject *data){
         // LOG(printf_P,PSTR("Settings: %s\n"),tmpData.c_str());
         myLamp.setMIRR_H((*data)[FPSTR(TCONST_004C)] == "1");
         myLamp.setMIRR_V((*data)[FPSTR(TCONST_004D)] == "1");
+
+        myLamp.setMatrixType((*data)[FPSTR(TCONST_00F4)] == "1");
+
         myLamp.setFaderFlag((*data)[FPSTR(TCONST_004E)] == "1");
         myLamp.setClearingFlag((*data)[FPSTR(TCONST_008E)] == "1");
         myLamp.setDRand((*data)[FPSTR(TCONST_004F)] == "1");
@@ -3747,6 +3751,7 @@ void sync_parameters(){
     obj[FPSTR(TCONST_008E)] = tmp.isEffClearing ? "1" : "0";
     obj[FPSTR(TCONST_004C)] = tmp.MIRR_H ? "1" : "0";
     obj[FPSTR(TCONST_004D)] = tmp.MIRR_V ? "1" : "0";
+    obj[FPSTR(TCONST_00F4)] = tmp.matrixType ? "1" : "0";
     obj[FPSTR(TCONST_004F)] = tmp.dRand ? "1" : "0";
     obj[FPSTR(TCONST_009E)] = tmp.showName ? "1" : "0";
     obj[FPSTR(TCONST_0096)] = tmp.isShowSysMenu ? "1" : "0";

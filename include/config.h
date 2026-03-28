@@ -206,9 +206,6 @@ typedef enum {NR_NONE,BIT_1,BIT_2,BIT_3,BIT_4} MIC_NOISE_REDUCE_LEVEL;
 #define COLOR_ORDER           (GRB)                         // порядок цветов на ленте. Если цвет отображается некорректно - меняйте. Начать можно с RGB
 #endif
 
-#ifndef MATRIX_TYPE
-#define MATRIX_TYPE           (0U)                          // тип матрицы: 0 - зигзаг, 1 - параллельная
-#endif
 #ifndef CONNECTION_ANGLE
 #define CONNECTION_ANGLE      (1U)                          // угол подключения: 0 - левый нижний, 1 - левый верхний, 2 - правый верхний, 3 - правый нижний
 #endif

@@ -314,6 +314,12 @@ static const char TCONST_00F1[] PROGMEM = "refresh";
 static const char TCONST_00F2[] PROGMEM = "anim_upload";
 static const char TCONST_00F3[] PROGMEM = "anim_delete";
 
+static const char TCONST_00F4[] PROGMEM = "MtrxType";
+static const char TCONST_00F5[] PROGMEM = "MtrxStrpConn";
+static const char TCONST_00F6[] PROGMEM = "MtrxConnAngl";
+static const char TCONST_00F7[] PROGMEM = "MtrxWidth";
+static const char TCONST_00F8[] PROGMEM = "MtrxHeight";
+
 /** набор служебных текстовых констант (HTTP/MQTT запросы)
  */
 

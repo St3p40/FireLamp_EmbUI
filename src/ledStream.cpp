@@ -370,7 +370,7 @@ void Led_Stream::sendConfig(uint32_t id){       // TODO: доработать
     obj[F("cols")] = String(HEIGHT);
     obj[F("rows")] = String(WIDTH);
     obj[F("ledType")] = F("ws2812b");
-    obj[F("serpentine")] = String(MATRIX_TYPE);
+    obj[F("serpentine")] = String(matrixflags.matrixType);
     String message;
     serializeJson(obj, message);
     wsStream.text(id, message);

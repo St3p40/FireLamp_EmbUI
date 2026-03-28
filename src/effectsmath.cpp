@@ -66,7 +66,7 @@ namespace EffectMath_PRIVATE {
         #define MIRR_H matrixflags.MIRR_H
         #define MIRR_V matrixflags.MIRR_V
         
-        if ((THIS_Y % 2 == 0) || MATRIX_TYPE)                     // если чётная строка
+        if ((THIS_Y % 2 == 0) || matrixflags.matrixType)                     // если чётная строка
         {
             return ((uint32_t)THIS_Y * SEGMENTS * _WIDTH + THIS_X);
         }
@@ -690,7 +690,7 @@ uint32_t EffectMath::getPixelNumberBuff(uint16_t x, uint16_t y, uint8_t W , uint
   uint16_t _THIS_Y = y;
   uint16_t _THIS_X = x;
   
-  if ((_THIS_Y % 2 == 0) || MATRIX_TYPE)                     // если чётная строка
+  if ((_THIS_Y % 2 == 0) || matrixflags.matrixType)                     // если чётная строка
   {
       return ((uint32_t)_THIS_Y * SEGMENTS * W + _THIS_X);
   }

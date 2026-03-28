@@ -144,6 +144,7 @@ struct {
     bool isStream:1;
     bool isDirect:1;
     bool isMapping:1;
+    bool matrixType:1;
 };
 uint64_t lampflags; // набор битов для конфига
 _LAMPFLAGS(){
@@ -178,6 +179,7 @@ _LAMPFLAGS(){
     isStream = false;
     isDirect = false;
     isMapping = true;
+    matrixType = false;
 }
 } LAMPFLAGS;
 #pragma pack(pop)
@@ -451,8 +453,8 @@ public:
             //for(uint16_t i=0; i<NUM_LEDS; i++) {streambuff[i] = CHSV(random(0,255),0,255);} // тест :)
         }
     }
-    void writeStreamBuff(CRGB &color, uint16_t x, uint16_t y) { if(streambuff) { streambuff[getPixelNumber(x,y)]=color; } }
-    void writeStreamBuff(CRGB &color, uint16_t num) { if(streambuff) { streambuff[num]=color; } }
+    void writeStreamBuff(CRGB &color, uint16_t x, uint16_t y) { return; }
+    void writeStreamBuff(CRGB &color, uint16_t num) {  return; }
     void fillStreamBuff(CRGB &color) { if(streambuff) { for(uint16_t i=0; i<NUM_LEDS; i++) streambuff[i]=color; } }
     void clearStreamBuff() { if(streambuff) { for(uint16_t i=0; i<NUM_LEDS; i++) streambuff[i]=CRGB::Black; } }
 #endif
@@ -463,6 +465,7 @@ public:
     void setIsShowSysMenu(bool flag) {flags.isShowSysMenu=flag;}
     void setMIRR_V(bool flag) {if (flag!=flags.MIRR_V) { flags.MIRR_V = flag; matrixflags.MIRR_V = flag; FastLED.clear();}}
     void setMIRR_H(bool flag) {if (flag!=flags.MIRR_H) { flags.MIRR_H = flag; matrixflags.MIRR_H = flag; FastLED.clear();}}
+    void setMatrixType(bool flag) {if (flag!=flags.matrixType) { flags.matrixType = flag; matrixflags.matrixType = flag; FastLED.clear();}}
     void setTextMovingSpeed(uint8_t val) {tmStringStepTime.setInterval(val);}
     uint32_t getTextMovingSpeed() {return tmStringStepTime.getInterval();}
     void setTextOffset(uint8_t val) { txtOffset=val;}

@@ -80,6 +80,10 @@ namespace EffectMath_PRIVATE {
     struct {
         bool MIRR_V:1; // отзрекаливание по V
         bool MIRR_H:1; // отзрекаливание по H
+        bool matrixType:1;
+        bool matrixAngle:1;
+        bool matrixWidth:8;
+        bool matrixHeight:8;
     };
     uint32_t flags; // набор битов для конфига
     } MATRIXFLAGS;

@@ -56,7 +56,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 class MICWORKER {
 private:
-#if defined(FAST_ADC_READ) && defined(ESP8266)
+#if (defined(FAST_ADC_READ) && defined(ESP8266)) || MIC_PIN == -1
   bool useFixedFreq = true; // использовать фиксированное семплирование, либо максимально возможное (false)
 #else
   bool useFixedFreq = false; // использовать фиксированное семплирование, либо максимально возможное (false)
@@ -86,11 +86,13 @@ public:
 #else
   static const uint16_t samples=256U;     //This value MUST ALWAYS be a power of 2
 #endif
-#else
+#elif MIC_PIN != -1
   static const uint16_t samples=64U;     //This value MUST ALWAYS be a power of 2
+#else
+  static const uint16_t samples=256U;
 #endif
   MICWORKER(float scale = 1.28, float noise = 0, bool withAnalyse=true) {
-#if CONFIG_IDF_TARGET_ESP32
+#if CONFIG_IDF_TARGET_ESP32 && MIC_PIN != -1
     //analogSetAttenuation(ADC_11db);
     //analogSetClockDiv(1); // fastest == 1
     //analogReadResolution(9);

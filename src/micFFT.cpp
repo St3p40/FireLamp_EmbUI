@@ -45,6 +45,9 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 ADC_MODE(ADC_TOUT);
 #endif
 
+uint16_t extMicReal[MICWORKER::samples] = {0};
+bool read_mic = true;
+
 void MICWORKER::read_data()
 {
   //uint16_t adc_addr[samples]; // point to the address of ADC continuously fast sampling output
@@ -71,7 +74,9 @@ void MICWORKER::read_data()
 //   // }
 // #endif
   for(uint16_t i=0; i<samples; i++){
-#if defined(ESP8266) && defined(FAST_ADC_READ)
+#if MIC_PIN == -1
+    vReal[i] = extMicReal[i];
+#elif defined(ESP8266) && defined(FAST_ADC_READ)
     system_adc_read_fast(adc_addr, 1, adc_clk_div);
     vReal[i] = adc_addr[0]; // использую system_adc_read_fast для бОльшей скорости
 #elif defined(ESP8266)
@@ -79,12 +84,7 @@ void MICWORKER::read_data()
 #else
     vReal[i] = adc1_get_raw(adc1_channel_t::ADC1_CHANNEL_0);
 #endif
-    if(useFixedFreq){ // используется фиксированное семплирование, организуем задержку
-      while((micros() - m < sampling_period_us)){
-        //empty loop
-      }
-      m += sampling_period_us;
-    }
+
   }
   if(!useFixedFreq)
     samplingFrequency = ((1000UL*1000UL)/(micros()-_m))*(samples);
@@ -94,6 +94,7 @@ void MICWORKER::read_data()
   //   int milliVolts = esp_adc_cal_raw_to_voltage(val, adc_chars);
   //   LOG(printf_P, PSTR("Sample=%d, mV=%d\n"), val, milliVolts);
   // }
+  read_mic = true;
   FFT = ArduinoFFT<float>(vReal, vImag, samples, samplingFrequency);
 }
 

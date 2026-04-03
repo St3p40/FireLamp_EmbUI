@@ -46,6 +46,23 @@ Buttons *myButtons;
 MP3PLAYERDEVICE *mp3 = nullptr;
 #endif
 
+AsyncWebSocket wsAudio("/audio");
+
+extern uint16_t extMicReal[MICWORKER::samples];
+extern bool read_mic;
+
+void onAudioEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
+    if (type == WS_EVT_DATA) {
+        AwsFrameInfo *info = (AwsFrameInfo*)arg;
+        if (info->opcode == WS_BINARY && len == MICWORKER::samples * 2 && read_mic) { // 2 байти на uint16_t
+            uint16_t* incoming = (uint16_t*)data;
+            for (int i = 0; i < MICWORKER::samples; i++) {
+                extMicReal[i] = incoming[i];
+            }
+            read_mic = false;
+        }
+    }
+}
 
 void setup() {
     Serial.begin(115200);
@@ -173,7 +190,8 @@ void setup() {
         }
     }
 );
-
+  wsAudio.onEvent(onAudioEvent);
+  embui.server.addHandler(&wsAudio);
   sync_parameters();        // падение есп32 не воспоизводится, kDn
 
   //embui.setPubInterval(5);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 5

@@ -286,7 +286,6 @@ String EffectRainbow::setDynCtrl(UIControl*_val){
 
 bool EffectRainbow::run(CRGB *ledarr, EffectWorker *opt){
 
-  hue += (6.0 * (speed / 255.0) + 0.05 );
 #ifdef MIC_EFFECTS
     micCoef = (getMicMapMaxPeak() > map(speed, 1, 255, 100, 10) and isMicOn() ? getMicMapMaxPeak() : 100.0)/100.0;
     //twirlFactor = EffectMath::fmap((float)scale, 85, 170, 8.3, 24);      // no need
@@ -295,6 +294,7 @@ bool EffectRainbow::run(CRGB *ledarr, EffectWorker *opt){
     //twirlFactor = EffectMath::fmap((float)scale, 85, 170, 8.3, 24);
     micCoef = 1.0;
 #endif
+    hue += (6.0 * (speed / 255.0) + 0.05 ) * micCoef;
     float i_scale = cos(twirlFactor);
     float j_scale = sin(twirlFactor);
 
@@ -302,7 +302,7 @@ bool EffectRainbow::run(CRGB *ledarr, EffectWorker *opt){
   {
     for (uint8_t j = 0U; j < HEIGHT; j++)
     {
-      CRGB thisColor = CHSV((hue + ((((float)i*i_scale + (float)j*j_scale) * scale / 25.) * micCoef)) * ((float)255 / (float)EffectMath::getmaxDim()), 255, 255);
+      CRGB thisColor = CHSV((hue + ((((float)i*i_scale + (float)j*j_scale) * scale / 25.))) * ((float)255 / (float)EffectMath::getmaxDim()), 255, 255);
       EffectMath::drawPixelXY(i, j, thisColor);
     }
   }
@@ -885,7 +885,8 @@ bool Effect3DNoise::run(CRGB *ledarr, EffectWorker *opt){
   #ifdef MIC_EFFECTS
     uint8_t mmf = isMicOn() ? getMicMapFreq() : 0;
     uint8_t mmp = isMicOn() ? getMicMapMaxPeak() : 0;
-    _scale = (NOISE_SCALE_AMP*(float)scale/255.0+NOISE_SCALE_ADD)*(mmf>0?(1.5*mmf/255.0):1);
+    //_scale = (NOISE_SCALE_AMP*(float)scale/255.0+NOISE_SCALE_ADD)*(mmf>0?(1.5*mmf/255.0):1);
+    _scale = NOISE_SCALE_AMP*scale/255.0+NOISE_SCALE_ADD; // scale changing was too much
     _speed = NOISE_SCALE_AMP*(float)speed/512.0*(mmf<LOW_FREQ_MAP_VAL && mmp>MIN_PEAK_LEVEL?10:2.5*mmp/255.0+1);
   #else
     _scale = NOISE_SCALE_AMP*scale/255.0+NOISE_SCALE_ADD;

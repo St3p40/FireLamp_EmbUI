@@ -37,10 +37,15 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #ifndef __MICFFT_H
 #define __MICFFT_H
 
+
+#if MIC_PIN == -1
+void setupAudioWebSocket();
+#else
 #ifdef CONFIG_IDF_TARGET_ESP32
 #include "driver/adc_common.h"
 #include "esp_adc_cal.h"
 #define DEFAULT_VREF 1100
+#endif
 #endif
 
 // Define this to use reciprocal multiplication for division and some more speedups that might decrease precision
@@ -124,8 +129,13 @@ public:
       this->vImag = new float[samples];
     else
       this->vImag = nullptr;
-    this->scale=scale;
-    this->noise=noise;
+#if MIC_PIN == -1
+    this->scale = 1.0;
+    this->noise = 0;
+#else
+    this->scale = scale;
+    this->noise = noise;
+#endif
   }
   ~MICWORKER() { if(vReal) delete [] vReal; if(vImag) delete [] vImag; }
   bool isCaliblation() {return _isCaliblation;}
@@ -138,7 +148,7 @@ public:
   float getCurVal() {return curVal;}
   uint8_t getMinPeak() {return minPeak;}
   uint8_t getMaxPeak() {return maxPeak;}
-  float fillSizeScaledArray(float *arr, size_t size, bool bound=true);
+  float fillSizeScaledArray(float *arr, size_t size, bool bound=(MIC_PIN != -1)); //Virtual mic works better with bound=false
 };
 
 #endif

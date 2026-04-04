@@ -3606,7 +3606,11 @@ bool EffectPacific::run(CRGB *leds, EffectWorker *param)
 }
 
 #ifdef MIC_EFFECTS
-
+#if MIC_PIN == -1
+#define READ_MIC getCurVal() // anything that works like analog read(should)
+#else
+#define READ_MIC analogRead(MIC_PIN)
+#endif
 //===== Ефект Осцилограф =======================//
 // (c) kostyamat
 String EffectOsc::setDynCtrl(UIControl*_val) {
@@ -3659,7 +3663,7 @@ bool EffectOsc::run(CRGB *leds, EffectWorker *param) {
 
     y[0] = y[1];
     y[1] = EffectMath::fmap(
-                          (isMicOn() ? analogRead(MIC_PIN) :  EffectMath::randomf(pointer - gain, pointer + gain)),
+                          (isMicOn() ? READ_MIC :  EffectMath::randomf(pointer - gain, pointer + gain)),
                           gain,
                           pointer * 2. - gain,
                           0., 
@@ -3671,6 +3675,8 @@ bool EffectOsc::run(CRGB *leds, EffectWorker *param) {
 return true;
 }
 #endif
+
+#undef READ_MIC
 
 //===== Ефект Вишиванка ========================// 
 // https://github.com/pixelmatix/aurora/blob/master/PatternMunch.h

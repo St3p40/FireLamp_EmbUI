@@ -45,9 +45,42 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 ADC_MODE(ADC_TOUT);
 #endif
 
+
+#if MIC_PIN == -1
+// In a few words, this is implementation of "virtual mic"
+// Lamp recieves audio data via websoket as samples array
+// The rest of the code is unchanged, so it must work with both physical and virtual mics the same way, I guess
+
+// 2 broken MAX9814 are definetly worth it - @st3p40
+AsyncWebSocket wsAudio("/audio");
+
 uint16_t extMicReal[MICWORKER::samples] = {0};
 bool read_mic = true;
 
+void onAudioEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
+    if (type == WS_EVT_DATA) {
+        AwsFrameInfo *info = (AwsFrameInfo*)arg;
+        if (info->opcode == WS_BINARY && len == MICWORKER::samples * 2 && read_mic) { // 2 байти на uint16_t
+            memcpy(extMicReal, data, MICWORKER::samples * 2);
+            read_mic = false;
+        }
+    }
+}
+
+void setupAudioWebSocket() {
+  wsAudio.onEvent(onAudioEvent);
+  embui.server.addHandler(&wsAudio);
+}
+
+void MICWORKER::read_data()
+{
+  for(uint16_t i=0; i<samples; i++){
+    vReal[i] = extMicReal[i];
+  }
+  FFT = ArduinoFFT<float>(vReal, vImag, samples, samplingFrequency);
+  read_mic = true;
+}
+#else
 void MICWORKER::read_data()
 {
   //uint16_t adc_addr[samples]; // point to the address of ADC continuously fast sampling output
@@ -74,9 +107,7 @@ void MICWORKER::read_data()
 //   // }
 // #endif
   for(uint16_t i=0; i<samples; i++){
-#if MIC_PIN == -1
-    vReal[i] = extMicReal[i];
-#elif defined(ESP8266) && defined(FAST_ADC_READ)
+#if defined(ESP8266) && defined(FAST_ADC_READ)
     system_adc_read_fast(adc_addr, 1, adc_clk_div);
     vReal[i] = adc_addr[0]; // использую system_adc_read_fast для бОльшей скорости
 #elif defined(ESP8266)
@@ -84,7 +115,12 @@ void MICWORKER::read_data()
 #else
     vReal[i] = adc1_get_raw(adc1_channel_t::ADC1_CHANNEL_0);
 #endif
-
+    if(useFixedFreq){ // используется фиксированное семплирование, организуем задержку
+      while((micros() - m < sampling_period_us)){
+        //empty loop
+      }
+      m += sampling_period_us;
+    }
   }
   if(!useFixedFreq)
     samplingFrequency = ((1000UL*1000UL)/(micros()-_m))*(samples);
@@ -94,9 +130,9 @@ void MICWORKER::read_data()
   //   int milliVolts = esp_adc_cal_raw_to_voltage(val, adc_chars);
   //   LOG(printf_P, PSTR("Sample=%d, mV=%d\n"), val, milliVolts);
   // }
-  read_mic = true;
   FFT = ArduinoFFT<float>(vReal, vImag, samples, samplingFrequency);
 }
+#endif
 
 void MICWORKER::PrintVector(float *vData, uint16_t bufferSize, uint8_t scaleType)
 {
@@ -148,26 +184,19 @@ double MICWORKER::process(MIC_NOISE_REDUCE_LEVEL level)
   int minVal = 255.0;
   int maxVal = 0.0;
   for(uint16_t i=0; i<samples; i++){
-    vReal[i]*=scale; // нормализация
+    vReal[i] = map(vReal[i]*scale, 0, RESOLUTION, -128, 127);
     switch (level)
     {
-    case MIC_NOISE_REDUCE_LEVEL::NR_NONE:
-      vReal[i] = map(vReal[i], 0, RESOLUTION, -128, 127); // без преобразований
-      break;
     case MIC_NOISE_REDUCE_LEVEL::BIT_1:
-      vReal[i] = map((uint16_t)vReal[i], 0, RESOLUTION, -128, 127);
       vReal[i] = ((uint16_t)(abs((int16_t)vReal[i]))&0xFE)*(vReal[i]>0?1:-1); // маскируем один бита
       break;
     case MIC_NOISE_REDUCE_LEVEL::BIT_2:
-      vReal[i] = map((uint16_t)vReal[i], 0, RESOLUTION, -128, 127);
       vReal[i] = ((uint16_t)(abs((int16_t)vReal[i]))&0xFC)*(vReal[i]>0?1:-1); // маскируем два бита
       break;
     case MIC_NOISE_REDUCE_LEVEL::BIT_3:
-      vReal[i] = map((uint16_t)vReal[i], 0, RESOLUTION, -128, 127);
       vReal[i] = ((uint16_t)(abs((int16_t)vReal[i]))&0xF8)*(vReal[i]>0?1:-1); // маскируем три бита
       break;
     case MIC_NOISE_REDUCE_LEVEL::BIT_4:
-      vReal[i] = map((uint16_t)vReal[i], 0, RESOLUTION, -128, 127);
       vReal[i] = ((uint16_t)(abs((int16_t)vReal[i]))&0xF0)*(vReal[i]>0?1:-1); // маскируем четыре бита
       break;
     default:
@@ -202,14 +231,15 @@ float MICWORKER::fillSizeScaledArray(float *arr, size_t size, bool bound) // bou
     prevdata[i] = arr[i];
     arr[i] = 0.0;
   }
-  
+
   signalFrequency = (float)analyse(); // сюда запишем частоту главной гармоники
 
   // т.к. samplingFrequency удвоенная от реальной, то делим на 2, т.е -> samplingFrequency>>1
-  float maxFreq = bound?log((samplingFrequency>>1)):log(20000);
-  float minFreq = bound?log((samplingFrequency>>1)/samples):log(20);
-  float scale = (size)/(maxFreq-minFreq);
   float step = samplingFrequency/samples;
+  float maxFreq = bound?log((samplingFrequency>>1)):log(20000);
+  float minFreq = bound?log((step*2)):log(20);
+  float scale = (size)/(maxFreq-minFreq);
+ 
 
   // EVERY_N_SECONDS(5){
   //   for(uint16_t i=0; i<samples; i++){
@@ -223,7 +253,7 @@ float MICWORKER::fillSizeScaledArray(float *arr, size_t size, bool bound) // bou
     float idx_freq=step*(i+1);
     idx=(logf(idx_freq)-minFreq)*scale;
     idx=(idx<0?0:(idx>=(int16_t)size?size-1:(i<idx?i:idx)));
-    arr[idx]+=(vReal[i]<0.0 ? 0.0 : vReal[i]);
+    arr[idx] += vReal[i];
   }
 
   // придушить ВЧ
@@ -231,7 +261,7 @@ float MICWORKER::fillSizeScaledArray(float *arr, size_t size, bool bound) // bou
     arr[size-1]/=10.0;
   else if(signalFrequency<(samplingFrequency>>2))
     arr[size-1]/=20.0;
-  
+
   float maxVal=0; // ищем максимум и усредняем с предыдущим измерением
   for(uint16_t i=0;i<size;i++){
     arr[i]=(arr[i]+prevdata[i])/2.0; // усредняем c предыдущим
@@ -275,6 +305,7 @@ void MICWORKER::debug()
 
 void MICWORKER::calibrate()
 {
+#if MIC_PIN != -1  // Don't need for virtual mic
   if(!_isCaliblation){
     // начальный вход в калибровку
     for(uint16_t i=0; i<samples; i++){
@@ -344,6 +375,7 @@ void MICWORKER::calibrate()
     noise = (sum2/count2)*scale; //+/- единиц шума
     LOG(print, F("AVG=")); LOG(print, sum/count); LOG(print, F(", noise=")); LOG(println, sum2/count2);
   }
+#endif
 }
 
 #endif  //def MIC_EFFECTS

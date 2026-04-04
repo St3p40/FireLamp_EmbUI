@@ -293,8 +293,8 @@ bool EffectRainbow::run(CRGB *ledarr, EffectWorker *opt){
     //twirlFactor *= getMicMapMaxPeak() > map(speed, 1, 255, 80, 10) and isMicOn() ? 1.5f * ((float)getMicMapFreq() / 255.0f) : 1.0f;
 #else
     //twirlFactor = EffectMath::fmap((float)scale, 85, 170, 8.3, 24);
-#endif
     micCoef = 1.0;
+#endif
     float i_scale = cos(twirlFactor);
     float j_scale = sin(twirlFactor);
 

@@ -4567,26 +4567,26 @@ bool EffectAttract::run(CRGB *leds, EffectWorker *param) {
   return true;
 }
 
-//===== Ефект Змійки ===========================//
-// варіант субпікселя і поведінка від kDn
+// Effect Snakes
+// subbpixel and new behavior by kDn
 void EffectSnake::load() {
   palettesload();
 
   for(uint8_t i=0;i<MAX_SNAKES;i++){
     snakes[i].reset();
-    snakes[i].pixels[0].x = WIDTH / 2; // пусть расползаются из центра
-    snakes[i].pixels[0].y = HEIGHT / 2; // так будет интереснее
     snakes[i].direction = (EffectSnake::Direction)random(4);
     snakes[i].internal_speedf = ((random(2) ? 0.5 : 0.33)+1.0/(random(i+1)+1))+0.5;
+    for(int j=0; j<SNAKE_LENGTH; j++){
+      snakes[i].pixels[j] = Pixel{WIDTH / 2, HEIGHT / 2};
+    }
   }
 }
 // !++
 String EffectSnake::setDynCtrl(UIControl*_val) {
   if(_val->getId()==1) speedFactor = ((float)EffectCalc::setDynCtrl(_val).toInt()/ 512.0 + 0.025) * EffectCalc::speedfactor;
   else if(_val->getId()==4) snakeCount = EffectCalc::setDynCtrl(_val).toInt();
-  else if(_val->getId()==5) subPix = EffectCalc::setDynCtrl(_val).toInt();
-  else if(_val->getId()==6) onecolor = EffectCalc::setDynCtrl(_val).toInt();
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
+  else if(_val->getId()==5) onecolor = EffectCalc::setDynCtrl(_val).toInt();
+  else EffectCalc::setDynCtrl(_val).toInt();
   return String();
 }
 
@@ -4610,7 +4610,7 @@ bool EffectSnake::run(CRGB *leds, EffectWorker *param) {
         (speed<25 || speed>230) ? (i%2 ? hue : 255-hue) : (i%2 ? hue*(i+1) : (255-hue)*(i+1))
       ), 1, *curPalette, 255-(i*8), LINEARBLEND); // вообще в цикле заполнять палитры может быть немножко тяжело... но зато разнообразнее по цветам
     }
-    snake.shuffleDown(speedFactor, subPix);
+    snake.shuffleDown(speedFactor, false);//subPix
 
 #ifdef MIC_EFFECTS
     if(getMicMapMaxPeak()>speed/3.0+75.0 && isMicOn()) {
@@ -4625,31 +4625,45 @@ bool EffectSnake::run(CRGB *leds, EffectWorker *param) {
 #endif
 
     snake.move(speedFactor);
-    snake.draw(colors, i, subPix, false /*isDebug()*/);
+    snake.draw(colors, i, false, false /*isDebug()*/);//subPix
   }
   return true;
 }
 
+// Допоміжна функція для "кільцевої" дельти
+float shortDist(float d, int size) {
+    if (d >  size / 2.0f) return d - size;
+    if (d < -size / 2.0f) return d + size;
+    return d;
+}
+
 void EffectSnake::Snake::draw(CRGB colors[SNAKE_LENGTH], int snakenb, bool subpix, bool isDebug)
 {
-  int len= isDebug ? 1 : (int)SNAKE_LENGTH;
-  for (int i = 0; i < len; i++) // (int)SNAKE_LENGTH
+  if(direction<LEFT)
+    EffectMath::drawPixelXYF_Y(pixels[0].x, pixels[0].y, colors[0]);
+  else
+    EffectMath::drawPixelXYF_X(pixels[0].x, pixels[0].y, colors[0]); // head
+  for (int i = 1; i < (int)SNAKE_LENGTH; i++)
   {
-    if(isDebug){ // тест сабпикселя
-      myLamp.clear(); 
-    }
+    Pixel dpixel = Pixel{pixels[i].x - pixels[i-1].x, pixels[i].y - pixels[i-1].y};
 
-    if (subpix){
-      EffectMath::drawPixelXYF(pixels[i].x, pixels[i].y, colors[i]);
-    }
-    else {
-      if(i!=0)
+    float steps = max(fabs(dpixel.x), fabs(dpixel.y));
+
+    if (steps > 1.0f) {
+      if (fabs(dpixel.x) < WIDTH * 0.8 && fabs(dpixel.y) < HEIGHT * 0.8) {
+        for (int s = 0; s <= (int)steps; s++) {
+            float t = (float)s / steps;
+            float currX = pixels[i-1].x + t * dpixel.x;
+            float currY = pixels[i-1].y + t * dpixel.y;
+
+            int16_t outX = ((int16_t)currX % WIDTH + WIDTH) % WIDTH;
+            int16_t outY = ((int16_t)currY % HEIGHT + HEIGHT) % HEIGHT;
+
+            EffectMath::drawPixelXY(outX, outY, colors[i]);
+        }
+      }
+    } else
         EffectMath::drawPixelXY(pixels[i].x, pixels[i].y, colors[i]);
-      else if(direction<LEFT)
-        EffectMath::drawPixelXYF_Y(pixels[i].x, pixels[i].y, colors[i]);
-      else
-        EffectMath::drawPixelXYF_X(pixels[i].x, pixels[i].y, colors[i]);
-    }
   }
 }
 
@@ -4767,225 +4781,6 @@ void EffectNexus::resetDot(uint8_t idx) {
   default:
     break;
   } 
-}
-
-//===== Ефект Зміїний острів ===================//
-// (c)SottNick
-// адаптація і допороблення kostyamat
-String EffectTest::setDynCtrl(UIControl*_val){
-  if(_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.06, 0.5) * EffectCalc::speedfactor;
-  else if(_val->getId()==3) SnakeNum = EffectCalc::setDynCtrl(_val).toInt();
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  regen();
-  return String();
-}
-
-void EffectTest::regen() {
-
-  for (uint8_t i = 0; i < map(SnakeNum, 1, 10, 2, MAX_SNAKES); i++)
-  {
-    snake[i].Last = 0;
-    snake[i].PosX = random8(WIDTH / 2 - WIDTH / 4, WIDTH/2 + WIDTH / 4);
-    snake[i].PosY = random8(HEIGHT / 2 - HEIGHT / 4, HEIGHT / 2 + HEIGHT / 4);
-    snake[i].SpeedX = EffectMath::randomf(0.2, 1.5);//(255. + random8()) / 255.;
-    snake[i].SpeedY = EffectMath::randomf(0.2, 1.5);
-    //snakeTurn = 0;
-    snake[i].Color = random8(map(SnakeNum, 1, 10, 2, MAX_SNAKES) * 255/map(SnakeNum, 1, 10, 2, MAX_SNAKES));
-    snake[i].Direct = random8(4); //     B00           направление головы змейки
-                                 // B10     B11
-                                 //     B01
-  }
-}
-
-bool EffectTest::run(CRGB *leds, EffectWorker *param) {
-  myLamp.clear(); 
-  int8_t dx = 0, dy = 0;
-  for (uint8_t i = 0; i < map(SnakeNum, 1, 10, 2, MAX_SNAKES); i++)
-  {
-    snake[i].SpeedY += snake[i].SpeedX * speedFactor;
-    if (snake[i].SpeedY >= 1)
-    {
-      snake[i].SpeedY = snake[i].SpeedY - (int)snake[i].SpeedY;
-      if (random8(8) <= 1U)
-        if (random8(2U))
-        {                                           // <- поворот налево
-          snake[i].Last = (snake[i].Last << 2) | B01; // младший бит = поворот
-          switch (snake[i].Direct)
-          {
-          case B10:
-            snake[i].Direct = B01;
-            if (snake[i].PosY == 0U)
-              snake[i].PosY = EffectMath::getmaxHeightIndex();
-            else
-              snake[i].PosY--;
-            break;
-          case B11:
-            snake[i].Direct = B00;
-            if (snake[i].PosY >= EffectMath::getmaxHeightIndex())
-              snake[i].PosY = 0U;
-            else
-              snake[i].PosY++;
-            break;
-          case B00:
-            snake[i].Direct = B10;
-            if (snake[i].PosX == 0U)
-              snake[i].PosX = EffectMath::getmaxWidthIndex();
-            else
-              snake[i].PosX--;
-            break;
-          case B01:
-            snake[i].Direct = B11;
-            if (snake[i].PosX >= EffectMath::getmaxWidthIndex())
-              snake[i].PosX = 0U;
-            else
-              snake[i].PosX++;
-            break;
-          }
-        }
-        else
-        {                                           // -> поворот направо
-          snake[i].Last = (snake[i].Last << 2) | B11; // младший бит = поворот, старший = направо
-          switch (snake[i].Direct)
-          {
-          case B11:
-            snake[i].Direct = B01;
-            if (snake[i].PosY == 0U)
-              snake[i].PosY = EffectMath::getmaxHeightIndex();
-            else
-              snake[i].PosY--;
-            break;
-          case B10:
-            snake[i].Direct = B00;
-            if (snake[i].PosY >= EffectMath::getmaxHeightIndex())
-              snake[i].PosY = 0U;
-            else
-              snake[i].PosY++;
-            break;
-          case B01:
-            snake[i].Direct = B10;
-            if (snake[i].PosX == 0U)
-              snake[i].PosX = EffectMath::getmaxWidthIndex();
-            else
-              snake[i].PosX--;
-            break;
-          case B00:
-            snake[i].Direct = B11;
-            if (snake[i].PosX >= EffectMath::getmaxWidthIndex())
-              snake[i].PosX = 0U;
-            else
-              snake[i].PosX++;
-            break;
-          }
-        }
-      else
-      { // двигаем без поворота
-        snake[i].Last = (snake[i].Last << 2);
-        switch (snake[i].Direct)
-        {
-        case B01:
-          if (snake[i].PosY == 0U)
-            snake[i].PosY = EffectMath::getmaxHeightIndex();
-          else
-            snake[i].PosY--;
-          break;
-        case B00:
-          if (snake[i].PosY >= EffectMath::getmaxHeightIndex())
-            snake[i].PosY = 0U;
-          else
-            snake[i].PosY++;
-          break;
-        case B10:
-          if (snake[i].PosX == 0U)
-            snake[i].PosX = EffectMath::getmaxWidthIndex();
-          else
-            snake[i].PosX--;
-          break;
-        case B11:
-          if (snake[i].PosX >= EffectMath::getmaxWidthIndex())
-            snake[i].PosX = 0U;
-          else
-            snake[i].PosX++;
-          break;
-        }
-      }
-    }
-    switch (snake[i].Direct)
-    {
-    case B01:
-      dy = 1;
-      dx = 0;
-      break;
-    case B00:
-      dy = -1;
-      dx = 0;
-      break;
-    case B10:
-      dy = 0;
-      dx = 1;
-      break;
-    case B11:
-      dy = 0;
-      dx = -1;
-      break;
-    }
-
-    long temp = snake[i].Last;
-    uint8_t x = snake[i].PosX;
-    uint8_t y = snake[i].PosY;
-    EffectMath::drawPixelXYF(x, y, ColorFromPalette(*curPalette, snake[i].Color, snake[i].SpeedY * 255));
-    for (uint8_t m = 0; m < SNAKE_LENGTH; m++)
-    { // 16 бит распаковываем, 14 ещё остаётся без дела в запасе, 2 на хвостик
-      x = (WIDTH + x + dx) % WIDTH;
-      y = (HEIGHT + y + dy) % HEIGHT;  
-      EffectMath::drawPixelXYF(x, y, ColorFromPalette(*curPalette, snake[i].Color + m * 4U, 255U));
-
-      if (temp & B01)
-      { // младший бит = поворот, старший = направо
-        temp = temp >> 1;
-        if (temp & B01)
-        { // старший бит = направо
-          if (dx == 0)
-          {
-            dx = 0 - dy;
-            dy = 0;
-          }
-          else
-          {
-            dy = dx;
-            dx = 0;
-          }
-        }
-        else
-        { // иначе налево
-          if (dx == 0)
-          {
-            dx = dy;
-            dy = 0;
-          }
-          else
-          {
-            dy = 0 - dx;
-            dx = 0;
-          }
-        }
-        temp = temp >> 1;
-      }
-      else
-      { // если без поворота
-        temp = temp >> 2;
-      }
-    }
-    x = (WIDTH + x + dx) % WIDTH;
-    y = (HEIGHT + y + dy) % HEIGHT;
-    EffectMath::drawPixelXYF(x, y, ColorFromPalette(*curPalette, snake[i].Color + SNAKE_LENGTH * 4U, (1 - snake[i].SpeedY) * 255)); // хвостик
-  }
-
-  return true;
-}
-
-void EffectTest::load() {
-  palettesload();
-  regen();
 }
 
 //===== Ефект Попкорн ==========================//

@@ -1042,14 +1042,14 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-//===== Ефект Змійки ===========================//
-// варіант субпікселя і поведінка від kDn
+// Effect Snakes
+// subbpixel and new behavior by kDn
 class EffectSnake : public EffectCalc {
 private:
     float hue;
     float speedFactor;
     int snakeCount;
-    bool subPix = false;
+    //bool subPix = false;
     bool onecolor = false;
     enum Direction
 {
@@ -1179,33 +1179,6 @@ class EffectNexus: public EffectCalc {
   public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
     void load() override;
-};
-
-//===== Ефект Зміїний острів ===================//
-// (c)SottNick
-// адаптація і допороблення kostyamat
-class EffectTest : public EffectCalc {
-private:
-//#define MAX_SNAKES    (WIDTH * 2)          // максимальное количество червяков
-    uint8_t SnakeNum;                        // выбранное количество червяков
-    struct{
-        long  Last;             // тут будет траектория тела червяка
-        float PosX;             // тут будет позиция головы
-        float PosY;             // тут будет позиция головы
-        float SpeedX;           // тут будет скорость червяка
-        float SpeedY;           // тут будет дробная часть позиции головы
-        //float snakeTurn[MAX_SNAKES];           //не пригодилось пока что
-        uint8_t Color;          // тут будет начальный цвет червяка
-        uint8_t Direct;         //тут будет направление червяка
-    }snake[MAX_SNAKES];
-    float speedFactor;
-
-    String setDynCtrl(UIControl*_val) override;
-    void regen();
-
-public:
-    void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
 //===== Ефект Попкорн ==========================//

@@ -243,9 +243,9 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed, const boo
   case EFF_ENUM::EFF_SOAP :
     worker = std::unique_ptr<EffectFlower>(new EffectFlower());
     break;
-  case EFF_ENUM::EFF_SNK_ISLAND :
-    worker = std::unique_ptr<EffectTest>(new EffectTest());
-    break;
+//  case EFF_ENUM::EFF_SNK_ISLAND :
+//    worker = std::unique_ptr<EffectTest>(new EffectTest());
+//    break;
    case EFF_ENUM::EFF_SMOKEBALLS :
     worker = std::unique_ptr<EffectSmokeballs>(new EffectSmokeballs());
     break;

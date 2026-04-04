@@ -3608,7 +3608,8 @@ bool EffectPacific::run(CRGB *leds, EffectWorker *param)
 
 #ifdef MIC_EFFECTS
 #if MIC_PIN == -1
-#define READ_MIC getCurVal() // anything that works like analog read(should)
+extern uint16_t extMicReal[MICWORKER::samples];
+#define READ_MIC extMicReal[int((x * MICWORKER::samples) / oscHV)] // as we don't have runtime mic value, using samples array, ~25fps, but it's better than nothing
 #else
 #define READ_MIC analogRead(MIC_PIN)
 #endif
@@ -3675,10 +3676,9 @@ bool EffectOsc::run(CRGB *leds, EffectWorker *param) {
 
 return true;
 }
-#endif
-
 #undef READ_MIC
 
+#endif
 //===== Ефект Вишиванка ========================// 
 // https://github.com/pixelmatix/aurora/blob/master/PatternMunch.h
 // Copyright(c) 2014 Jason Coon

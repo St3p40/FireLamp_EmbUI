@@ -40,6 +40,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #include "fontHEX.h"
 
 extern LAMP myLamp; // Объект лампы
+extern bool read_mic;
 
 void LAMP::lamp_init(const uint16_t curlimit)
 {
@@ -85,7 +86,12 @@ void LAMP::handle()
 {
 #ifdef MIC_EFFECTS
   static unsigned long mic_check = 0; // = 40000; // пропускаю первые 40 секунд
-  if(effects.worker && flags.isMicOn && (flags.ONflag || isMicCalibration()) && !isAlarm() && mic_check + MIC_POLLRATE < millis()){
+#if MIC_PIN == -1
+  bool mic_check_flag = !read_mic; // Timings...
+#else
+  bool mic_check_flag = mic_check + MIC_POLLRATE < millis();
+#endif
+  if(effects.worker && flags.isMicOn && (flags.ONflag || isMicCalibration()) && !isAlarm() && mic_check_flag){
     if(effects.worker->isMicOn() || isMicCalibration())
       micHandler();
     mic_check = millis();

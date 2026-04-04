@@ -37,10 +37,15 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #ifndef __MICFFT_H
 #define __MICFFT_H
 
+
+#if MIC_PIN == -1
+void setupAudioWebSocket();
+#else
 #ifdef CONFIG_IDF_TARGET_ESP32
 #include "driver/adc_common.h"
 #include "esp_adc_cal.h"
 #define DEFAULT_VREF 1100
+#endif
 #endif
 
 // Define this to use reciprocal multiplication for division and some more speedups that might decrease precision
@@ -56,7 +61,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 class MICWORKER {
 private:
-#if defined(FAST_ADC_READ) && defined(ESP8266)
+#if (defined(FAST_ADC_READ) && defined(ESP8266)) || MIC_PIN == -1
   bool useFixedFreq = true; // использовать фиксированное семплирование, либо максимально возможное (false)
 #else
   bool useFixedFreq = false; // использовать фиксированное семплирование, либо максимально возможное (false)
@@ -86,11 +91,13 @@ public:
 #else
   static const uint16_t samples=256U;     //This value MUST ALWAYS be a power of 2
 #endif
-#else
+#elif MIC_PIN != -1
   static const uint16_t samples=64U;     //This value MUST ALWAYS be a power of 2
+#else
+  static const uint16_t samples=256U;
 #endif
   MICWORKER(float scale = 1.28, float noise = 0, bool withAnalyse=true) {
-#if CONFIG_IDF_TARGET_ESP32
+#if CONFIG_IDF_TARGET_ESP32 && MIC_PIN != -1
     //analogSetAttenuation(ADC_11db);
     //analogSetClockDiv(1); // fastest == 1
     //analogReadResolution(9);
@@ -122,8 +129,13 @@ public:
       this->vImag = new float[samples];
     else
       this->vImag = nullptr;
-    this->scale=scale;
-    this->noise=noise;
+#if MIC_PIN == -1
+    this->scale = 1.0;
+    this->noise = 0;
+#else
+    this->scale = scale;
+    this->noise = noise;
+#endif
   }
   ~MICWORKER() { if(vReal) delete [] vReal; if(vImag) delete [] vImag; }
   bool isCaliblation() {return _isCaliblation;}
@@ -136,7 +148,7 @@ public:
   float getCurVal() {return curVal;}
   uint8_t getMinPeak() {return minPeak;}
   uint8_t getMaxPeak() {return maxPeak;}
-  float fillSizeScaledArray(float *arr, size_t size, bool bound=true);
+  float fillSizeScaledArray(float *arr, size_t size, bool bound=(MIC_PIN != -1)); //Virtual mic works better with bound=false
 };
 
 #endif

@@ -46,7 +46,6 @@ Buttons *myButtons;
 MP3PLAYERDEVICE *mp3 = nullptr;
 #endif
 
-
 void setup() {
     Serial.begin(115200);
     //Serial.begin(460800);
@@ -173,7 +172,6 @@ void setup() {
         }
     }
 );
-
   sync_parameters();        // падение есп32 не воспоизводится, kDn
 
   //embui.setPubInterval(5);   // change periodic WebUI publish interval from EMBUI_PUB_PERIOD to 5
@@ -184,6 +182,11 @@ void setup() {
 
 #ifdef ENCODER
   enc.init();
+#endif
+#ifdef MIC_EFFECTS
+#if MIC_PIN == -1
+  setupAudioWebSocket();
+#endif
 #endif
 
     LOG(println, F("setup() done"));

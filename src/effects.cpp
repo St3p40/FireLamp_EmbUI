@@ -3618,6 +3618,8 @@ extern uint16_t extMicReal[MICWORKER::samples];
 String EffectOsc::setDynCtrl(UIControl*_val) {
 #ifdef ESP32
   pointer = 4096/(getMicScale()*2);
+#elif MIC_PIN != -1
+  pointer = 4096/(getMicScale()*2);
 #else
   pointer = 1024/(getMicScale()*2);
 #endif

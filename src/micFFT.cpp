@@ -58,11 +58,11 @@ uint16_t extMicReal[MICWORKER::samples] = {0};
 bool read_mic = true;
 
 void onAudioEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
-    if (type == WS_EVT_DATA) {
+    if (type == WS_EVT_DATA && read_mic) {
         AwsFrameInfo *info = (AwsFrameInfo*)arg;
-        if (info->opcode == WS_BINARY && len == MICWORKER::samples * 2 && read_mic) { // 2 байти на uint16_t
-            memcpy(extMicReal, data, MICWORKER::samples * 2);
-            read_mic = false;
+        if (info->opcode == WS_BINARY && len == MICWORKER::samples << 1) {
+          memcpy(extMicReal, data, MICWORKER::samples << 1);
+          read_mic = false;
         }
     }
 }
@@ -174,11 +174,14 @@ void MICWORKER::PrintVector(float *vData, uint16_t bufferSize, uint8_t scaleType
 double MICWORKER::process(MIC_NOISE_REDUCE_LEVEL level)
 {
   read_data();
-
+#if MIC_PIN != -1
 #ifdef ESP8266
   const uint16_t RESOLUTION = 1023;
 #else
   const uint16_t RESOLUTION = 4095;
+#endif
+#else
+  const uint16_t RESOLUTION = 4095; // I don't see any reason to give more resolution
 #endif
 
   int minVal = 255.0;

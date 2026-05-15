@@ -718,35 +718,31 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-//===== Ефект Відблиски на воді ================//
-// Ідея SottNick
-// переписані на програмні відблиски - (c)Kostyamat
-// Генератор відблисків - (c)Stepko
+// Glare on Water
+// Idea by @SottNick
+// Updates by @kostyamat
+// Generated Glares by @st3p40(aka Stepko)
 class EffectAquarium : public EffectCalc
 {
 private:
-    CRGBPalette16 currentPalette;
-    const uint8_t _scale = 24;
-    const uint8_t _speed = 3;
-
     float hue = 0.;
-    uint16_t x;
-    uint16_t y;
-    uint16_t z;
-    uint8_t noise[2][WIDTH + 1][HEIGHT + 1];
-#define amountDrops ((HEIGHT + WIDTH) / 6)
-    const uint8_t maxRadius = WIDTH + HEIGHT;
-    uint8_t posX[amountDrops];
-    uint8_t posY[amountDrops];
-    float radius[amountDrops];
-    uint8_t satur;
+    const uint16_t amountDrops = (HEIGHT + WIDTH) / 6;
+    const uint16_t maxRadius = WIDTH + HEIGHT;
+
+    struct{
+        float posX;
+        float posY;
+        float vx;
+        float vy;
+    }drops[(HEIGHT + WIDTH) / 6];
+    bool satur;
+
     uint8_t glare = 0;
     uint8_t iconIdx = 0;
     float speedFactor;
 
     void nGlare(uint8_t bri);
     void nDrops(uint8_t bri);
-    void nTest(uint8_t bri);
     void wu(int16_t x, int16_t y);
     void fillNoise();
 

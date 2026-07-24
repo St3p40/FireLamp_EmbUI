@@ -34,6 +34,7 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
    разом із цією програмою. Якщо це не так, див.
    <https://www.gnu.org/licenses/>.)
 */
+#define EMBBTN_FUNCTIONS_IMPLEMENTATION // implementation compiled once, here
 #include "buttons.h"
 #ifdef ESP_USE_BUTTON
 #include "main.h"
@@ -175,7 +176,7 @@ Buttons::Buttons(uint8_t _pin, uint8_t _pullmode, uint8_t _state): buttons() {
 	pinTransition = true;
 	onoffLampState = myLamp.isLampOn();
 
-	touch.millisFunc=millis;
+	embButtonMillis = millis;
 	touch.buttonCheck=&btnread;
 
 	clicks = 0;
@@ -203,9 +204,9 @@ void Buttons::buttonTick(){
 	embButtonTick(&touch);
 	bool reverse = false;
 
-	if ((holding = touch.isHold)) {
+	if ((holding = touch.s.held)) {
 		// начало удержания кнопки
-		byte tstclicks = touch.clicks - 1;
+		byte tstclicks = touch.s.clicks - 1;
 		if(!tClicksClear || (tstclicks && tstclicks!=clicks)) // нажатия после удержания не сбрасываем!!! они сбросятся по tClicksClear или по смене кол-ва нажатий до удержания
 			clicks=tstclicks;
 		if(!tClicksClear){
@@ -219,12 +220,12 @@ void Buttons::buttonTick(){
 			tReverseTimeout->cancel();
 		}
 		LOG(printf_P, PSTR("start hold - buttonEnabled=%d, onoffLampState=%d, holding=%d, holded=%d, clicks=%d, reverse=%d\n"), buttonEnabled, onoffLampState, holding, holded, clicks, reverse);
-	} else if ((holding = touch.step)) {
+	} else if ((holding = touch.s.step)) {
 		// кнопка удерживается
 		if(tClicksClear)
 			tClicksClear->restartDelayed(); // отсрочиваем сброс нажатий
-	} else if (!touch.endClicks || !(clicks = (touch.endClicks && !touch.lastPressType) ? touch.clicks : 0)) {
-		if( (!touch.state == EMB_BTN_STATE_HELD && holded) )	{ // кнопку уже не трогают
+	} else if (!touch.s.endClicking || !(clicks = (touch.s.endClicking && !touch.s.lastPressType) ? touch.s.clicks : 0)) {
+		if( touch.s.state != EMBBTN_STATE_HLD && holded )	{ // кнопку уже не трогают
 			LOG(println,F("Сброс состояния кнопки после окончания удержания"));
 			resetStates();
 			onoffLampState = myLamp.isLampOn(); // сменить статус после удержания
@@ -256,7 +257,7 @@ void Buttons::buttonTick(){
 			if (!buttons[i]->activate(buttons[i]->flags, reverse)) {
 				//LOG(println,buttons[i]->action); // отладка
 				// действие не подразумевает повтора
-				if(buttons[i]->flags.onetime && touch.state==EMB_BTN_STATE_HELD){ // в процессе удержания
+				if(buttons[i]->flags.onetime && touch.s.state==EMBBTN_STATE_HLD){ // в процессе удержания
 					buttons[i]->flags.onetime|=3; // установить старший бит сработавшего действия
 				}
 			}

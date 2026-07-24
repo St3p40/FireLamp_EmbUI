@@ -6,9 +6,9 @@
 #include "ts.h"
 #include "LList.h"
 
-#define EmbBtnStepTimer				// Adds extra timer for "1" every N milliseconds during long press
-#define EmbBtnEndClicksAfterHolding // Previous library didn't read clicks after hold without ending click strike
-#define EmbBtnCheckButtonAsValue    // It is better for this project
+#define EMBBTN_ENABLE_STEP             // Adds extra timer for "1" every N milliseconds during long press
+#define EMBBTN_ENDCLICKING_AFTER_HOLD  // Previous library didn't read clicks after hold without ending click strike
+#define EMBBTN_BTN_READ PNTR           // It is better for this project
 #include "embButton.h"
 
 typedef enum _button_action {
@@ -89,7 +89,7 @@ class Buttons {
 	uint8_t pullmode; // подтяжка
 	uint8_t state; // тип (нормально открытый/закрытый)
 
-	char btnread = 0;
+	unsigned char btnread = 0;
 
 	byte clicks = 0;
 	Task *tButton = nullptr;      // планировщик кнопки

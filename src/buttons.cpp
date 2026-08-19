@@ -274,6 +274,19 @@ void Buttons::buttonTick(){
 	}
 }
 
+void Buttons::setPinConfig(uint8_t _pin, uint8_t _pullmode) {
+	if (pin == _pin && pullmode == _pullmode) return;
+	bool wasEnabled = buttonEnabled;
+	if (wasEnabled) setButtonOn(false);
+	pin = _pin;
+	pullmode = _pullmode;
+	if (pullmode == 1)
+		pinMode(pin, INPUT);
+	else
+		pinMode(pin, INPUT_PULLUP);
+	if (wasEnabled) setButtonOn(true);
+}
+
 void Buttons::clear() {
 	while (buttons.size()) {
 		ButtonAction *btn = buttons.shift();

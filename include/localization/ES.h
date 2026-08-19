@@ -468,6 +468,10 @@ static const char TINTF_0F5[] PROGMEM = "Cancelada";
 static const char TINTF_0F6[] PROGMEM = "Comprobación de efectos";
 static const char TINTF_0F7[] PROGMEM = "Cómo configurar la matriz para Jinx se puede ver";
 static const char TINTF_0F8[] PROGMEM = "aqui";
+static const char TINTF_0F9[] PROGMEM = "Modo de pull";
+static const char TINTF_0FA[] PROGMEM = "PULL-UP";
+static const char TINTF_0FB[] PROGMEM = "PULL-DOWN";
+static const char TINTF_0FC[] PROGMEM = "Type de matriz paralela";
 
 static const char NY_MDG_STRING1[] PROGMEM = "Hasta que se quede el año nuevo %d %s";
 static const char NY_MDG_STRING2[] PROGMEM = "Feliz año nuevo %d!";

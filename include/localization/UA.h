@@ -467,6 +467,10 @@ static const char TINTF_0F5[] PROGMEM = "Операція скасована";
 static const char TINTF_0F6[] PROGMEM = "Перевірка ефектів";
 static const char TINTF_0F7[] PROGMEM = "Інструкція як налаштовувати розмітку матриці в Jinx";
 static const char TINTF_0F8[] PROGMEM = "тут";
+static const char TINTF_0F9[] PROGMEM = "Підтяжка кнопки";
+static const char TINTF_0FA[] PROGMEM = "PULL-UP";
+static const char TINTF_0FB[] PROGMEM = "PULL-DOWN";
+static const char TINTF_0FC[] PROGMEM = "Паралельний тип матриці";
 
 static const char NY_MDG_STRING1[] PROGMEM = "До нового року залишилось %d %s";
 static const char NY_MDG_STRING2[] PROGMEM = "З новим %d роком!";

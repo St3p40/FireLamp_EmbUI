@@ -467,6 +467,10 @@ static const char TINTF_0F5[] PROGMEM = "Canceled";
 static const char TINTF_0F6[] PROGMEM = "Effects checking";
 static const char TINTF_0F7[] PROGMEM = "You can find Jinx matrix configuration tutorial";
 static const char TINTF_0F8[] PROGMEM = "there";
+static const char TINTF_0F9[] PROGMEM = "Pull mode";
+static const char TINTF_0FA[] PROGMEM = "PULL-UP";
+static const char TINTF_0FB[] PROGMEM = "PULL-DOWN";
+static const char TINTF_0FC[] PROGMEM = "Parallel matrix type";
 
 static const char NY_MDG_STRING1[] PROGMEM = "Until the new year is left %d %s";
 static const char NY_MDG_STRING2[] PROGMEM = "Happy new %d year!";

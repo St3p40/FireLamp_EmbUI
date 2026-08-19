@@ -112,6 +112,10 @@ class Buttons {
 	void setButtonOn(bool flag);
 	bool isButtonOn() { return buttonEnabled; }
 
+	uint8_t getPin() { return pin; }
+	uint8_t getPullMode() { return pullmode; }
+	void setPinConfig(uint8_t _pin, uint8_t _pullmode);
+
 	inline ButtonAction* operator[](int i) { return buttons[i]; }
 
 	int size(){ return buttons.size(); }

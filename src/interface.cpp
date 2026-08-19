@@ -2198,7 +2198,7 @@ void block_settings_other(Interface *interf, JsonObject *data){
 #if !defined(MATRIXx4) and !defined(XY_EXTERN)
     interf->checkbox(FPSTR(TCONST_004C), myLamp.getLampSettings().MIRR_H ? "1" : "0", FPSTR(TINTF_03B), false);
     interf->checkbox(FPSTR(TCONST_004D), myLamp.getLampSettings().MIRR_V ? "1" : "0", FPSTR(TINTF_03C), false);
-    interf->checkbox(FPSTR(TCONST_00F4), myLamp.getLampSettings().matrixType ? "1" : "0", FPSTR(TINTF_05B), false);
+    interf->checkbox(FPSTR(TCONST_00F4), myLamp.getLampSettings().matrixType ? "1" : "0", FPSTR(TINTF_0FC), false);
 #endif
     interf->checkbox(FPSTR(TCONST_004E), myLamp.getLampSettings().isFaderON ? "1" : "0", FPSTR(TINTF_03D), false);
     interf->checkbox(FPSTR(TCONST_008E), myLamp.getLampSettings().isEffClearing ? "1" : "0", FPSTR(TINTF_083), false);
@@ -2707,8 +2707,20 @@ void block_settings_butt(Interface *interf, JsonObject *data){
     interf->json_section_end();
     interf->spacer();
 
+#ifdef ESP32
+    interf->number(FPSTR(TCONST_0097), FPSTR(TINTF_094), String(1), String(0), String(39));
+#else
+    interf->number(FPSTR(TCONST_0097), FPSTR(TINTF_094), String(1), String(0), String(16));
+#endif
+    interf->select(FPSTR(TCONST_00F9), String(myButtons->getPullMode()), String(FPSTR(TINTF_0F9)), false);
+        interf->option(String(0), FPSTR(TINTF_0FA));
+        interf->option(String(1), FPSTR(TINTF_0FB));
+    interf->json_section_end();
+    interf->button_submit(FPSTR(TCONST_006D), FPSTR(TINTF_008), FPSTR(P_GRAY));
+    interf->spacer();
+
     interf->json_section_begin(FPSTR(TCONST_006E));
-    interf->select(FPSTR(TCONST_006F), String(0), String(FPSTR(TINTF_07A)), false);
+    interf->select(FPSTR(TCONST_006F), String(0), String(FPSTR(TINTF_013)), false);
     for (int i = 0; i < myButtons->size(); i++) {
         interf->option(String(i), (*myButtons)[i]->getName());
     }
@@ -2734,6 +2746,26 @@ void show_settings_butt(Interface *interf, JsonObject *data){
     interf->json_frame_interface();
     block_settings_butt(interf, data);
     interf->json_frame_flush();
+}
+
+void set_butt_pinconf(Interface *interf, JsonObject *data){
+    if (!data) return;
+    if (!data->containsKey(FPSTR(TCONST_0097)) || !data->containsKey(FPSTR(TCONST_00F9))) return;
+
+    uint16_t newpin = (*data)[FPSTR(TCONST_0097)].as<uint16_t>();
+#ifdef ESP32
+    if (newpin > 39) return;
+#else
+    if (newpin > 16) return;
+#endif
+    uint8_t newpull = (*data)[FPSTR(TCONST_00F9)].as<uint8_t>();
+
+    SETPARAM(FPSTR(TCONST_0097));
+    SETPARAM(FPSTR(TCONST_00F9));
+
+    myButtons->setPinConfig((uint8_t)newpin, newpull);
+
+    show_settings_butt(interf, data);
 }
 
 void set_butt_conf(Interface *interf, JsonObject *data){
@@ -3196,9 +3228,6 @@ void section_sys_settings_frame(Interface *interf, JsonObject *data){
     interf->json_section_main(FPSTR(TCONST_0099), FPSTR(TINTF_08F));
         interf->spacer(FPSTR(TINTF_092)); // заголовок
         interf->json_section_line(FPSTR(TINTF_092)); // расположить в одной линии
-#ifdef ESP_USE_BUTTON
-            interf->number(FPSTR(TCONST_0097),FPSTR(TINTF_094),String(1),String(0),String(16));
-#endif
 #ifdef MP3PLAYER
             interf->number(FPSTR(TCONST_009B),FPSTR(TINTF_097),String(1),String(0),String(16));
             interf->number(FPSTR(TCONST_009C),FPSTR(TINTF_098),String(1),String(0),String(16));
@@ -3223,18 +3252,12 @@ void section_sys_settings_frame(Interface *interf, JsonObject *data){
 void set_sys_settings(Interface *interf, JsonObject *data){
     if(!data) return;
 
-#ifdef ESP_USE_BUTTON
-    {String tmpChk = (*data)[FPSTR(TCONST_0097)]; if(tmpChk.toInt()>16) return;}
-#endif
 #ifdef MP3PLAYER
     {String tmpChk = (*data)[FPSTR(TCONST_009B)]; if(tmpChk.toInt()>16) return;}
     {String tmpChk = (*data)[FPSTR(TCONST_009C)]; if(tmpChk.toInt()>16) return;}
 #endif
     {String tmpChk = (*data)[FPSTR(TCONST_0098)]; if(tmpChk.toInt()>16000) return;}
 
-#ifdef ESP_USE_BUTTON
-    SETPARAM(FPSTR(TCONST_0097));
-#endif
 #ifdef MP3PLAYER
     SETPARAM(FPSTR(TCONST_009B));
     SETPARAM(FPSTR(TCONST_009C));
@@ -3397,6 +3420,7 @@ void create_parameters(){
     // пины и системные настройки
 #ifdef ESP_USE_BUTTON
     embui.var_create(FPSTR(TCONST_0097), String(BTN_PIN)); // Пин кнопки
+    embui.var_create(FPSTR(TCONST_00F9), String(PULL_MODE));
     embui.var_create(FPSTR(TCONST_003F), String(GAUGETYPE::GT_VERT));         // Тип шкалы
 #endif
 #ifdef ENCODER
@@ -3539,6 +3563,7 @@ void create_parameters(){
     embui.section_handle_add(FPSTR(TCONST_0075), set_butt_conf);
     embui.section_handle_add(FPSTR(TCONST_001F), set_btnflag);
     embui.section_handle_add(FPSTR(TCONST_003F), set_gaugetype);
+    embui.section_handle_add(FPSTR(TCONST_006D), set_butt_pinconf);
 #endif
 
 #ifdef LAMP_DEBUG

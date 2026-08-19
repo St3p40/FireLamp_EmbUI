@@ -118,11 +118,11 @@ void setup() {
 #endif
 
 #ifdef ESP_USE_BUTTON
-#ifdef SHOWSYSCONFIG
-    myButtons = new Buttons(embui.param(FPSTR(TCONST_0097)).toInt(), PULL_MODE, 1);
-#else
-    myButtons = new Buttons(BTN_PIN, PULL_MODE, NORM_OPEN);
-#endif
+    myButtons = new Buttons(
+      embui.param(FPSTR(TCONST_0097)).isEmpty() ? BTN_PIN : embui.param(FPSTR(TCONST_0097)).toInt(),
+      embui.param(FPSTR(TCONST_00F9)).isEmpty() ? PULL_MODE : embui.param(FPSTR(TCONST_00F9)).toInt(),
+      1
+    );
     if (!myButtons->loadConfig()) {
       default_buttons();
       myButtons->saveConfig();

@@ -467,6 +467,10 @@ static const char TINTF_0F5[] PROGMEM = "Operacja anulowana";
 static const char TINTF_0F6[] PROGMEM = "Sprawdzanie efektów";
 static const char TINTF_0F7[] PROGMEM = "Tutorial do konfigurowania macierzy w Jinx";
 static const char TINTF_0F8[] PROGMEM = "tutaj";
+static const char TINTF_0F9[] PROGMEM = "Tryb podciągania";
+static const char TINTF_0FA[] PROGMEM = "PULL-UP";
+static const char TINTF_0FB[] PROGMEM = "PULL-DOWN";
+static const char TINTF_0FC[] PROGMEM = "Paralelny typ macierzy";
 
 static const char NY_MDG_STRING1[] PROGMEM = "%d %s pozostało do nowego roku";
 static const char NY_MDG_STRING2[] PROGMEM = "Szczęśliwego Nowego Roku %d!";

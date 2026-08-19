@@ -319,6 +319,7 @@ static const char TCONST_00F5[] PROGMEM = "MtrxStrpConn";
 static const char TCONST_00F6[] PROGMEM = "MtrxConnAngl";
 static const char TCONST_00F7[] PROGMEM = "MtrxWidth";
 static const char TCONST_00F8[] PROGMEM = "MtrxHeight";
+static const char TCONST_00F9[] PROGMEM = "PULLB";
 
 /** набор служебных текстовых констант (HTTP/MQTT запросы)
  */

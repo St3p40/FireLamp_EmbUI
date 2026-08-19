@@ -560,7 +560,7 @@ void block_effects_config(Interface *interf, JsonObject *data, bool fast=true){
             fquiklist->print(']');
             fquiklist->close();
             LittleFS.rename(FPSTR(TCONST_0081),FPSTR(TCONST_0082));
-            delete (fs::FS *)fquiklist;
+            delete fquiklist;
         }
     } else {
         EffectListElem *eff = nullptr;
@@ -585,7 +585,7 @@ void block_effects_config(Interface *interf, JsonObject *data, bool fast=true){
             fquiklist->print(']');
             fquiklist->close();
             LittleFS.rename(FPSTR(TCONST_0081),FPSTR(TCONST_0082));
-            delete (fs::FS *)fquiklist;
+            delete fquiklist;
         }
     }
     //interf->option(String(0),"");
@@ -676,7 +676,7 @@ void delayedcall_show_effects(){
                         delay(500);
 #endif
                         LittleFS.rename(FPSTR(TCONST_0085),confEff?FPSTR(TCONST_0083):FPSTR(TCONST_0084));
-                        delete (fs::FS *)slowlist;
+                        delete slowlist;
                     }
 
                     Task *_t = &ts.currentTask();
@@ -1218,7 +1218,7 @@ void block_effects_main(Interface *interf, JsonObject *data, bool fast=true){
             quicklist->print(']');
             quicklist->close();
             LittleFS.rename(FPSTR(TCONST_0081),FPSTR(TCONST_0086));
-            delete (fs::FS *)quicklist;
+            delete quicklist;
         }
     } else {
         LOG(println,F("DBG2: using slow Names generation"));
@@ -1254,7 +1254,7 @@ void block_effects_main(Interface *interf, JsonObject *data, bool fast=true){
             quicklist->print(']');
             quicklist->close();
             LittleFS.rename(FPSTR(TCONST_0081),FPSTR(TCONST_0086));
-            delete (fs::FS *)quicklist;
+            delete quicklist;
         }
     }
     interf->json_frame_custom(FPSTR(T_XLOAD));

@@ -289,7 +289,9 @@ void MP3PLAYERDEVICE::playEffect(uint16_t effnb, const String &_soundfile, bool 
     int shift=effnb%256-prev_effnb%256;
     prev_effnb = effnb%256;
     cur_effnb = ((int32_t)cur_effnb + shift)%256;
-    if(cur_effnb>mp3filescount)
+    if(!mp3filescount)
+      cur_effnb=0;
+    else if(cur_effnb>mp3filescount)
       cur_effnb%=mp3filescount;
     else if(cur_effnb==0)
       cur_effnb=1;

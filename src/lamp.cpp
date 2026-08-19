@@ -1233,6 +1233,8 @@ void LAMP::showWarning(
   bool forcerestart,                                        /* перезапускать, если пришло повторное событие предупреждения  */
   const char *msg)                                          /* сообщение для вывода на матрицу                              */
 {
+  if(!blinkHalfPeriod) blinkHalfPeriod = 1;
+
   CRGB warn_color = CRGB::Black;
   uint32_t warn_duration = 1000;
   uint16_t warn_blinkHalfPeriod = 500;

@@ -368,7 +368,7 @@ void EffectWorker::initDefault(const char *folder)
   do {
     File idx = LittleFS.open(filename,"r");
     //idx.seek(0, SeekMode::SeekSet);
-    while((size = idx.readBytesUntil('\n',storage,buffersize))){
+    while((size = idx.readBytesUntil('\n',storage,buffersize-1))){
 #ifdef ESP8266
       ESP.wdtFeed();
 #elif defined ESP32
@@ -1321,7 +1321,7 @@ void EffectWorker::loadEffectsBackup(const char *filename, bool clear)
     bkp.seek((*data)[FPSTR(TCONST_005B)].as<size_t>(), SeekMode::SeekSet);
     uint8_t *buffer = new uint8_t[bufsize];
     memset(buffer,0,bufsize);
-    size_t size = bkp.readBytesUntil('\n',buffer,bufsize);
+    size_t size = bkp.readBytesUntil('\n',buffer,bufsize-1);
     uint32_t pos=0, nb=0;
     String cfilename;
     File configFile;

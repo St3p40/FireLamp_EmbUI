@@ -64,7 +64,7 @@ void Led_Stream::handleE131Packet(e131_packet_t* p, const IPAddress &clientIP, b
     }
 
     // only listen for universes we're handling & allocated memory
-    if (uni >= (ledStream->getUni() + ledStream->getUniCt())) {
+    if (uni < ledStream->getUni() || uni >= (ledStream->getUni() + ledStream->getUniCt())) {
         return;
     }
 
@@ -192,7 +192,8 @@ void Led_Stream::handleWSPacket(AsyncWebSocket *server, AsyncWebSocketClient *cl
             lastLen += len;
         }
         if(info->final && pgkReady){
-            ledStream->fillBuff(ledStream->wsBuff);
+            // for a self-contained (non-fragmented) message wsBuff was never filled — use data directly
+            ledStream->fillBuff(info->len == len ? data : ledStream->wsBuff);
         }
     }
 }

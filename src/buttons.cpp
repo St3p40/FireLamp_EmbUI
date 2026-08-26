@@ -226,7 +226,7 @@ void Buttons::buttonTick(){
 			tClicksClear->restartDelayed(); // отсрочиваем сброс нажатий
 	} else if (!touch.s.endClicking || !(clicks = (touch.s.endClicking && !touch.s.lastPressType) ? touch.s.clicks : 0)) {
 		if( touch.s.state != EMBBTN_STATE_HLD && holded )	{ // кнопку уже не трогают
-			LOG(println,F("Сброс состояния кнопки после окончания удержания"));
+			LOG(println,F("Button state reset after hold"));
 			resetStates();
 			onoffLampState = myLamp.isLampOn(); // сменить статус после удержания
 			LOG(printf_P, PSTR("reset - buttonEnabled=%d, onoffLampState=%d, holding=%d, holded=%d, clicks=%d, reverse=%d\n"), buttonEnabled, onoffLampState, holding, holded, clicks, reverse);
@@ -267,7 +267,7 @@ void Buttons::buttonTick(){
 
 	// Здесь уже все отработало, и кнопка точно не удерживается
 	if(!holding){
-		LOG(println,F("Сброс состояния кнопки"));
+		LOG(println,F("Button system reset"));
 		resetStates();
 		onoffLampState = myLamp.isLampOn(); // обновить статус по итогу работы
 		isrEnable();

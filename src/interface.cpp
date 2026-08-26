@@ -99,27 +99,22 @@ void recreateoptionsTask(bool isCancelOnly=false){
 
 // Функция преобразования для конфига
 uint64_t stoull(const String &str){
-    uint64_t tmp = 0;
     LOG(printf_P, PSTR("STOULL %s \n"), str.c_str());
-    for (uint8_t i = 0; i < str.length(); i++){
-        if (i)
-            tmp *= 10;
-        tmp += (int)str[i] - 48;
-    }
+    uint64_t tmp = 0;
+    for (const char *c = str.c_str(); *c; ++c)
+        tmp = tmp * 10 + (uint8_t)(*c - '0');
     return tmp;
 }
 // Функция преобразования для конфига
 String ulltos(uint64_t longlong){
-    String bfr;
+    char bfr[21];
+    char *c = bfr + sizeof(bfr) - 1;
+    *c = '\0';
     while (longlong){
-        int8_t i = longlong % 10;
-        bfr += String(i);
+        *--c = (char)('0' + longlong % 10);
         longlong /= 10;
     }
-    String tmp;
-    for (int i = bfr.length()-1; i >= 0; i--)
-        tmp += (String)bfr[i];
-    return tmp;
+    return String(c);
 }
 
 bool check_recovery_state(bool isSet, uint16_t *rcnt = NULL){
@@ -187,6 +182,8 @@ void pubCallback(Interface *interf){
     interf->json_frame_value();
     interf->value(FPSTR(TCONST_0001), embui.timeProcessor.getFormattedShortTime(), true);
 
+    char bfr[32];
+
 #if !defined(ESP32) || !defined(BOARD_HAS_PSRAM)    
     #ifdef PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED
         uint32_t iram;
@@ -199,28 +196,31 @@ void pubCallback(Interface *interf){
             HeapSelectDram ephemeral;
             dram = ESP.getFreeHeap();
         }
-        interf->value(FPSTR(TCONST_0002), String(dram)+" / "+String(iram), true);
+        snprintf_P(bfr, sizeof(bfr), PSTR("%u / %u"), dram, iram);
+        interf->value(FPSTR(TCONST_0002), bfr, true);
     #else
         interf->value(FPSTR(TCONST_0002), String(myLamp.getLampState().freeHeap), true);
     #endif
 #else
     if(psramFound()){
-        interf->value(FPSTR(TCONST_0002), String(ESP.getFreeHeap())+" / "+String(ESP.getFreePsram()), true);
+        snprintf_P(bfr, sizeof(bfr), PSTR("%u / %u"), ESP.getFreeHeap(), ESP.getFreePsram());
+        interf->value(FPSTR(TCONST_0002), bfr, true);
         LOG(printf_P, PSTR("Free PSRAM: %d\n"), ESP.getFreePsram());
     } else {
         interf->value(FPSTR(TCONST_0002), String(myLamp.getLampState().freeHeap), true);
     }
 #endif
-    char fuptime[16];
     uint32_t tm = embui.getUptime();
-    sprintf_P(fuptime, PSTR("%u.%02u:%02u:%02u"),tm/86400,(tm/3600)%24,(tm/60)%60,tm%60);
-    interf->value(FPSTR(TCONST_008F), String(fuptime), true);
+    snprintf_P(bfr, sizeof(bfr), PSTR("%u.%02u:%02u:%02u"),tm/86400,(tm/3600)%24,(tm/60)%60,tm%60);
+    interf->value(FPSTR(TCONST_008F), bfr, true);
     interf->value(FPSTR(TCONST_00C2), String(myLamp.getLampState().fsfreespace), true);
 #ifdef DS18B20
-    interf->value(FPSTR(TCONST_003E), String(getTemp())+F("°C"), true);
+    snprintf_P(bfr, sizeof(bfr), PSTR("%d°C"), getTemp());
+    interf->value(FPSTR(TCONST_003E), bfr, true);
 #endif
     int32_t rssi = myLamp.getLampState().rssi;
-    interf->value(FPSTR(TCONST_00CE), String(constrain(map(rssi, -85, -40, 0, 100),0,100)) + F("% (") + String(rssi) + F("dBm)"), true);
+    snprintf_P(bfr, sizeof(bfr), PSTR("%d%% (%ddBm)"), constrain(map(rssi, -85, -40, 0, 100),0,100), rssi);
+    interf->value(FPSTR(TCONST_00CE), bfr, true);
     interf->json_frame_flush();
 }
 
@@ -506,6 +506,28 @@ void set_cur_eff_param(Interface *interf, JsonObject *data){
     }
 }
 
+static void appendEffCfgNumber(String &dst, uint16_t eff_nb){
+    dst += eff_nb;
+    if(eff_nb > 255){
+        dst += F(" (");
+        dst += (unsigned int)(eff_nb & 0xFF);
+        dst += ')';
+    }
+    dst += F(". ");
+}
+
+static void appendEffListNumber(String &dst, uint16_t eff_nb, bool numList){
+    if(!numList) return;
+    if(eff_nb <= 255){
+        dst += eff_nb;
+    } else {
+        dst += (unsigned int)(byte)(eff_nb & 0xFF);
+        dst += '.';
+        dst += (unsigned int)((byte)(eff_nb >> 8) - 1U);
+    }
+    dst += F(". ");
+}
+
 void block_effects_config(Interface *interf, JsonObject *data, bool fast=true){
     if (!interf) return;
 
@@ -539,13 +561,17 @@ void block_effects_config(Interface *interf, JsonObject *data, bool fast=true){
         // Сначала подгрузим дефолтный список, а затем спустя время - подтянем имена из конфига
 
         //interf->option(String(myLamp.effects.getSelected()), myLamp.effects.getEffectName());
-        String effname((char *)0);
+        String effname;
+        effname.reserve(64);
         EffectListElem *eff = nullptr;
         MIC_SYMB;
         while ((eff = myLamp.effects.getNextEffect(eff)) != nullptr) {
-            effname = String(eff->eff_nb) + (eff->eff_nb>255 ? String(F(" (")) + String(eff->eff_nb&0xFF) + String(F(")")) : String("")) + String(F(". ")) + String(FPSTR(T_EFFNAMEID[(uint8_t)eff->eff_nb])) + MIC_SYMBOL;
+            effname = "";
+            appendEffCfgNumber(effname, eff->eff_nb);
+            effname += FPSTR(T_EFFNAMEID[(uint8_t)eff->eff_nb]);
+            effname += MIC_SYMBOL;
             if(fquiklist){
-                fquiklist->printf_P(PSTR("%s{\"label\":\"%s\",\"value\":\"%s\"}"), firsttime?"":",", effname.c_str(), String(eff->eff_nb).c_str());
+                fquiklist->printf_P(PSTR("%s{\"label\":\"%s\",\"value\":\"%u\"}"), firsttime?"":",", effname.c_str(), (unsigned)eff->eff_nb);
                 firsttime = false;
             }
             //interf->option(String(eff->eff_nb), effname);
@@ -565,13 +591,16 @@ void block_effects_config(Interface *interf, JsonObject *data, bool fast=true){
     } else {
         EffectListElem *eff = nullptr;
         LOG(println,F("DBG1: using slow Names generation"));
-        String effname((char *)0);
+        String effname;
+        effname.reserve(64);
         MIC_SYMB;
         while ((eff = myLamp.effects.getNextEffect(eff)) != nullptr) {
-            myLamp.effects.loadeffname(effname, eff->eff_nb);
-            effname = String(eff->eff_nb) + (eff->eff_nb>255 ? String(F(" (")) + String(eff->eff_nb&0xFF) + String(F(")")) : String("")) + String(F(". ")) + String(FPSTR(T_EFFNAMEID[(uint8_t)eff->eff_nb])) + MIC_SYMBOL;
+            effname = "";
+            appendEffCfgNumber(effname, eff->eff_nb);
+            effname += FPSTR(T_EFFNAMEID[(uint8_t)eff->eff_nb]);
+            effname += MIC_SYMBOL;
             if(fquiklist){
-                fquiklist->printf_P(PSTR("%s{\"label\":\"%s\",\"value\":\"%s\"}"), firsttime?"":",", effname.c_str(), String(eff->eff_nb).c_str());
+                fquiklist->printf_P(PSTR("%s{\"label\":\"%s\",\"value\":\"%u\"}"), firsttime?"":",", effname.c_str(), (unsigned)eff->eff_nb);
                 firsttime = false;
             }
             //interf->option(String(eff->eff_nb), effname);
@@ -612,24 +641,24 @@ void delayedcall_show_effects(){
     if(delayedOptionTask)
         delayedOptionTask->cancel(); // отмена предыдущей задачи, если была запущена
 
-    EffectListElem **peff = new (EffectListElem *); // выделяем память под укзатель на указатель
-    *peff = nullptr; // чистим содержимое
     File *slowlist = nullptr;
-    if(!LittleFS.exists(confEff?FPSTR(TCONST_0083):FPSTR(TCONST_0084))){
-        slowlist = new fs::File;
-        *slowlist = LittleFS.open(FPSTR(TCONST_0085), "w");
-    } else {
-        // формируем и отправляем кадр с запросом подгрузки внешнего ресурса
-        Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws, 512) : nullptr;
-        interf->json_frame_custom(FPSTR(T_XLOAD));
-        interf->json_section_content();
-        interf->select(confEff?FPSTR(TCONST_0010):FPSTR(TCONST_0016), String(effnb), String(FPSTR(TINTF_00A)), true, true, String(confEff?FPSTR(TCONST_0083):FPSTR(TCONST_0084))+'?'+myLamp.effects.getlistsuffix());
-        interf->json_section_end();
-        interf->json_frame_flush();
-        delete interf;
-        interf = nullptr;
+    if(LittleFS.exists(confEff?FPSTR(TCONST_0083):FPSTR(TCONST_0084))){
+        if(embui.ws.count()){
+            Interface *interf = new Interface(&embui, &embui.ws, 512);
+            interf->json_frame_custom(FPSTR(T_XLOAD));
+            interf->json_section_content();
+            interf->select(confEff?FPSTR(TCONST_0010):FPSTR(TCONST_0016), String(effnb), String(FPSTR(TINTF_00A)), true, true, String(confEff?FPSTR(TCONST_0083):FPSTR(TCONST_0084))+'?'+myLamp.effects.getlistsuffix());
+            interf->json_section_end();
+            interf->json_frame_flush();
+            delete interf;
+        }
         return;
     }
+    slowlist = new fs::File;
+    *slowlist = LittleFS.open(FPSTR(TCONST_0085), "w");
+
+    EffectListElem **peff = new (EffectListElem *);
+    *peff = nullptr;
     //LOG(print,(uint32_t)peff); LOG(print," "); LOG(println,(uint32_t)*peff);
 
     delayedOptionTask = new Task(300, TASK_FOREVER,
@@ -644,6 +673,8 @@ void delayedcall_show_effects(){
             }
 
             String effname((char *)0);
+            String name;
+            name.reserve(64);
             MIC_SYMB;
             size_t cnt = 5; // генерим по 5 элементов
             bool numList = myLamp.getLampSettings().numInList;
@@ -653,11 +684,15 @@ void delayedcall_show_effects(){
                     myLamp.effects.loadeffname(effname, eff->eff_nb);
                     LOG(println, effname);
                     if(confEff || eff->canBeSelected()){ // если в конфигурировании или эффект может быть выбран
-                        String name =                             (!confEff ? EFF_NUMBER : String(eff->eff_nb) + (eff->eff_nb>255 ? String(F(" (")) + String(eff->eff_nb&0xFF) + String(F(")")) : String("")) + String(F(". "))) +
-                            effname +
-                            MIC_SYMBOL;
+                        name = "";
+                        if(confEff)
+                            appendEffCfgNumber(name, eff->eff_nb);
+                        else
+                            appendEffListNumber(name, eff->eff_nb, numList);
+                        name += effname;
+                        name += MIC_SYMBOL;
                         if(slowlist){
-                            slowlist->printf_P(PSTR("%s{\"label\":\"%s\",\"value\":\"%s\"}"), firsttime?"":",", name.c_str(), String(eff->eff_nb).c_str());
+                            slowlist->printf_P(PSTR("%s{\"label\":\"%s\",\"value\":\"%u\"}"), firsttime?"":",", name.c_str(), (unsigned)eff->eff_nb);
                             firsttime = false;
                         }
                     }
@@ -691,14 +726,16 @@ void delayedcall_show_effects(){
         [peff](){
             LOG(println, F("=== GENERATE EffLIst for GUI completed ==="));
             // формируем и отправляем кадр с запросом подгрузки внешнего ресурса
-            Interface *interf = embui.ws.count()? new Interface(&embui, &embui.ws, 512) : nullptr;
-            uint16_t effnb = confEff?(int)confEff->eff_nb:myLamp.effects.getSelected(); // если confEff не NULL, то мы в конфирурировании, иначе в основном режиме
-            interf->json_frame_custom(FPSTR(T_XLOAD));
-            interf->json_section_content();
-            interf->select(confEff?FPSTR(TCONST_0010):FPSTR(TCONST_0016), String(effnb), String(FPSTR(TINTF_00A)), true, true, String(confEff?FPSTR(TCONST_0083):FPSTR(TCONST_0084))+'?'+myLamp.effects.getlistsuffix());
-            interf->json_section_end();
-            interf->json_frame_flush();
-            delete interf;
+            if(embui.ws.count()){
+                uint16_t effnb = confEff?(int)confEff->eff_nb:myLamp.effects.getSelected();
+                Interface *interf = new Interface(&embui, &embui.ws, 512);
+                interf->json_frame_custom(FPSTR(T_XLOAD));
+                interf->json_section_content();
+                interf->select(confEff?FPSTR(TCONST_0010):FPSTR(TCONST_0016), String(effnb), String(FPSTR(TINTF_00A)), true, true, String(confEff?FPSTR(TCONST_0083):FPSTR(TCONST_0084))+'?'+myLamp.effects.getlistsuffix());
+                interf->json_section_end();
+                interf->json_frame_flush();
+                delete interf;
+            }
             delete peff; // освободить указатель на указатель
             delayedOptionTask = nullptr;
             TASK_RECYCLE;
@@ -745,6 +782,10 @@ void publish_ctrls_vals()
 }
 #endif
 
+static inline bool isMicCtrl(UIControl *ctrl){
+    return ctrl->getId()==7 && ctrl->getName().startsWith(FPSTR(TINTF_020));
+}
+
 void block_effects_param(Interface *interf, JsonObject *data){
     //if (!interf) return;
     bool isinterf = (interf != nullptr); // буду публиковать, даже если WebUI клиентов нет
@@ -752,16 +793,22 @@ void block_effects_param(Interface *interf, JsonObject *data){
     if(isinterf) interf->json_section_begin(FPSTR(TCONST_0011));
 
     LList<UIControl*>&controls = myLamp.effects.getControls();
+    const int ctrlCnt = controls.size();
     uint8_t ctrlCaseType; // тип контрола, старшие 4 бита соответствуют CONTROL_CASE, младшие 4 - CONTROL_TYPE
 #ifdef MIC_EFFECTS
    bool isMicOn = myLamp.isMicOnOff();
-    for(int i=0; i<controls.size();i++)
-        if(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020)))
+    for(int i=0; i<ctrlCnt; i++)
+        if(isMicCtrl(controls[i]))
             isMicOn = isMicOn && controls[i]->getVal().toInt();
 #endif
+    const bool isRandDemo = (myLamp.getLampSettings().dRand && myLamp.getMode()==LAMPMODE::MODE_DEMO);
+#ifdef EMBUI_USE_MQTT
+    const String mqttPrefix(FPSTR(TCONST_008B));
+#endif
 
-    for(int i=0; i<controls.size();i++){
-        ctrlCaseType = controls[i]->getType();
+    for(int i=0; i<ctrlCnt; i++){
+        UIControl *ctrl = controls[i];
+        ctrlCaseType = ctrl->getType();
         switch(ctrlCaseType>>4){
             case CONTROL_CASE::HIDE :
                 continue;
@@ -769,87 +816,79 @@ void block_effects_param(Interface *interf, JsonObject *data){
             case CONTROL_CASE::ISMICON :
 #ifdef MIC_EFFECTS
                 //if(!myLamp.isMicOnOff()) continue;
-                if(!isMicOn && (!myLamp.isMicOnOff() || !(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020))==1) )) continue;
+                if(!isMicOn && (!myLamp.isMicOnOff() || !isMicCtrl(ctrl) )) continue;
 #else
                 continue;
-#endif          
+#endif
                 break;
             case CONTROL_CASE::ISMICOFF :
 #ifdef MIC_EFFECTS
                 //if(myLamp.isMicOnOff()) continue;
-                if(isMicOn && (myLamp.isMicOnOff() || !(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020))==1) )) continue;
+                if(isMicOn && (myLamp.isMicOnOff() || !isMicCtrl(ctrl) )) continue;
 #else
                 continue;
-#endif   
+#endif
                 break;
             default: break;
         }
-        bool isRandDemo = (myLamp.getLampSettings().dRand && myLamp.getMode()==LAMPMODE::MODE_DEMO);
-        String ctrlId = String(FPSTR(TCONST_0015)) + String(controls[i]->getId());
-        String ctrlName = i ? controls[i]->getName() : (myLamp.IsGlobalBrightness() ? FPSTR(TINTF_00C) : FPSTR(TINTF_00D));
+        const bool markRandom = isRandDemo && ctrl->getId()>0 && !isMicCtrl(ctrl);
+        String ctrlId(FPSTR(TCONST_0015));
+        ctrlId += ctrl->getId();
+        String ctrlName = i ? ctrl->getName() : (myLamp.IsGlobalBrightness() ? FPSTR(TINTF_00C) : FPSTR(TINTF_00D));
+        if(markRandom)
+            ctrlName = String(FPSTR(TINTF_0C9)) + ctrlName;
         switch(ctrlCaseType&0x0F){
             case CONTROL_TYPE::RANGE :
                 {
-                    if(isRandDemo && controls[i]->getId()>0 && !(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020))==1))
-                        ctrlName=String(FPSTR(TINTF_0C9))+ctrlName;
-                    int value = i ? controls[i]->getVal().toInt() : myLamp.getNormalizedLampBrightness();
+                    int value = i ? ctrl->getVal().toInt() : myLamp.getNormalizedLampBrightness();
                     if(isinterf) interf->range(
                         ctrlId
                         ,String(value)
-                        ,controls[i]->getMin()
-                        ,controls[i]->getMax()
-                        ,controls[i]->getStep()
+                        ,ctrl->getMin()
+                        ,ctrl->getMax()
+                        ,ctrl->getStep()
                         , ctrlName
                         , true);
 #ifdef EMBUI_USE_MQTT
-                    embui.publish(String(FPSTR(TCONST_008B)) + ctrlId, String(value), true);
+                    embui.publish(mqttPrefix + ctrlId, String(value), true);
 #endif
                 }
                 break;
             case CONTROL_TYPE::EDIT :
                 {
-                    String ctrlName = controls[i]->getName();
-                    if(isRandDemo && controls[i]->getId()>0 && !(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020))==1))
-                        ctrlName=String(FPSTR(TINTF_0C9))+ctrlName;
-                    
-                    if(isinterf) interf->text(String(FPSTR(TCONST_0015)) + String(controls[i]->getId())
-                    , controls[i]->getVal()
+                    if(!i) ctrlName = markRandom ? String(FPSTR(TINTF_0C9)) + ctrl->getName() : ctrl->getName();
+                    if(isinterf) interf->text(ctrlId
+                    , ctrl->getVal()
                     , ctrlName
                     , true
                     );
 #ifdef EMBUI_USE_MQTT
-                    embui.publish(String(FPSTR(TCONST_008B)) + ctrlId, controls[i]->getVal(), true);
+                    embui.publish(mqttPrefix + ctrlId, ctrl->getVal(), true);
 #endif
                     break;
                 }
             case CONTROL_TYPE::CHECKBOX :
                 {
-                    String ctrlName = controls[i]->getName();
-                    if(isRandDemo && controls[i]->getId()>0 && !(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020))==1))
-                        ctrlName=String(FPSTR(TINTF_0C9))+ctrlName;
-
-                    if(isinterf) interf->checkbox(String(FPSTR(TCONST_0015)) + String(controls[i]->getId())
-                    , controls[i]->getVal()
+                    if(!i) ctrlName = markRandom ? String(FPSTR(TINTF_0C9)) + ctrl->getName() : ctrl->getName();
+                    if(isinterf) interf->checkbox(ctrlId
+                    , ctrl->getVal()
                     , ctrlName
                     , true
                     );
 #ifdef EMBUI_USE_MQTT
-                    embui.publish(String(FPSTR(TCONST_008B)) + ctrlId, controls[i]->getVal(), true);
+                    embui.publish(mqttPrefix + ctrlId, ctrl->getVal(), true);
 #endif
                     break;
                 }
             case CONTROL_TYPE::SELECT :
                 {
-                    String ctrlName = controls[i]->getName();
-                    if(isRandDemo && controls[i]->getId()>0 && !(controls[i]->getId()==7 && controls[i]->getName().startsWith(FPSTR(TINTF_020))==1))
-                        ctrlName=String(FPSTR(TINTF_0C9))+ctrlName;
-                    
-                    if(isinterf) interf->select(String(FPSTR(TCONST_0015)) + String(controls[i]->getId())
-                    , controls[i]->getVal()
+                    if(!i) ctrlName = markRandom ? String(FPSTR(TINTF_0C9)) + ctrl->getName() : ctrl->getName();
+                    if(isinterf) interf->select(ctrlId
+                    , ctrl->getVal()
                     , ctrlName
                     , true
                     );
-                    String tmpS = controls[i]->getStep();
+                    String tmpS = ctrl->getStep();
                     tmpS.replace(F("'"),F("\"")); // так делать не красиво, но шопаделаешь...
                     // Пример массива: "[{'v':'1', 'l':'option1'},{'v':'2', 'l':'option2'},{'v':'3', 'l':'option3'}]"
                     // Альтернатива - укзать путь к ФС, например: "/folde1/folder2/" чи "/animations/"
@@ -910,13 +949,13 @@ void block_effects_param(Interface *interf, JsonObject *data){
                     interf->button_confirm(FPSTR(TCONST_00F3), "Delete selected animation");
                     }
 #ifdef EMBUI_USE_MQTT
-                    embui.publish(String(FPSTR(TCONST_008B)) + ctrlId, controls[i]->getVal(), true);
+                    embui.publish(mqttPrefix + ctrlId, ctrl->getVal(), true);
 #endif
                     break;
                 }
             default:
 #ifdef EMBUI_USE_MQTT
-                    embui.publish(String(FPSTR(TCONST_008B)) + ctrlId, controls[i]->getVal(), true);
+                    embui.publish(mqttPrefix + ctrlId, ctrl->getVal(), true);
 #endif
                 break;
         }
@@ -1066,8 +1105,7 @@ void set_effects_dynCtrl(Interface *interf, JsonObject *data){
             }
             if(task==ctrlsTask)
                 ctrlsTask = nullptr;
-            //TASK_RECYCLE;
-            delete task;
+            TASK_RECYCLE;
         },
         &ts,
         false
@@ -1187,15 +1225,19 @@ void block_effects_main(Interface *interf, JsonObject *data, bool fast=true){
         // Сначала подгрузим дефолтный список, а затем спустя время - подтянем имена из конфига
 
         //interf->option(String(myLamp.effects.getSelected()), myLamp.effects.getEffectName());
-        String effname((char *)0);
+        String effname;
+        effname.reserve(64);
         bool isEmptyHidden=false;
         MIC_SYMB;
         bool numList = myLamp.getLampSettings().numInList;
         while ((eff = myLamp.effects.getNextEffect(eff)) != nullptr) {
             if (eff->canBeSelected()) {
-                effname = EFF_NUMBER + FPSTR(T_EFFNAMEID[(uint8_t)eff->eff_nb]) + MIC_SYMBOL;
+                effname = "";
+                appendEffListNumber(effname, eff->eff_nb, numList);
+                effname += FPSTR(T_EFFNAMEID[(uint8_t)eff->eff_nb]);
+                effname += MIC_SYMBOL;
                 if(quicklist){
-                    quicklist->printf_P(PSTR("%s{\"label\":\"%s\",\"value\":\"%s\"}"), firsttime?"":",", effname.c_str(), String(eff->eff_nb).c_str());
+                    quicklist->printf_P(PSTR("%s{\"label\":\"%s\",\"value\":\"%u\"}"), firsttime?"":",", effname.c_str(), (unsigned)eff->eff_nb);
                     firsttime = false;
                 }
                 //interf->option(String(eff->eff_nb), effname);
@@ -1224,14 +1266,19 @@ void block_effects_main(Interface *interf, JsonObject *data, bool fast=true){
         LOG(println,F("DBG2: using slow Names generation"));
         bool isEmptyHidden=false;
         String effname((char *)0);
+        String name;
+        name.reserve(64);
         MIC_SYMB;
         bool numList = myLamp.getLampSettings().numInList;
         while ((eff = myLamp.effects.getNextEffect(eff)) != nullptr) {
             if (eff->canBeSelected()) {
                 myLamp.effects.loadeffname(effname, eff->eff_nb);
-                effname = EFF_NUMBER + effname + MIC_SYMBOL;
+                name = "";
+                appendEffListNumber(name, eff->eff_nb, numList);
+                name += effname;
+                name += MIC_SYMBOL;
                 if(quicklist){
-                    quicklist->printf_P(PSTR("%s{\"label\":\"%s\",\"value\":\"%s\"}"), firsttime?"":",", effname.c_str(), String(eff->eff_nb).c_str());
+                    quicklist->printf_P(PSTR("%s{\"label\":\"%s\",\"value\":\"%u\"}"), firsttime?"":",", name.c_str(), (unsigned)eff->eff_nb);
                     firsttime = false;
                 }
                 //interf->option(String(eff->eff_nb), effname);
@@ -4504,9 +4551,16 @@ String httpCallback(const String &param, const String &value, bool isset){
             }
         else if (cmdParam == FPSTR(CMD_TCONST_000C)) {
             LList<UIControl*>&controls = myLamp.effects.getControls();
-            for(int i=0; i<controls.size();i++){
-                if(value == String(controls[i]->getId())){
-                    result = String(F("[")) + controls[i]->getId() + String(F(",\"")) + (controls[i]->getId()==0 ? String(myLamp.getNormalizedLampBrightness()) : controls[i]->getVal()) + String(F("\"]"));
+            char idbuf[8];
+            for(int i=0, cnt=controls.size(); i<cnt; i++){
+                UIControl *ctrl = controls[i];
+                itoa(ctrl->getId(), idbuf, 10);
+                if(value == idbuf){
+                    result = F("[");
+                    result += ctrl->getId();
+                    result += F(",\"");
+                    result += (ctrl->getId()==0 ? String(myLamp.getNormalizedLampBrightness()) : ctrl->getVal());
+                    result += F("\"]");
 #ifdef EMBUI_USE_MQTT
                     embui.publish(String(FPSTR(TCONST_008B)) + FPSTR(TCONST_00D0), result, true);
 #endif
@@ -4518,52 +4572,58 @@ String httpCallback(const String &param, const String &value, bool isset){
             result = F("[");
             bool first=true;
             EffectListElem *eff = nullptr;
-            String effname((char *)0);
             while ((eff = myLamp.effects.getNextEffect(eff)) != nullptr) {
-                result = result + String(first ? F("") : F(",")) + eff->eff_nb;
+                if(!first) result += ',';
+                result += eff->eff_nb;
                 first=false;
             }
-            result = result + F("]");
+            result += ']';
         }
         else if (cmdParam == FPSTR(CMD_TCONST_0010))  {
             result = F("[");
             bool first=true;
             EffectListElem *eff = nullptr;
-            String effname((char *)0);
             while ((eff = myLamp.effects.getNextEffect(eff)) != nullptr) {
                 if (eff->canBeSelected()) {
-                    result = result + String(first ? F("") : F(",")) + eff->eff_nb;
+                    if(!first) result += ',';
+                    result += eff->eff_nb;
                     first=false;
                 }
             }
-            result = result + F("]");
+            result += ']';
         }
         else if (cmdParam == FPSTR(CMD_TCONST_0011))  {
             result = F("[");
             bool first=true;
             EffectListElem *eff = nullptr;
-            String effname((char *)0);
             while ((eff = myLamp.effects.getNextEffect(eff)) != nullptr) {
                 if (eff->isFavorite()) {
-                    result = result + String(first ? F("") : F(",")) + eff->eff_nb;
+                    if(!first) result += ',';
+                    result += eff->eff_nb;
                     first=false;
                 }
             }
-            result = result + F("]");
+            result += ']';
         }
         else if (cmdParam == FPSTR(CMD_TCONST_0012))  {
             String effname((char *)0);
-            uint16_t effnum = String(value).toInt();
+            uint16_t effnum = value.toInt();
             effnum = effnum ? effnum : myLamp.effects.getCurrent();
             myLamp.effects.loadeffname(effname, effnum);
-            result = String(F("["))+effnum+String(",\"")+effname+String("\"]");
+            result = F("[");
+            result += effnum;
+            result += F(",\"");
+            result += effname;
+            result += F("\"]");
         }
         else if (cmdParam == FPSTR(CMD_TCONST_0013))  {
-            String effname((char *)0);
-            uint16_t effnum = String(value).toInt();
+            uint16_t effnum = value.toInt();
             effnum = effnum ? effnum : myLamp.effects.getCurrent();
-            effname = FPSTR(T_EFFNAMEID[(uint8_t)effnum]);
-            result = String(F("["))+effnum+String(",\"")+effname+String("\"]");
+            result = F("[");
+            result += effnum;
+            result += F(",\"");
+            result += FPSTR(T_EFFNAMEID[(uint8_t)effnum]);
+            result += F("\"]");
         }
         else if (cmdParam == FPSTR(CMD_TCONST_0014)) { action = RA_EFF_NEXT;  remote_action(action, value.c_str(), NULL); }
         else if (cmdParam == FPSTR(CMD_TCONST_0015)) { action = RA_EFF_PREV;  remote_action(action, value.c_str(), NULL); }
@@ -4650,19 +4710,25 @@ String httpCallback(const String &param, const String &value, bool isset){
         }
         else if (cmdParam == FPSTR(CMD_TCONST_0012))  {
             String effname((char *)0);
-            uint16_t effnum=String(value).toInt();
+            uint16_t effnum = value.toInt();
             myLamp.effects.loadeffname(effname, effnum);
-            result = String(F("["))+effnum+String(",\"")+effname+String("\"]");
+            result = F("[");
+            result += effnum;
+            result += F(",\"");
+            result += effname;
+            result += F("\"]");
 #ifdef EMBUI_USE_MQTT
             embui.publish(String(FPSTR(TCONST_008B)) + param, result, true);
 #endif
             return result;
         }
         else if (cmdParam == FPSTR(CMD_TCONST_0013))  {
-            String effname((char *)0);
-            uint16_t effnum=String(value).toInt();
-            effname = FPSTR(T_EFFNAMEID[(uint8_t)effnum]);
-            result = String(F("["))+effnum+String(",\"")+effname+String("\"]");
+            uint16_t effnum = value.toInt();
+            result = F("[");
+            result += effnum;
+            result += F(",\"");
+            result += FPSTR(T_EFFNAMEID[(uint8_t)effnum]);
+            result += F("\"]");
 #ifdef EMBUI_USE_MQTT
             embui.publish(String(FPSTR(TCONST_008B)) + param, result, true);
 #endif

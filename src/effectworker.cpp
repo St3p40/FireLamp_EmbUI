@@ -440,7 +440,7 @@ void EffectWorker::removeConfig(const uint16_t nb, const char *folder)
 
 void EffectWorker::effectsReSort(SORT_TYPE _effSort)
 {
-  LOG(printf_P,PSTR("*Пересортировка эффектов*: %d\n"), _effSort);
+  LOG(printf_P,PSTR("*Effects re-sort*: %d\n"), _effSort);
   if(_effSort==255) _effSort=effSort; // Для дефолтного - берем с конфига
 
   switch(_effSort){
@@ -1085,7 +1085,7 @@ void EffectWorker::makeIndexFileFromList(const char *folder, bool forceRemove)
   }
   indexFile.print("]");
   indexFile.close();
-  LOG(println,F("Индекс эффектов обновлен!"));
+  LOG(println,F("Effects index updated!"));
   effectsReSort(); // восстанавливаем сортировку
 }
 
@@ -1161,7 +1161,7 @@ void EffectWorker::makeIndexFileFromFS(const char *fromfolder,const char *tofold
   indexFile.print("]");
   indexFile.close();
 
-  LOG(println,F("Индекс эффектов создан из FS!"));
+  LOG(println,F("Effects index created from FS!"));
   if(!skipInit)
     initDefault(tofolder); // перечитаем вновь созданный индекс
 }
@@ -1587,7 +1587,7 @@ void EffectWorker::setSelected(uint16_t effnb, const bool move)
 }
 
 void EffectWorker::moveSelected(bool force){
-  LOG(printf_P,PSTR("Синхронизация списков! Эффект: %d\n"), selEff);
+  LOG(printf_P,PSTR("List sync! Effect: %d\n"), selEff);
   if(curEff != selEff || force){
     workerset(selEff, true, force);
     curEff = selEff;

@@ -104,7 +104,7 @@ void LAMP::handle()
       return;
   wait_handlers = millis();
 
-  EVERY_N_SECONDS(15){
+  EVERY_N_SECONDS(60){
     lampState.freeHeap = ESP.getFreeHeap();
 #ifdef ESP8266
     lampState.HeapFragmentation = ESP.getHeapFragmentation();

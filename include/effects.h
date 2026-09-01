@@ -729,6 +729,13 @@ private:
     const uint16_t amountDrops = (HEIGHT + WIDTH) / 6;
     const uint16_t maxRadius = WIDTH + HEIGHT;
 
+    const uint8_t _scale = 32;
+    const uint8_t _speed = 3;
+
+    uint16_t x;
+    uint16_t y;
+    uint16_t z;
+    uint8_t noise[2][WIDTH + 1][HEIGHT + 1];
     struct{
         float posX;
         float posY;
@@ -967,36 +974,6 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-//===== Ефект Стрілки ==========================//
-// https://github.com/vvip-68/GyverPanelWiFi/
-class EffectArrows : public EffectCalc {
-private:
-    float arrow_x[4], arrow_y[4], stop_x[4], stop_y[4];
-    byte arrow_direction;             // 0x01 - слева направо; 0x02 - снизу вверх; 0х04 - справа налево; 0х08 - сверху вниз
-    byte arrow_mode, arrow_mode_orig; // 0 - по очереди все варианты
-                                      // 1 - по очереди от края до края экрана;
-                                      // 2 - одновременно по горизонтали навстречу к ентру, затем одновременно по вертикали навстречу к центру
-                                      // 3 - одновременно все к центру
-                                      // 4 - по два (горизонталь / вертикаль) все от своего края к противоположному, стрелки смещены от центра на 1/3
-                                      // 5 - одновременно все от своего края к противоположному, стрелки смещены от центра на 1/3
-    bool arrow_complete, arrow_change_mode;
-    byte arrow_hue[4];
-    byte arrow_play_mode_count[6];      // Сколько раз проигрывать полностью каждый режим если вариант 0 - текущий счетчик
-    byte arrow_play_mode_count_orig[6]; // Сколько раз проигрывать полностью каждый режим если вариант 0 - исходные настройки
-    uint8_t _scale;
-    float speedFactor;
-    void arrowSetupForMode(byte mode, bool change);
-    void arrowSetup_mode1();
-    void arrowSetup_mode2();
-    //void arrowSetup_mode3(;)
-    void arrowSetup_mode4();
-
-    String setDynCtrl(UIControl*_val) override;
-public:
-    void load() override;
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
-};
-
 //===== Ефект Притягування =====================//
 // https://github.com/pixelmatix/aurora/blob/master/PatternAttract.h
 // причесав kostyamat
@@ -1222,7 +1199,13 @@ class EffectSmokeballs: public EffectCalc {
         uint8_t maxMin;
     }wave[WIDTH];
     float speedFactor;
-    
+
+    uint8_t noiseShift = 0;
+    uint8_t noise3d[NUM_LAYERS][WIDTH][HEIGHT];
+    uint32_t e_x[NUM_LAYERS], e_y[NUM_LAYERS], e_z[NUM_LAYERS];
+    uint32_t e_scaleX[NUM_LAYERS], e_scaleY[NUM_LAYERS];
+    void FillNoise(int8_t layer);
+
     void shiftUp();
     void regen();
     String setDynCtrl(UIControl*_val) override;
@@ -1325,15 +1308,19 @@ class EffectOscilator: public EffectCalc {
 
     oscillatingCell oscillatingWorld[WIDTH][HEIGHT];
 
+    CRGBPalette16 genPalette;
+    uint8_t genHue = 0;
+    void buildGenPalette();
+
     void drawPixelXYFseamless(float x, float y, CRGB color);
     int redNeighbours(uint8_t x, uint8_t y);
     int blueNeighbours(uint8_t x, uint8_t y);
     int greenNeighbours(uint8_t x, uint8_t y);
     void setCellColors(uint8_t x, uint8_t y);
-    //String setDynCtrl(UIControl*_val) override;
   public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
     void load() override;
+    String setDynCtrl(UIControl*_val) override;
 };
 
 //===== Ефект Шторм ============================// 
@@ -1950,22 +1937,6 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-//===== Ефект Дим ==============================//
-// based on code by @Stepko (c) 23/12/2021
-class EffectSmoker : public EffectCalc {
-private:
-    byte color, saturation;
-    byte _scale = 30, glitch;
-	float speedFactor;
-    float t;
-
-    String setDynCtrl(UIControl*_val) override;
-
-public:
-
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
-};
-
 //===== Ефект Міраж ============================//
 // based on cod by @Stepko (c) 23/12/2021
 class EffectMirage : public EffectCalc {
@@ -2124,9 +2095,7 @@ public:
 class EffectFlower : public EffectCalc {
 	private:
         uint16_t mov;
-        int8_t zD;
-        int8_t zF;
-        uint8_t noise3d[WIDTH][HEIGHT];
+        uint8_t noise3d[NUM_LAYERS][WIDTH][HEIGHT];
         uint32_t noise32_x;
         uint32_t noise32_y;
         uint32_t noise32_z;
@@ -2135,8 +2104,6 @@ class EffectFlower : public EffectCalc {
         uint8_t noisesmooth;
 
         void NoiseFill();
-        void MoveFractionalNoiseX(int8_t amplitude = 1, float shift = 0);
-        void MoveFractionalNoiseY(int8_t amplitude = 1, float shift = 0);
 	public:
         void load() override;
         bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;

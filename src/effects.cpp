@@ -2621,51 +2621,63 @@ bool EffectPicasso::metaBallsRoutine(CRGB *leds, EffectWorker *param){
 
   GradientPalette *myPal = (*palettes)[pidx];
 
- // сила возмущения
-  unsigned mx = EffectMath::fmap(scale, 0U, 255U, 200U, 80U);
-  // радиус возмущения
-  unsigned sc = EffectMath::fmap(scale, 0U, 255U, 12, 7);
-  // отсечка расчетов (оптимизация скорости)
-  unsigned tr = sc * 2 / 3;
+  const float sc = EffectMath::fmap(scale, 0U, 255U, 12, 7); 
+  const float r2 = sc * sc;
 
   for (unsigned x = 0; x < WIDTH; x++) {
     for (unsigned y = 0; y < HEIGHT; y++) {
-      float sum = 0;
-      for (unsigned i = 0; i < numParticles; i += 2) {
-        Particle *p1 = (Particle *)&particles[i];
-        if (effId == 1){
-            sum += EffectMath::distance(x, y, p1->position_x, p1->position_y);
-        }
-        else {
-          if ((unsigned)abs(x - p1->position_x) > tr || (unsigned)abs(y - p1->position_y) > tr) continue;
-          float d = EffectMath::distance(x, y, p1->position_x, p1->position_y);
-        if (d < 2) {
-          // дополнительно подсвечиваем сердцевину
-          sum += EffectMath::mapcurve(d, 0, 2, 255, mx, EffectMath::InQuad);
-        } else if (d < sc) {
-          // ореол резко демпфируем, во избежание размазывания и пересвета
-          sum += EffectMath::mapcurve(d, 2, sc, mx, 0, EffectMath::OutQuart);
-        }
+      uint8_t v = 0;
 
-        if (sum >= 255) { sum = 255; break; }
+      switch (effId) {
+
+      case 1: {
+          float sum = 0;
+          for (unsigned i = 0; i < numParticles; i += 2) {
+            Particle *p = &particles[i];
+            float dx = x - p->position_x, dy = y - p->position_y;
+            sum += EffectMath::sqrt(dx * dx + dy * dy);
+          }
+          sum = map(numParticles, 6, 20, 512, 1024) / (sum == 0 ? 1 : sum);
+          if (sum > 0 && sum < 60) sum *= 9; else sum = 0;
+          v = (uint8_t)sum;
+        }
+        break;
+
+      case 2: {
+          float m1 = 1e30f, m2 = 1e30f;
+          for (unsigned i = 0; i < numParticles; i += 2) {
+            Particle *p = &particles[i];
+            float dx = x - p->position_x, dy = y - p->position_y;
+            float d2 = dx * dx + dy * dy;
+            if (d2 < m1)      { m2 = m1; m1 = d2; }
+            else if (d2 < m2) { m2 = d2; }
+          }
+          float e = (EffectMath::sqrt(m2) - EffectMath::sqrt(m1)) * 16.f;
+          v = (uint8_t)(e < 0.f ? 0.f : (e > 255.f ? 255.f : e));
+        }
+        break;
+
+      default: {
+          float f = 0;
+          for (unsigned i = 0; i < numParticles; i += 2) {
+            Particle *p = &particles[i];
+            float dx = x - p->position_x, dy = y - p->position_y;
+            float d2 = dx * dx + dy * dy;
+            float q = r2 / (d2 < 1.f ? 1.f : d2);
+            f += q * q;
+          }
+          v = (uint8_t)(255.f * f / (1.f + f));
+        }
+        break;
       }
-      }
-      if(effId == 1){
-        sum = map(numParticles, 6, 20, 512, 1024) / (sum==0?1:sum);
-        if (sum > 0 and sum < 60)
-          sum *= 9;
-        else
-          sum = 0;
-      }
-      CRGB color = myPal->GetColor((uint8_t)sum, 255);
-      EffectMath::drawPixelXY(x, y, color);
-      }
-  }
-  if(effId == 1){
-    for (unsigned i = 0; i < numParticles; i += 2) {
-      Particle *p1 = (Particle *)&particles[i];
-      EffectMath::drawPixelXYF(p1->position_x, p1->position_y, CRGB::White);
+
+      EffectMath::drawPixelXY(x, y, myPal->GetColor(v, 255));
     }
+  }
+
+  if (effId == 1) {
+    for (unsigned i = 0; i < numParticles; i += 2)
+      EffectMath::drawPixelXYF(particles[i].position_x, particles[i].position_y, CRGB::White);
   }
 
   return true;
@@ -3093,41 +3105,81 @@ void EffectAquarium::nDrops(uint8_t bri)
   EffectMath::blur2d(leds, WIDTH, HEIGHT, 128);
 }
 
-void EffectAquarium::nGlare(uint8_t bri) {
-  for(uint16_t i = 0; i < amountDrops; i++)
-  {
-    drops[i].posX += drops[i].vx;
-    drops[i].posY += drops[i].vy;
-
-    if (drops[i].posX < 0) { drops[i].posX = 0; drops[i].vx = -drops[i].vx; }
-    if (drops[i].posX > (WIDTH-1)) { drops[i].posX = (WIDTH-1); drops[i].vx = -drops[i].vx; }
-    if (drops[i].posY < 0) { drops[i].posY = 0; drops[i].vy = -drops[i].vy; }
-    if (drops[i].posY > (HEIGHT-1)) { drops[i].posY = (HEIGHT-1); drops[i].vy = -drops[i].vy; }
+void EffectAquarium::nGlare(uint8_t bri)
+{
+  for(uint8_t i = 0; i < 4; i++){
+  fillNoise();//x3 speed (idk, it's better when it's faster)
   }
-
-  for (uint16_t x = 0; x < WIDTH; x++)
+  memset8(&noise[1][0][0],255,(WIDTH+1)*(HEIGHT+1)-1);
+  for (uint8_t x = 0; x < WIDTH; x++)
   {
-    for (uint16_t y = 0; y < HEIGHT; y++)
+    for (uint8_t y = 0; y < HEIGHT; y++)
     {
-      float m_dist1 = 0x7F7FFFFF;
-      float m_dist2 = 0x7F7FFFFF;
-      for (uint16_t i = 0; i < amountDrops; i++) {
-        float dx = drops[i].posX - x;
-        float dy = drops[i].posY - y;
-        float d2 = pow(dx, 2) + pow(dy, 2);
-
-        if (d2 < m_dist1) {
-          m_dist2 = m_dist1;
-          m_dist1 = d2;
-        } else if (d2 < m_dist2) {
-          m_dist2 = d2;
-        }
-      }
-      uint8_t val = constrain(((sqrt(m_dist2) - sqrt(m_dist1))) * 128, 0, 255);
-      if(!satur) val = ~val;
-      EffectMath::drawPixelXY(x, y, CHSV(hue, val, 255));
+      uint8_t n0 = noise[0][x][y];
+      uint8_t n1 = noise[0][x + 1][y];
+      uint8_t n2 = noise[0][x][y + 1];
+      int8_t xl = n0 - n1;
+      int8_t yl = n0 - n2;
+      uint16_t xa = (x << 8) + ((xl * ((n0 + n1) << 1))>>1);
+      uint16_t ya = (y << 8) + ((yl * ((n0 + n2) << 1))>>1);
+      wu(xa, ya);
     }
   }
+  for (uint8_t i = 0; i < WIDTH; i++)
+  {
+    for (uint8_t j = 0; j < HEIGHT; j++)
+    {
+      uint8_t col = noise[1][i][j];
+      EffectMath::drawPixelXY(i, j,nblend(EffectMath::getPixel(i,j),  CHSV(hue, map(col, 0, 255, ~(satur*255), (satur*255)), 255),64));
+    }
+  }
+}
+
+void EffectAquarium::fillNoise()
+{
+  uint8_t dataSmoothing = 200 - (_speed << 2);
+  for (uint8_t i = 0; i < WIDTH + 1; i++)
+  {
+    uint32_t ioffset = _scale * i;
+    for (uint8_t j = 0; j < HEIGHT + 1; j++)
+    {
+      uint32_t joffset = _scale * j;
+
+      uint8_t data = inoise8(x + ioffset, y + joffset, z);
+
+      data = qsub8(data, 16);
+      data = qadd8(data, scale8(data, 39));
+
+      data = scale8(noise[0][i][j], dataSmoothing) + scale8(data, 256 - dataSmoothing);
+
+      noise[0][i][j] = data;
+    }
+  }
+  z += _speed;
+  x += _speed >> 3;
+  y -= _speed >> 4;
+}
+
+void EffectAquarium::wu(int16_t x, int16_t y)
+{
+  uint8_t xx = x & 0xff, yy = y & 0xff, ix = 255 - xx, iy = 255 - yy;
+#define WU_WEIGHT(a, b) ((uint8_t)(((a) * (b) + (a) + (b)) >> 8))
+  uint8_t wu[4] = {
+      WU_WEIGHT(ix, iy),
+      WU_WEIGHT(xx, iy),
+      WU_WEIGHT(ix, yy),
+      WU_WEIGHT(xx, yy)};
+
+  for (uint8_t i = 0; i < 4; i++)
+  {
+    uint8_t xn = (x >> 8) + (i & 1);
+    uint8_t yn = (y >> 8) + ((i >> 1) & 1);
+    if (xn >= 0 && xn < WIDTH + 1 && yn >= 0 && yn < HEIGHT + 1)
+    {
+      noise[1][xn][yn] = constrain(sub8(noise[1][xn][yn], wu[i]), 15, 255);
+    }
+  }
+#undef WU_WEIGHT
 }
 
 bool EffectAquarium::run(CRGB *leds, EffectWorker *param)
@@ -4098,361 +4150,6 @@ bool EffectPatterns::patternsRoutine(CRGB *leds, EffectWorker *param)
   return true;
 }
 
-//===== Ефект Стрілки ==========================//
-// https://github.com/vvip-68/GyverPanelWiFi/
-void EffectArrows::load(){
-    myLamp.clear();
-    arrow_complete = false;
-    arrow_mode_orig = _scale-1;
-    arrow_mode = arrow_mode_orig == 0 ? random8(1,5) : arrow_mode_orig;
-    arrow_play_mode_count_orig[0] = 0;
-    arrow_play_mode_count_orig[1] = 4;  // 4 фазы - все стрелки показаны по кругу один раз - переходить к следующему ->
-    arrow_play_mode_count_orig[2] = 4;  // 2 фазы - гориз к центру (1), затем верт к центру (2) - обе фазы повторить по 2 раза -> 4
-    arrow_play_mode_count_orig[3] = 4;  // 1 фаза - все к центру (1) повторить по 4 раза -> 4
-    arrow_play_mode_count_orig[4] = 4;  // 2 фазы - гориз к центру (1), затем верт к центру (2) - обе фазы повторить по 2 раза -> 4
-    arrow_play_mode_count_orig[5] = 4;  // 1 фаза - все сразу (1) повторить по 4 раза -> 4
-    for (byte i=0; i<6; i++) {
-      arrow_play_mode_count[i] = arrow_play_mode_count_orig[i];
-    }
-    arrowSetupForMode(arrow_mode, true);
-}
-
-// !++
-String EffectArrows::setDynCtrl(UIControl*_val){
-  if(_val->getId()==1) { speedFactor = ((float)EffectCalc::setDynCtrl(_val).toInt() / 768.0 + 0.15)*EffectCalc::speedfactor; }
-  else if(_val->getId()==3) { _scale = EffectCalc::setDynCtrl(_val).toInt(); load();}
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  return String();
-}
-
-bool EffectArrows::run(CRGB *leds, EffectWorker *param) {
-  if (_scale == 1) {
-    EVERY_N_SECONDS((3000U / speed))
-    {
-      load();
-    }
-  }
-
-  myLamp.clear();
-
-  CHSV color;
-  // движение стрелки - cлева направо
-  if ((arrow_direction & 0x01) > 0) {
-    color = CHSV(arrow_hue[0], 255, 255);
-    for (float x = 0; x <= 7; x+=0.33) {
-      for (byte y = 0; y <= x; y++) {
-        if (arrow_x[0] - x >= 0 && arrow_x[0] - x <= stop_x[0]) {
-          CHSV clr = (x < 4 || (x >= 4 && y < 2)) ? color : CHSV(0,0,0);
-          EffectMath::sDrawPixelXYF_X(arrow_x[0] - x, arrow_y[0] - y, clr);
-          EffectMath::sDrawPixelXYF_X(arrow_x[0] - x, arrow_y[0] + y, clr);
-        }
-      }
-    }
-    arrow_x[0]+= speedFactor;
-  }
-  // движение стрелки - cнизу вверх
-  if ((arrow_direction & 0x02) > 0) {
-    color = CHSV(arrow_hue[1], 255, 255);
-    for (float y = 0; y <= 7; y+=0.33) {
-      for (byte x = 0; x <= y; x++) {
-        if (arrow_y[1] - y >= 0 && arrow_y[1] - y <= stop_y[1]) {
-          CHSV clr = (y < 4 || (y >= 4 && x < 2)) ? color : CHSV(0,0,0);
-          EffectMath::sDrawPixelXYF_Y(arrow_x[1] - x, arrow_y[1] - y, clr);
-          EffectMath::sDrawPixelXYF_Y(arrow_x[1] + x, arrow_y[1] - y, clr);
-        }
-      }
-    }
-    arrow_y[1]+= speedFactor;
-  }
-  // движение стрелки - cправа налево
-  if ((arrow_direction & 0x04) > 0) {
-    color = CHSV(arrow_hue[2], 255, 255);
-    for (float x = 0; x <= 7; x+=0.33) {
-      for (byte y = 0; y <= x; y++) {
-        if (arrow_x[2] + x >= stop_x[2] && arrow_x[2] + x < WIDTH) {
-          CHSV clr = (x < 4 || (x >= 4 && y < 2)) ? color : CHSV(0,0,0);
-          EffectMath::sDrawPixelXYF_X(arrow_x[2] + x, arrow_y[2] - y, clr);
-          EffectMath::sDrawPixelXYF_X(arrow_x[2] + x, arrow_y[2] + y, clr);
-        }
-      }
-    }
-    arrow_x[2]-= speedFactor;
-  }
-  // движение стрелки - cверху вниз
-  if ((arrow_direction & 0x08) > 0) {
-    color = CHSV(arrow_hue[3], 255, 255);
-    for (float y = 0; y <= 7; y+=0.33) {
-      for (byte x = 0; x <= y; x++) {
-        if (arrow_y[3] + y >= stop_y[3] && arrow_y[3] + y < HEIGHT) {
-          CHSV clr = (y < 4 || (y >= 4 && x < 2)) ? color : CHSV(0,0,0);
-          EffectMath::sDrawPixelXYF_Y(arrow_x[3] - x, arrow_y[3] + y, clr);
-          EffectMath::sDrawPixelXYF_Y(arrow_x[3] + x, arrow_y[3] + y, clr);
-        }
-      }
-    }
-    arrow_y[3]-= speedFactor;
-  }
-  // Проверка завершения движения стрелки, переход к следующей фазе или режиму
-  switch (arrow_mode) {
-
-    case 1:
-      // Последовательно - слева-направо -> снизу вверх -> справа налево -> сверху вниз и далее по циклу
-      // В каждый сомент времени сктивна только одна стрелка, если она дошла до края - переключиться на следующую и задать ее начальные координаты
-      arrow_complete = false;
-      switch (arrow_direction) {
-        case 1: arrow_complete = arrow_x[0] > stop_x[0]; break;
-        case 2: arrow_complete = arrow_y[1] > stop_y[1]; break;
-        case 4: arrow_complete = arrow_x[2] < stop_x[2]; break;
-        case 8: arrow_complete = arrow_y[3] < stop_y[3]; break;
-      }
-
-      arrow_change_mode = false;
-      if (arrow_complete) {
-        arrow_direction = (arrow_direction << 1) & 0x0F;
-        if (arrow_direction == 0) arrow_direction = 1;
-        if (arrow_mode_orig == 0) {
-          arrow_play_mode_count[1]--;
-          if (arrow_play_mode_count[1] == 0) {
-            arrow_play_mode_count[1] = arrow_play_mode_count_orig[1];
-            arrow_mode = random8(1, 5);
-            arrow_change_mode = true;
-          }
-        }
-
-        arrowSetupForMode(arrow_mode, arrow_change_mode);
-      }
-      break;
-
-    case 2:
-      // Одновременно горизонтальные навстречу до половины экрана
-      // Затем одновременно вертикальные до половины экрана. Далее - повторять
-      arrow_complete = false;
-      switch (arrow_direction) {
-        case  5: arrow_complete = arrow_x[0] > stop_x[0]; break;   // Стрелка слева и справа встречаются в центре одновременно - проверять только стрелку слева
-        case 10: arrow_complete = arrow_y[1] > stop_y[1]; break;   // Стрелка снизу и сверху встречаются в центре одновременно - проверять только стрелку снизу
-      }
-
-      arrow_change_mode = false;
-      if (arrow_complete) {
-        arrow_direction = arrow_direction == 5 ? 10 : 5;
-        if (arrow_mode_orig == 0) {
-          arrow_play_mode_count[2]--;
-          if (arrow_play_mode_count[2] == 0) {
-            arrow_play_mode_count[2] = arrow_play_mode_count_orig[2];
-            arrow_mode = random8(1,5);
-            arrow_change_mode = true;
-          }
-        }
-
-        arrowSetupForMode(arrow_mode, arrow_change_mode);
-      }
-      break;
-
-    case 3:
-      // Одновременно со всех сторон к центру
-      // Завершение кадра режима - когда все стрелки собрались в центре.
-      // Проверять стрелки по самой длинной стороне
-      if (WIDTH >= HEIGHT)
-        arrow_complete = arrow_x[0] > stop_x[0];
-      else
-        arrow_complete = arrow_y[1] > stop_y[1];
-
-      arrow_change_mode = false;
-      if (arrow_complete) {
-        if (arrow_mode_orig == 0) {
-          arrow_play_mode_count[3]--;
-          if (arrow_play_mode_count[3] == 0) {
-            arrow_play_mode_count[3] = arrow_play_mode_count_orig[3];
-            arrow_mode = random8(1,5);
-            arrow_change_mode = true;
-          }
-        }
-
-        arrowSetupForMode(arrow_mode, arrow_change_mode);
-      }
-      break;
-
-    case 4:
-      // Одновременно слева/справа от края до края со смещением горизонтальной оси на 1/3 высоты, далее
-      // одновременно снизу/сверху от края до края со смещением вертикальной оси на 1/3 ширины
-      // Завершение кадра режима - когда все стрелки собрались в центре.
-      // Проверять стрелки по самой длинной стороне
-      switch (arrow_direction) {
-        case  5: arrow_complete = arrow_x[0] > stop_x[0]; break;   // Стрелка слева и справа движутся и достигают края одновременно - проверять только стрелку слева
-        case 10: arrow_complete = arrow_y[1] > stop_y[1]; break;   // Стрелка снизу и сверху движутся и достигают края одновременно - проверять только стрелку снизу
-      }
-
-      arrow_change_mode = false;
-      if (arrow_complete) {
-        arrow_direction = arrow_direction == 5 ? 10 : 5;
-        if (arrow_mode_orig == 0) {
-          arrow_play_mode_count[4]--;
-          if (arrow_play_mode_count[4] == 0) {
-            arrow_play_mode_count[4] = arrow_play_mode_count_orig[4];
-            arrow_mode = random8(1,5);
-            arrow_change_mode = true;
-          }
-        }
-
-        arrowSetupForMode(arrow_mode, arrow_change_mode);
-      }
-      break;
-
-    case 5:
-      // Одновременно со всех сторон от края до края со смещением горизонтальной оси на 1/3 высоты, далее
-      // Проверять стрелки по самой длинной стороне
-      if (WIDTH >= HEIGHT)
-        arrow_complete = arrow_x[0] > stop_x[0];
-      else
-        arrow_complete = arrow_y[1] > stop_y[1];
-
-      arrow_change_mode = false;
-      if (arrow_complete) {
-        if (arrow_mode_orig == 0) {
-          arrow_play_mode_count[5]--;
-          if (arrow_play_mode_count[5] == 0) {
-            arrow_play_mode_count[5] = arrow_play_mode_count_orig[5];
-            arrow_mode = random8(1,5);
-            arrow_change_mode = true;
-          }
-        }
-
-        arrowSetupForMode(arrow_mode, arrow_change_mode);
-      }
-      break;
-  }
-  return true;
-}
-
-void EffectArrows::arrowSetupForMode(byte mode, bool change) {
-    switch (mode) {
-      case 1:
-        if (change) arrow_direction = 1;
-        arrowSetup_mode1();    // От края матрицы к краю, по центру гориз и верт
-        break;
-      case 2:
-        if (change) arrow_direction = 5;
-        arrowSetup_mode2();    // По центру матрицы (гориз / верт) - ограничение - центр матрицы
-        break;
-      case 3:
-        if (change) arrow_direction = 15;
-        arrowSetup_mode2();    // как и в режиме 2 - по центру матрицы (гориз / верт) - ограничение - центр матрицы
-        break;
-      case 4:
-        if (change) arrow_direction = 5;
-        arrowSetup_mode4();    // От края матрицы к краю, верт / гориз
-        break;
-      case 5:
-        if (change) arrow_direction = 15;
-        arrowSetup_mode4();    // как и в режиме 4 от края матрицы к краю, на 1/3
-        break;
-    }
-}
-void EffectArrows::arrowSetup_mode1() {
-  // Слева направо
-  if ((arrow_direction & 0x01) > 0) {
-    arrow_hue[0] = random8();
-    arrow_x[0] = 0;
-    arrow_y[0] = HEIGHT / 2;
-    stop_x [0] = WIDTH + 7;      // скрывается за экраном на 7 пикселей
-    stop_y [0] = 0;              // неприменимо
-  }
-  // снизу вверх
-  if ((arrow_direction & 0x02) > 0) {
-    arrow_hue[1] = random8();
-    arrow_y[1] = 0;
-    arrow_x[1] = WIDTH / 2;
-    stop_y [1] = HEIGHT + 7;     // скрывается за экраном на 7 пикселей
-    stop_x [1] = 0;              // неприменимо
-  }
-  // справа налево
-  if ((arrow_direction & 0x04) > 0) {
-    arrow_hue[2] = random8();
-    arrow_x[2] = EffectMath::getmaxWidthIndex();
-    arrow_y[2] = HEIGHT / 2;
-    stop_x [2] = -7;             // скрывается за экраном на 7 пикселей
-    stop_y [2] = 0;              // неприменимо
-  }
-  // сверху вниз
-  if ((arrow_direction & 0x08) > 0) {
-    arrow_hue[3] = random8();
-    arrow_y[3] = EffectMath::getmaxHeightIndex();
-    arrow_x[3] = WIDTH / 2;
-    stop_y [3] = -7;             // скрывается за экраном на 7 пикселей
-    stop_x [3] = 0;              // неприменимо
-  }
-}
-
-void EffectArrows::arrowSetup_mode2() {
-  // Слева направо до половины экрана
-  if ((arrow_direction & 0x01) > 0) {
-    arrow_hue[0] = random8();
-    arrow_x[0] = 0;
-    arrow_y[0] = HEIGHT / 2;
-    stop_x [0] = WIDTH / 2 - 1;  // до центра экрана
-    stop_y [0] = 0;              // неприменимо
-  }
-  // снизу вверх до половины экрана
-  if ((arrow_direction & 0x02) > 0) {
-    arrow_hue[1] = random8();
-    arrow_y[1] = 0;
-    arrow_x[1] = WIDTH / 2;
-    stop_y [1] = HEIGHT / 2 - 1; // до центра экрана
-    stop_x [1] = 0;              // неприменимо
-  }
-  // справа налево до половины экрана
-  if ((arrow_direction & 0x04) > 0) {
-    arrow_hue[2] = random8();
-    arrow_x[2] = EffectMath::getmaxWidthIndex();
-    arrow_y[2] = HEIGHT / 2;
-    stop_x [2] = WIDTH / 2;      // до центра экрана
-    stop_y [2] = 0;              // неприменимо
-  }
-  // сверху вниз до половины экрана
-  if ((arrow_direction & 0x08) > 0) {
-    arrow_hue[3] = random8();
-    arrow_y[3] = EffectMath::getmaxHeightIndex();
-    arrow_x[3] = WIDTH / 2;
-    stop_y [3] = HEIGHT / 2;     // до центра экрана
-    stop_x [3] = 0;              // неприменимо
-  }
-}
-
-void EffectArrows::arrowSetup_mode4() {
-  // Слева направо
-  if ((arrow_direction & 0x01) > 0) {
-    arrow_hue[0] = random8();
-    arrow_x[0] = 0;
-    arrow_y[0] = (HEIGHT / 3) * 2;
-    stop_x [0] = WIDTH + 7;      // скрывается за экраном на 7 пикселей
-    stop_y [0] = 0;              // неприменимо
-  }
-  // снизу вверх
-  if ((arrow_direction & 0x02) > 0) {
-    arrow_hue[1] = random8();
-    arrow_y[1] = 0;
-    arrow_x[1] = (WIDTH / 3) * 2;
-    stop_y [1] = HEIGHT + 7;     // скрывается за экраном на 7 пикселей
-    stop_x [1] = 0;              // неприменимо
-  }
-  // справа налево
-  if ((arrow_direction & 0x04) > 0) {
-    arrow_hue[2] = random8();
-    arrow_x[2] = EffectMath::getmaxWidthIndex();
-    arrow_y[2] = HEIGHT / 3;
-    stop_x [2] = -7;             // скрывается за экраном на 7 пикселей
-    stop_y [2] = 0;              // неприменимо
-  }
-  // сверху вниз
-  if ((arrow_direction & 0x08) > 0) {
-    arrow_hue[3] = random8();
-    arrow_y[3] = EffectMath::getmaxHeightIndex();
-    arrow_x[3] = WIDTH / 3;
-    stop_y [3] = -7;             // скрывается за экраном на 7 пикселей
-    stop_x [3] = 0;              // неприменимо
-  }
-}
-
 //===== Ефект Притягування =====================//
 // https://github.com/pixelmatix/aurora/blob/master/PatternAttract.h
 // причесав kostyamat
@@ -4842,6 +4539,7 @@ void EffectPopcorn::load() {
 String EffectSmokeballs::setDynCtrl(UIControl*_val){
   if(_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1., 255., .02, .1)*EffectCalc::speedfactor; // попробовал разные способы управления скоростью. Этот максимально приемлемый, хотя и сильно тупой.
   else if(_val->getId()==3) _scale = EffectCalc::setDynCtrl(_val).toInt();
+  else if(_val->getId()==5) noiseShift = EffectCalc::setDynCtrl(_val).toInt();
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   regen();
   return String();
@@ -4849,7 +4547,20 @@ String EffectSmokeballs::setDynCtrl(UIControl*_val){
 
 void EffectSmokeballs::load(){
   palettesload();
+  e_x[0] = random16(); e_y[0] = random16(); e_z[0] = random16();
+  e_scaleX[0] = 8000; e_scaleY[0] = 8000;
+  memset(noise3d, 0, sizeof(noise3d));
   regen();
+}
+
+void EffectSmokeballs::FillNoise(int8_t layer) {
+  for (uint8_t i = 0; i < WIDTH; i++) {
+    int32_t ioffset = e_scaleX[layer] * (i - CENTER_X_MINOR);
+    for (uint8_t j = 0; j < HEIGHT; j++) {
+      int32_t joffset = e_scaleY[layer] * (j - CENTER_Y_MINOR);
+      noise3d[layer][i][j] = inoise16(e_x[layer] + ioffset, e_y[layer] + joffset, e_z[layer]) >> 8;
+    }
+  }
 }
 
 void EffectSmokeballs::regen() {
@@ -4866,11 +4577,18 @@ void EffectSmokeballs::regen() {
 bool EffectSmokeballs::run(CRGB *ledarr, EffectWorker *opt){
   uint8_t _amount = map(_scale, 1, 16, 2, WIDTH);
   shiftUp();
+  if (noiseShift) {
+    uint32_t mov = 1000 * speedFactor;
+    e_x[0] += mov; e_y[0] += mov; e_z[0] += mov;
+    FillNoise(0);
+    EffectMath::MoveFractionalNoise(MOVE_X, noise3d, WIDTH/8 ? WIDTH/8 : 1);
+    EffectMath::MoveFractionalNoise(MOVE_Y, noise3d, HEIGHT/8 ? HEIGHT/8 : 1, speedFactor);
+  }
   EffectMath::dimAll(240);
   EffectMath::blur2d(20);
   for (byte j = 0; j < _amount; j++) {
     wave[j].Pos = beatsin16((uint8_t)(wave[j].Speed * (speedFactor * 5.)), wave[j].Reg, wave[j].maxMin + wave[j].Reg, wave[j].Color * 256, wave[j].Color * 8);
-      EffectMath::drawPixelXYF((float)wave[j].Pos / 10., 0.05, ColorFromPalette(*curPalette, wave[j].Color), 0, true);
+      EffectMath::drawPixelXYF_X((float)wave[j].Pos / 10., 0, ColorFromPalette(*curPalette, wave[j].Color));
   }
   EVERY_N_SECONDS(20){
     for (byte j = 0; j < _amount; j++) {
@@ -5476,8 +5194,10 @@ bool EffectOscilator::run(CRGB *leds, EffectWorker *opt) {
   if (millis() - timer < (unsigned)map(speed, 1U, 255U, 70, 15)) return true;
   else timer = millis(); // не могу сообразить, как по другому скоростью управлять
   CRGB currColors[3];
+  // позиция 0 ползунка палитр отдана генератору цвета, остальные - штатные палитры
   for (uint8_t c = 0; c < 3; c++)
-    currColors[c] = ColorFromPalette(*curPalette, c * 85U + hue);
+    currColors[c] = paletteIdx ? ColorFromPalette(*curPalette, c * 85U + hue)
+                               : ColorFromPalette(genPalette,  c * 85U + hue);
   // расчёт химической реакции и отрисовка мира
   uint16_t colorCount[3] = {0U, 0U, 0U};
   hue++;
@@ -5560,8 +5280,37 @@ bool EffectOscilator::run(CRGB *leds, EffectWorker *opt) {
   return true;
 }
 
+// Собирает палитру из одного оттенка: три состояния автомата разнесены на треть круга,
+// поэтому берём триаду hue / hue+85 / hue+170 и замыкаем её обратно на hue.
+// Эффект сэмплит палитру в точках c*85 + hue, так что штатный "дрейф" цвета сохраняется.
+void EffectOscilator::buildGenPalette() {
+  TDynamicRGBGradientPalette_byte dynpal[16] = {
+      0,   0, 0, 0,
+      85,  0, 0, 0,
+      170, 0, 0, 0,
+      255, 0, 0, 0
+  };
+  uint8_t *ptr = (uint8_t *)dynpal + 1;
+  for (uint8_t i = 0; i < 4; i++) {
+    CRGB color = CHSV((uint8_t)(genHue + (i % 3) * 85U), 255U, 255U);
+    memcpy(ptr, color.raw, sizeof(color.raw));
+    ptr += 4;
+  }
+  genPalette.loadDynamicGradientPalette(dynpal);
+}
+
+String EffectOscilator::setDynCtrl(UIControl*_val) {
+  String ret_val = EffectCalc::setDynCtrl(_val);   // палитра/скорость/яркость - базовым классом
+  if (_val && _val->getId() == 4) {
+    genHue = ret_val.toInt();
+    buildGenPalette();
+  }
+  return ret_val;
+}
+
 void EffectOscilator::load() {
   palettesload();
+  buildGenPalette();   // палитра генератора должна быть валидна до первого события контрола
   step = 0U;
  //случайное заполнение
   for (uint8_t i = 0; i < WIDTH; i++) {
@@ -6744,14 +6493,14 @@ bool EffectStarShips::run(CRGB *leds, EffectWorker *opt) {
     case 1: // Up
         MoveY(255);
       break;
-    case 2: // Up - Right 
+    case 2: // Up - Right
         MoveY(255);
 		MoveX(255);
       break;
     case 3: // Right
         MoveX(255);
       break;
-    case 4: // Down - Right 
+    case 4: // Down - Right
         MoveY(0);
 		MoveX(255);
       break;
@@ -6765,7 +6514,7 @@ bool EffectStarShips::run(CRGB *leds, EffectWorker *opt) {
     case 7: // Left
         MoveX(0);
       break;
-    case 8: // Up - Left 
+    case 8: // Up - Left
         MoveY(255);
 		MoveX(0);
       break;
@@ -6776,7 +6525,7 @@ bool EffectStarShips::run(CRGB *leds, EffectWorker *opt) {
 
   for (byte i = 0; i < _scale; i++) {
     float x = (float)beatsin88(3840*speedFactor + i*256, 0, EffectMath::getmaxWidthIndex() *4, 0, _scale*i*256) /4;
-    float y = (float)beatsin88(3072*speedFactor + i*256, 0, EffectMath::getmaxWidthIndex() *4, 0, 0) /4;
+    float y = (float)beatsin88(3072*speedFactor + i*256, 0, EffectMath::getmaxHeightIndex() *4, 0, 0) /4;
     if ((x >= 0 and x <= EffectMath::getmaxWidthIndex()) and (y >= 0 and y <= EffectMath::getmaxHeightIndex())) draw(x, y, ColorFromPalette(*curPalette, beatsin88(256*12.*speedFactor + i*256, 0, 255), 255));
   }
   EffectMath::blur2d(16);
@@ -7158,7 +6907,7 @@ void EffectFire2021::load() {
   palettesload();    // подгружаем палитры
 
     sparks.resize(sparksCount);
-  for (byte i = 0; i < sparksCount; i++) 
+  for (byte i = 0; i < sparksCount; i++)
     sparks[i].reset();
 }
 
@@ -7205,7 +6954,7 @@ bool EffectFire2021::run(CRGB *leds, EffectWorker *param) {
 
   for (byte x = 0; x < WIDTH; x++) {
     for (byte y = 0; y < HEIGHT; y++) {
-     
+
       int16_t bri= inoise8(x * _scale, (y * _scale) - t) - ((withSparks ? y + spacer : y) * (256 / WIDTH));
       byte col = bri;
       if(bri<0){bri= 0;} if(bri!=0) {bri= 256 - (bri* 0.2);}
@@ -7456,30 +7205,6 @@ bool EffectDNA::run(CRGB *leds, EffectWorker *param) {
   return true;
 }
 
-//===== Ефект Дим ==============================//
-// based on code by @Stepko (c) 23/12/2021
-String EffectSmoker::setDynCtrl(UIControl*_val) {
-  if(_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 3, 20) * speedfactor;
-  else if(_val->getId()==2) color = EffectCalc::setDynCtrl(_val).toInt();
-  else if(_val->getId()==3) saturation = EffectCalc::setDynCtrl(_val).toInt();
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  return String();
-}
-
-bool EffectSmoker::run(CRGB *leds, EffectWorker *param) {
-  t += speedFactor;
-  for (byte x = 0; x < WIDTH; x++) {
-    for (byte y = 0; y < HEIGHT; y++) { 
-      uint8_t bri= inoise8(x * beatsin8(glitch, 20, 40), (y * _scale) - t);
-      nblend(EffectMath::getPixel(x, y), CHSV(color, saturation, bri), speedFactor);}
-  }
-  
-  EVERY_N_SECONDS(random8(10, 31)) {
-    glitch = random(1, 3);
-  }
-  return true;
-}
-
 //===== Ефект Міраж ============================//
 // based on cod by @Stepko (c) 23/12/2021
 String EffectMirage::setDynCtrl(UIControl*_val) {
@@ -7698,10 +7423,11 @@ void EffectFlower::load() {
   noise32_z = random16();
   scale32_x = 160000/WIDTH;
   scale32_y = 160000/HEIGHT;
+  noisesmooth = 0;      // раньше читалось неинициализированным
   NoiseFill();
   for (uint8_t i = 0; i < WIDTH; i++) {
    for (uint8_t j = 0; j < HEIGHT; j++) {
-      EffectMath::getPixel(i,j) = ColorFromPalette(*curPalette,~noise3d[i][j]*3);
+      EffectMath::getPixel(i,j) = ColorFromPalette(*curPalette,~noise3d[0][i][j]*3);
     }
   } 
 }
@@ -7712,8 +7438,8 @@ bool EffectFlower::run(CRGB *leds, EffectWorker *param) {
   noise32_y += mov;
   noise32_z += mov;
   NoiseFill();
-  MoveFractionalNoiseX(WIDTH/8);
-  MoveFractionalNoiseY(HEIGHT/8);
+  EffectMath::MoveFractionalNoise(MOVE_X, noise3d, WIDTH/8,  0, curPalette);
+  EffectMath::MoveFractionalNoise(MOVE_Y, noise3d, HEIGHT/8, 0, curPalette);
   return true;
 }
 
@@ -7723,65 +7449,15 @@ void EffectFlower::NoiseFill() {
     for (uint8_t j = 0; j < HEIGHT; j++) {
       int32_t joffset = scale32_y * (j - CENTER_Y_MINOR);
       int8_t data = inoise16(noise32_x + ioffset, noise32_y + joffset, noise32_z) >> 8;
-      int8_t olddata = noise3d[i][j];
+      int8_t olddata = noise3d[0][i][j];
       int8_t newdata = scale8(olddata, noisesmooth) + scale8(data, 255 - noisesmooth);
       data = newdata;
-      noise3d[i][j] = data;
+      noise3d[0][i][j] = data;
     }
   }
 }
 
-void EffectFlower::MoveFractionalNoiseX(int8_t amplitude, float shift) {
-  CRGB ledsbuff[WIDTH];
-  for (uint8_t y = 0; y < HEIGHT; y++) {
-    int16_t amount = ((int16_t) noise3d[0][y] - 128) * 2 * amplitude + shift * 256;
-    int8_t delta = abs(amount) >> 8;
-    int8_t fraction = abs(amount) & 255;
-    for (uint8_t x = 0; x < WIDTH; x++) {
-      if (amount < 0) {
-        zD = x - delta;
-        zF = zD - 1;
-      } else {
-        zD = x + delta;
-        zF = zD + 1;
-      }
-      CRGB PixelA = CRGB::Black;
-      if ((zD >= 0) && (zD < (int8_t)WIDTH)) PixelA = EffectMath::getPixel(zD,y); else PixelA = ColorFromPalette(*curPalette,~noise3d[abs(zD)%WIDTH][y]*3);
-      CRGB PixelB = CRGB::Black;
-      if ((zF >= 0) && (zF < (int8_t)WIDTH)) PixelB = EffectMath::getPixel(zF,y); else PixelB = ColorFromPalette(*curPalette,~noise3d[abs(zF)%WIDTH][y]*3);
-      ledsbuff[x] = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction))); // lerp8by8(PixelA, PixelB, fraction );
-    }
-    for (uint8_t x = 0; x < WIDTH; x++) {
-      EffectMath::getPixel(x,y) = ledsbuff[x];
-    }
-  }
-}
 
-void EffectFlower::MoveFractionalNoiseY(int8_t amplitude, float shift) {
-  CRGB ledsbuff[HEIGHT];
-  for (uint8_t x = 0; x < WIDTH; x++) {
-    int16_t amount = ((int16_t) noise3d[x][0] - 128) * 2 * amplitude + shift * 256;
-    int8_t delta = abs(amount) >> 8;
-    int8_t fraction = abs(amount) & 255;
-    for (uint8_t y = 0; y < HEIGHT; y++) {
-      if (amount < 0) {
-        zD = y - delta;
-        zF = zD - 1;
-      } else {
-        zD = y + delta;
-        zF = zD + 1;
-      }
-      CRGB PixelA = CRGB::Black;
-      if ((zD >= 0) && (zD < (int8_t)HEIGHT)) PixelA = EffectMath::getPixel(x,zD); else PixelA = ColorFromPalette(*curPalette, ~noise3d[x][abs(zD)%HEIGHT]*3); 
-      CRGB PixelB = CRGB::Black;
-      if ((zF >= 0) && (zF < (int8_t)HEIGHT))PixelB = EffectMath::getPixel(x,zF);  else PixelB = ColorFromPalette(*curPalette, ~noise3d[x][abs(zF)%HEIGHT]*3);
-      ledsbuff[y] = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));
-    }
-    for (uint8_t y = 0; y < HEIGHT; y++) {
-      EffectMath::getPixel(x,y) = ledsbuff[y];
-    }
-  }
-}
 
 //===== Ефект Калейдоскоп ======================//
 //https://editor.soulmatelights.com/gallery/1569-radialnuclearnoise

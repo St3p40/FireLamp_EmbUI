@@ -145,15 +145,18 @@ void EffectMath::blurRows( CRGB* leds, uint8_t width, uint8_t height, fract8 blu
     uint8_t seep = blur_amount >> 1;
     for( uint8_t row = 0; row < height; row++) {
         CRGB carryover = CRGB::Black;
+        uint32_t previdx = 0;
         for( uint8_t i = 0; i < width; i++) {
-            CRGB cur = leds[getPixelNumber(i,row)];
+            uint32_t idx = getPixelNumber(i,row);
+            CRGB cur = leds[idx];
             CRGB part = cur;
             part.nscale8( seep);
             cur.nscale8( keep);
             cur += carryover;
-            if( i) leds[getPixelNumber(i-1,row)] += part;
-            leds[getPixelNumber(i,row)] = cur;
+            if( i) leds[previdx] += part;
+            leds[idx] = cur;
             carryover = part;
+            previdx = idx;
         }
     }
 }
@@ -166,15 +169,18 @@ void EffectMath::blurColumns(CRGB* leds, uint8_t width, uint8_t height, fract8 b
     uint8_t seep = blur_amount >> 1;
     for( uint8_t col = 0; col < width; ++col) {
         CRGB carryover = CRGB::Black;
+        uint32_t previdx = 0;
         for( uint8_t i = 0; i < height; ++i) {
-            CRGB cur = leds[getPixelNumber(col,i)];
+            uint32_t idx = getPixelNumber(col,i);
+            CRGB cur = leds[idx];
             CRGB part = cur;
             part.nscale8( seep);
             cur.nscale8( keep);
             cur += carryover;
-            if( i) leds[getPixelNumber(col,i-1)] += part;
-            leds[getPixelNumber(col,i)] = cur;
+            if( i) leds[previdx] += part;
+            leds[idx] = cur;
             carryover = part;
+            previdx = idx;
         }
     }
 } 
@@ -185,39 +191,45 @@ uint8_t EffectMath::mapsincos8(bool map, uint8_t theta, uint8_t lowest, uint8_t 
   return lowest + scale8(beat, highest - lowest);
 }
 
-void EffectMath::MoveFractionalNoise(bool _scale, const uint8_t noise3d[][WIDTH][HEIGHT], int8_t amplitude, float shift) {
-  uint8_t zD;
-  uint8_t zF;
-  CRGB *leds = getUnsafeLedsArray(); // unsafe
-  CRGB ledsbuff[NUM_LEDS];
-  uint16_t _side_a = _scale ? HEIGHT : WIDTH;
-  uint16_t _side_b = _scale ? WIDTH : HEIGHT;
+void EffectMath::MoveFractionalNoise(bool _scale, const uint8_t noise3d[][WIDTH][HEIGHT], int8_t amplitude, float shift, const TProgmemRGBPalette16 *edgePal) {
+  const uint16_t _side_a = _scale ? HEIGHT : WIDTH;
+  const uint16_t _side_b = _scale ? WIDTH  : HEIGHT;
+
+  CRGB ledsbuff[WIDTH > HEIGHT ? WIDTH : HEIGHT];
 
   for(uint8_t i=0; i<NUM_LAYERS; i++)
     for (uint16_t a = 0; a < _side_a; a++) {
       uint8_t _pixel = _scale ? noise3d[i][0][a] : noise3d[i][a][0];
       int16_t amount = ((int16_t)(_pixel - 128) * 2 * amplitude + shift * 256);
-      int8_t delta = ((uint16_t)fabs(amount) >> 8) ;
-      int8_t fraction = ((uint16_t)fabs(amount) & 255);
-      for (uint8_t b = 0 ; b < _side_b; b++) {
+      int16_t delta = abs(amount) >> 8;
+      int16_t fraction = abs(amount) & 255;
+      for (uint16_t b = 0 ; b < _side_b; b++) {
+        int16_t zD, zF;
         if (amount < 0) {
           zD = b - delta; zF = zD - 1;
         } else {
           zD = b + delta; zF = zD + 1;
         }
-        CRGB PixelA = CRGB::Black  ;
-        if ((zD >= 0) && (zD < _side_b))
-          PixelA = _scale ? EffectMath::getPixel(zD%WIDTH, a%HEIGHT) : EffectMath::getPixel(a%WIDTH, zD%HEIGHT);
+        CRGB PixelA;
+        if ((zD >= 0) && (zD < (int16_t)_side_b))
+          PixelA = _scale ? EffectMath::getPixel(zD, a) : EffectMath::getPixel(a, zD);
+        else if (edgePal)
+          PixelA = ColorFromPalette(*edgePal, ~(_scale ? noise3d[i][abs(zD)%WIDTH][a] : noise3d[i][a][abs(zD)%HEIGHT]) * 3);
+        else
+          PixelA = CRGB::Black;
 
-        CRGB PixelB = CRGB::Black ;
-        if ((zF >= 0) && (zF < _side_b))
-          PixelB = _scale ? EffectMath::getPixel(zF%WIDTH, a%HEIGHT) : EffectMath::getPixel(a%WIDTH, zF%HEIGHT);
-        uint16_t x = _scale ? b : a;
-        uint16_t y = _scale ? a : b;
-        ledsbuff[getPixelNumber(x%WIDTH, y%HEIGHT)] = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));   // lerp8by8(PixelA, PixelB, fraction );
+        CRGB PixelB;
+        if ((zF >= 0) && (zF < (int16_t)_side_b))
+          PixelB = _scale ? EffectMath::getPixel(zF, a) : EffectMath::getPixel(a, zF);
+        else if (edgePal)
+          PixelB = ColorFromPalette(*edgePal, ~(_scale ? noise3d[i][abs(zF)%WIDTH][a] : noise3d[i][a][abs(zF)%HEIGHT]) * 3);
+        else
+          PixelB = CRGB::Black;
+        ledsbuff[b] = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));   // lerp8by8(PixelA, PixelB, fraction );
       }
+      for (uint16_t b = 0 ; b < _side_b; b++)
+        (_scale ? EffectMath::getPixel(b, a) : EffectMath::getPixel(a, b)) = ledsbuff[b];
     }
-  memcpy(leds, ledsbuff, sizeof(CRGB)* NUM_LEDS);
 }
 
 /**
@@ -350,12 +362,10 @@ void EffectMath::wu_pixel(uint32_t x, uint32_t y, CRGB col) {      //awesome wu_
   // multiply the intensities by the colour, and saturating-add them to the pixels
   for (uint8_t i = 0; i < 4; i++) {
     uint16_t xn = (x >> 8) + (i & 1); uint16_t yn = (y >> 8) + ((i >> 1) & 1);
-    CRGB clr = getLed(getPixelNumber(xn, yn));
-    clr.r = qadd8(clr.r, (col.r * wu[i]) >> 8);
-    clr.g = qadd8(clr.g, (col.g * wu[i]) >> 8);
-    clr.b = qadd8(clr.b, (col.b * wu[i]) >> 8);
-
-    EffectMath::drawPixelXY(xn, yn, clr);
+    CRGB &px = getPixel(xn, yn);
+    px.r = qadd8(px.r, (col.r * wu[i]) >> 8);
+    px.g = qadd8(px.g, (col.g * wu[i]) >> 8);
+    px.b = qadd8(px.b, (col.b * wu[i]) >> 8);
   }
   #undef WU_WEIGHT
 }
@@ -408,7 +418,8 @@ void EffectMath::drawPixelXYF(float x, float y, const CRGB &color, uint8_t darkl
     int16_t xn = x + (i & 1), yn = y + ((i >> 1) & 1);
     // тут нам, ИМХО, незачем гонять через прокладки, и потом сдвигать регистры. А в случае сегмента подразумевается,
     // что все ЛЕД в одном сегменте одинакового цвета, и достаточно получить цвет любого из них.
-    CRGB clr = getPixel(xn, yn);
+    CRGB &px = getPixel(xn, yn);
+    CRGB clr = px;
     if(variant){
       clr = blend(clr, color, wu[i]);
     }
@@ -416,8 +427,7 @@ void EffectMath::drawPixelXYF(float x, float y, const CRGB &color, uint8_t darkl
     clr.r = qadd8(clr.r, (color.r * wu[i]) >> 8);
     clr.g = qadd8(clr.g, (color.g * wu[i]) >> 8);
     clr.b = qadd8(clr.b, (color.b * wu[i]) >> 8);}
-    if (darklevel > 0) getPixel(xn, yn) = EffectMath::makeDarker(clr, darklevel);
-    else getPixel(xn, yn) = clr;
+    px = (darklevel > 0) ? EffectMath::makeDarker(clr, darklevel) : clr;
   }
   #undef WU_WEIGHT
 }
@@ -433,12 +443,12 @@ void EffectMath::drawPixelXYF_X(float x, int16_t y, const CRGB &color, uint8_t d
   // multiply the intensities by the colour, and saturating-add them to the pixels
   for (int8_t i = 1; i >= 0; i--) {
     int16_t xn = x + (i & 1);
-    CRGB clr = getPixel(xn, y);
+    CRGB &px = getPixel(xn, y);
+    CRGB clr = px;
     clr.r = qadd8(clr.r, (color.r * wu[i]) >> 8);
     clr.g = qadd8(clr.g, (color.g * wu[i]) >> 8);
     clr.b = qadd8(clr.b, (color.b * wu[i]) >> 8);
-    if (darklevel > 0) getPixel(xn, y) = EffectMath::makeDarker(clr, darklevel);
-    else getPixel(xn, y) = clr;
+    px = (darklevel > 0) ? EffectMath::makeDarker(clr, darklevel) : clr;
   }
 }
 
@@ -453,12 +463,12 @@ void EffectMath::drawPixelXYF_Y(int16_t x, float y, const CRGB &color, uint8_t d
   // multiply the intensities by the colour, and saturating-add them to the pixels
   for (int8_t i = 1; i >= 0; i--) {
     int16_t yn = y + (i & 1);
-    CRGB clr = getPixel(x, yn);
+    CRGB &px = getPixel(x, yn);
+    CRGB clr = px;
     clr.r = qadd8(clr.r, (color.r * wu[i]) >> 8);
     clr.g = qadd8(clr.g, (color.g * wu[i]) >> 8);
     clr.b = qadd8(clr.b, (color.b * wu[i]) >> 8);
-    if (darklevel > 0) getPixel(x, yn) = EffectMath::makeDarker(clr, darklevel);
-    else getPixel(x, yn) = clr;
+    px = (darklevel > 0) ? EffectMath::makeDarker(clr, darklevel) : clr;
   }
 }
 

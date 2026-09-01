@@ -216,9 +216,9 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed, const boo
   case EFF_ENUM::EFF_PATTERNS :
     worker = std::unique_ptr<EffectPatterns>(new EffectPatterns());
     break;
-  case EFF_ENUM::EFF_ARROWS :
-    worker = std::unique_ptr<EffectArrows>(new EffectArrows());
-    break;
+//  case EFF_ENUM::EFF_ARROWS :
+//    worker = std::unique_ptr<EffectArrows>(new EffectArrows());
+//    break;
 //  case EFF_ENUM::EFF_NBALLS :
 //    worker = std::unique_ptr<EffectNBals>(new EffectNBals());
 //    break;
@@ -267,9 +267,9 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed, const boo
    case EFF_ENUM::EFF_DNA :
     worker = std::unique_ptr<EffectDNA>(new EffectDNA());
     break;
-   case EFF_ENUM::EFF_SMOKER :
-    worker = std::unique_ptr<EffectSmoker>(new EffectSmoker());
-    break;
+//   case EFF_ENUM::EFF_SMOKER :
+//    worker = std::unique_ptr<EffectSmoker>(new EffectSmoker());
+//    break;
   case EFF_ENUM::EFF_MIRAGE :
     worker = std::unique_ptr<EffectMirage>(new EffectMirage());
     break;

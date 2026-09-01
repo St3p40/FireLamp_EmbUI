@@ -121,10 +121,11 @@ public:
 
   // для работы с буфером
   static uint32_t getPixelNumberBuff(uint16_t x, uint16_t y, uint8_t W , uint8_t H); // получить номер пикселя в буфере по координатам
-  
+
   static CRGB &getPixel(uint16_t x, uint16_t y);
   static uint8_t mapsincos8(bool map, uint8_t theta, uint8_t lowest = 0, uint8_t highest = 255);
-  static void MoveFractionalNoise(bool scale, const uint8_t noise3d[][WIDTH][HEIGHT], int8_t amplitude, float shift = 0);
+
+  static void MoveFractionalNoise(bool scale, const uint8_t noise3d[][WIDTH][HEIGHT], int8_t amplitude, float shift = 0, const TProgmemRGBPalette16 *edgePal = nullptr);
   static void fadePixel(uint8_t i, uint8_t j, uint8_t step);
   static void fader(uint8_t step);
   static uint8_t ceil8(const uint8_t a, const uint8_t b);

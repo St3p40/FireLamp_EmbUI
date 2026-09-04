@@ -591,138 +591,6 @@ bool EffectStarFall::snowStormStarfallRoutine(CRGB *leds, EffectWorker *param)
   return true;
 }
 
-//===== Ефект Світлячки зі шлейфом =============//
-String EffectLighterTracers::setDynCtrl(UIControl*_val) {
-  if(_val->getId()==4) {var = EffectCalc::setDynCtrl(_val).toInt(); regen();}
-  else if(_val->getId()==1) {speedFactor = EffectCalc::setDynCtrl(_val).toInt(); speedFactor = ((var)? (EffectMath::fmap(speedFactor, 1, 255, 0.01, .1)) : ((speedFactor / 4096.0f + 0.005f)) * EffectCalc::speedfactor);}
-  else if(_val->getId()==3) cnt = EffectCalc::setDynCtrl(_val).toInt();
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  return String();
-}
-
-void EffectLighterTracers::regen(){
-  randomSeed(millis());
-  if (var){
-    for (uint8_t i = 0U; i < LIGHTERS_AM; i++)
-    {
-      int8_t sign;
-      lighter[i].PosX = WIDTH / 2;
-      lighter[i].PosY = HEIGHT / 2;
-      random(255)%2 ? sign = 1 : sign = -1;
-      lighter[i].SpeedX = ((float)random(40, 150) / 10.0f) * sign;
-      random(255)%2 ? sign = 1 : sign = -1;
-      lighter[i].SpeedY = ((float)random(40, 150) / 10.0f) * sign;
-      lighter[i].Light = 127U;
-      lighter[i].Color = random(0, 9) * 28;
-    }
-  }
-  else {
-    for (uint8_t i = 0U; i < LIGHTERS_AM; i++)
-    {
-      lightersIdx=0;
-      lighter[i].PosX = random(0, WIDTH);
-      lighter[i].PosY = random(0, HEIGHT);
-      lighter[i].SpeedX = (float)random(-200, 200) / 10.0f;
-      lighter[i].SpeedY = (float)random(-200, 200) / 10.0f;
-      lighter[i].Color = random(0U, 255U);
-    }
-  }
-}
-
-bool EffectLighterTracers::lighterRoutine(CRGB *leds, EffectWorker *param)
-{
-  memset8( leds, 0, NUM_LEDS * 3);
-
-  EVERY_N_MILLIS(333)
-  {
-    lightersIdx = (lightersIdx+1)%constrain(cnt,1,LIGHTERS_AM);
-    lighter[lightersIdx].SpeedX += random(-10, 10);
-    lighter[lightersIdx].SpeedY += random(-10, 10);
-    lighter[lightersIdx].SpeedX = fmod(lighter[lightersIdx].SpeedX, 21);
-    lighter[lightersIdx].SpeedY = fmod(lighter[lightersIdx].SpeedY, 21);
-    lighter[lightersIdx].Light = random(255U-(cnt*8),255U);
-    if(!random(cnt+3))
-      lighter[lightersIdx].Light = 127;
-  }
-
-  for (uint8_t i = 0U; i < constrain(cnt,1,LIGHTERS_AM); i++) // масштабируем на LIGHTERS_AM, чтобы не было выхода за диапазон
-  {
-    // EVERY_N_SECONDS(1)
-    // {
-    //   LOG.printf_P("S0:%d S1:%d P0:%3.2f P1:%3.2f, cnt:%3.2f\n", lightersSpeed[0U][i], lightersSpeed[1U][i],lightersPos[0U][i],lightersPos[1U][i],speedFactor);
-    // }
-    lighter[i].PosX += lighter[i].SpeedX * speedFactor;
-    lighter[i].PosY += lighter[i].SpeedY  * speedFactor;
-
-    if (lighter[i].PosX < 0) lighter[i].PosX = (float)EffectMath::getmaxWidthIndex();
-    if (lighter[i].PosX >= (float)WIDTH) lighter[i].PosX = 0.0f;
-
-    if (lighter[i].PosY <= 0.0f)
-    {
-      lighter[i].PosY = 0.0f;
-      lighter[i].SpeedY  = -lighter[i].SpeedY;
-      lighter[i].SpeedX  = -lighter[i].SpeedX;
-    }
-    if (lighter[i].PosY >= (int32_t)(EffectMath::getmaxHeightIndex()))
-    {
-      lighter[i].PosY = (EffectMath::getmaxHeightIndex());
-      lighter[i].SpeedY  = -lighter[i].SpeedY;
-      lighter[i].SpeedX  = -lighter[i].SpeedX;
-    }
-      EffectMath::drawPixelXYF(lighter[i].PosX, lighter[i].PosY, CHSV(lighter[i].Color, 255U-(i*2), lighter[i].Light), 0);
-  }
-  return true;
-}
-
-bool EffectLighterTracers::lighterTracersRoutine(CRGB *leds, EffectWorker *param)
-{
-
-  fadeToBlackBy(leds, NUM_LEDS, map(speed, 1, 255, 6, 55)); // размер шлейфа должен сохранять размер, не зависимо от скорости
-
-  // движение шариков
-  uint8_t maxBalls = cnt;
-  for (uint8_t j = 0U; j < maxBalls; j++)
-  {
-    lighter[j].Color = (uint8_t)((maxBalls-j) * LIGHTERS_AM + j);
-
-    lighter[j].PosX += lighter[j].SpeedX * speedFactor;
-    lighter[j].PosY += lighter[j].SpeedY * speedFactor;
-    if (lighter[j].PosX < 0)
-    {
-      lighter[j].PosX = 0.0f;
-      lighter[j].SpeedX = -lighter[j].SpeedX;
-    }
-    if (lighter[j].PosY < 0)
-    {
-      lighter[j].PosY = 0.0f;
-      lighter[j].SpeedY = -lighter[j].SpeedY;
-    }
-    if ((uint16_t)lighter[j].PosX > EffectMath::getmaxWidthIndex())
-    {
-      lighter[j].PosX = EffectMath::getmaxWidthIndex();
-      lighter[j].SpeedX = -lighter[j].SpeedX;
-    }
-    if ((uint16_t)lighter[j].PosY > EffectMath::getmaxHeightIndex())
-    {
-      lighter[j].PosY = EffectMath::getmaxHeightIndex();
-      lighter[j].SpeedY = -lighter[j].SpeedY;
-    }
-
-    EffectMath::drawPixelXYF(lighter[j].PosX, lighter[j].PosY, CHSV(lighter[j].Color, 200U, 255));
-  }
-  EffectMath::blur2d(leds, WIDTH, HEIGHT, 5);
-  return true;
-}
-
-void EffectLighterTracers::load(){
-  regen();
-}
-
-bool EffectLighterTracers::run(CRGB *ledarr, EffectWorker *opt){
-
-  return (var)? lighterTracersRoutine(*&ledarr, &*opt) : lighterRoutine(*&ledarr, &*opt);
-}
-
 //===== Ефект Блукаючий кубик ==================//
 String EffectBall::setDynCtrl(UIControl*_val) {
   if(_val->getId()==1) {
@@ -3074,7 +2942,7 @@ String EffectAquarium::setDynCtrl(UIControl *_val)
     load();
   }
   else
-    EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
+    EffectCalc::setDynCtrl(_val).toInt();
   return String();
 }
 
@@ -3104,13 +2972,14 @@ void EffectAquarium::nDrops(uint8_t bri)
 
   EffectMath::blur2d(leds, WIDTH, HEIGHT, 128);
 }
-
 void EffectAquarium::nGlare(uint8_t bri)
 {
   for(uint8_t i = 0; i < 4; i++){
-  fillNoise();//x3 speed (idk, it's better when it's faster)
+    fillNoise();
   }
-  memset8(&noise[1][0][0],255,(WIDTH+1)*(HEIGHT+1)-1);
+
+  memset8(&noise[1][0][0], 0, (WIDTH + 1) * (HEIGHT + 1));
+
   for (uint8_t x = 0; x < WIDTH; x++)
   {
     for (uint8_t y = 0; y < HEIGHT; y++)
@@ -3118,19 +2987,24 @@ void EffectAquarium::nGlare(uint8_t bri)
       uint8_t n0 = noise[0][x][y];
       uint8_t n1 = noise[0][x + 1][y];
       uint8_t n2 = noise[0][x][y + 1];
-      int8_t xl = n0 - n1;
-      int8_t yl = n0 - n2;
-      uint16_t xa = (x << 8) + ((xl * ((n0 + n1) << 1))>>1);
-      uint16_t ya = (y << 8) + ((yl * ((n0 + n2) << 1))>>1);
+
+      int16_t xl = (int16_t)n0 - n1;
+      int16_t yl = (int16_t)n0 - n2;
+
+      int16_t xa = (x << 8) + ((xl * ((n0 + n1) << 1))>>1);
+      int16_t ya = (y << 8) + ((yl * ((n0 + n2) << 1))>>1);
+
       wu(xa, ya);
     }
   }
+
   for (uint8_t i = 0; i < WIDTH; i++)
   {
     for (uint8_t j = 0; j < HEIGHT; j++)
     {
       uint8_t col = noise[1][i][j];
-      EffectMath::drawPixelXY(i, j,nblend(EffectMath::getPixel(i,j),  CHSV(hue, map(col, 0, 255, ~(satur*255), (satur*255)), 255),64));
+
+      EffectMath::drawPixelXY(i, j, blend(EffectMath::getPixel(i, j), CHSV(hue, (satur) ? col : ~col, 255), 64));
     }
   }
 }
@@ -3172,11 +3046,13 @@ void EffectAquarium::wu(int16_t x, int16_t y)
 
   for (uint8_t i = 0; i < 4; i++)
   {
-    uint8_t xn = (x >> 8) + (i & 1);
-    uint8_t yn = (y >> 8) + ((i >> 1) & 1);
+    int16_t xn = (x >> 8) + (i & 1);
+    int16_t yn = (y >> 8) + ((i >> 1) & 1);
+
     if (xn >= 0 && xn < WIDTH + 1 && yn >= 0 && yn < HEIGHT + 1)
     {
-      noise[1][xn][yn] = constrain(sub8(noise[1][xn][yn], wu[i]), 15, 255);
+
+      noise[1][xn][yn] = qadd8(noise[1][xn][yn], scale8(wu[i], 196));
     }
   }
 #undef WU_WEIGHT
@@ -3821,42 +3697,12 @@ void EffectNoise::load() {
   palettesload();
 }
 
-//===== Ефект Метелики =========================//
-// (с) SottNick
-void EffectButterfly::load()
+// Effect Butterflyes
+// (c) SottNick, Fireflies modes by (c) kostyamat
+
+bool EffectButterfly::mothsRoutine(CRGB *leds, EffectWorker *param)
 {
-  for (uint8_t i = 0U; i < BUTTERFLY_MAX_COUNT; i++)
-  {
-    lighter[i].PosX = random8(WIDTH);
-    lighter[i].PosY = random8(HEIGHT);
-    lighter[i].SpeedX = 0;
-    lighter[i].SpeedY = 0;
-    lighter[i].Turn = 0;
-    lighter[i].Color = (isColored) ? random8() : 0U;
-    lighter[i].Light = 255U;
-  }
-}
-
-// !++
-String EffectButterfly::setDynCtrl(UIControl*_val) {
-  if(_val->getId()==1) speedFactor = ((float)EffectCalc::setDynCtrl(_val).toInt() / 2048.0 + 0.01) *EffectCalc::speedfactor;
-  else if(_val->getId()==3) cnt = EffectCalc::setDynCtrl(_val).toInt();
-  else if(_val->getId()==4) wings = EffectCalc::setDynCtrl(_val).toInt();
-  else if(_val->getId()==5) {
-    isColored = EffectCalc::setDynCtrl(_val).toInt();
-    isColored = !isColored;
-
-    for (uint8_t i = 0U; i < BUTTERFLY_MAX_COUNT; i++)
-    {
-      lighter[i].Color = (isColored) ? random8() : 0U;
-    }
-  }
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
-  return String();
-}
-
-bool EffectButterfly::run(CRGB *leds, EffectWorker *param)
-{
+  const bool isColored = (mode == 0);
   byte _scale = cnt;
 
   if (isColored) // для режима смены цвета фона фиксируем количество мотыльков
@@ -4005,6 +3851,167 @@ bool EffectButterfly::run(CRGB *leds, EffectWorker *param)
   }
   return true;
 }
+
+bool EffectButterfly::firefliesRoutine(CRGB *leds, EffectWorker *param)
+{
+  memset8( leds, 0, NUM_LEDS * 3);
+
+  EVERY_N_MILLIS(333)
+  {
+    lightersIdx = (lightersIdx+1)%constrain(cnt,1,LIGHTERS_AM);
+    lighter[lightersIdx].SpeedX += random(-10, 10);
+    lighter[lightersIdx].SpeedY += random(-10, 10);
+    lighter[lightersIdx].SpeedX = fmod(lighter[lightersIdx].SpeedX, 21);
+    lighter[lightersIdx].SpeedY = fmod(lighter[lightersIdx].SpeedY, 21);
+    lighter[lightersIdx].Light = random(255U-(cnt*8),255U);
+    if(!random(cnt+3))
+      lighter[lightersIdx].Light = 127;
+  }
+
+  for (uint8_t i = 0U; i < constrain(cnt,1,LIGHTERS_AM); i++)
+  {
+
+    lighter[i].PosX += lighter[i].SpeedX * speedFactor;
+    lighter[i].PosY += lighter[i].SpeedY  * speedFactor;
+
+    if (lighter[i].PosX < 0) lighter[i].PosX = (float)EffectMath::getmaxWidthIndex();
+    if (lighter[i].PosX >= (float)WIDTH) lighter[i].PosX = 0.0f;
+
+    if (lighter[i].PosY <= 0.0f)
+    {
+      lighter[i].PosY = 0.0f;
+      lighter[i].SpeedY  = -lighter[i].SpeedY;
+      lighter[i].SpeedX  = -lighter[i].SpeedX;
+    }
+    if (lighter[i].PosY >= (int32_t)(EffectMath::getmaxHeightIndex()))
+    {
+      lighter[i].PosY = (EffectMath::getmaxHeightIndex());
+      lighter[i].SpeedY  = -lighter[i].SpeedY;
+      lighter[i].SpeedX  = -lighter[i].SpeedX;
+    }
+
+    if (wings)
+      EffectMath::drawPixelXYF(lighter[i].PosX, lighter[i].PosY, CHSV(lighter[i].Color, 255U-(i*2), (lighter[i].Light == 255U) ? 255U : 128U + random8(2U) * 111U), 0);
+    else
+    EffectMath::drawPixelXYF(lighter[i].PosX, lighter[i].PosY, CHSV(lighter[i].Color, 255U-(i*2), lighter[i].Light), 0);
+  }
+  return true;
+}
+
+bool EffectButterfly::tracersRoutine(CRGB *leds, EffectWorker *param)
+{
+
+  fadeToBlackBy(leds, NUM_LEDS, map(speed, 1, 255, 6, 55));
+  uint8_t maxBalls = cnt;
+  for (uint8_t j = 0U; j < maxBalls; j++)
+  {
+    lighter[j].Color = (uint8_t)((maxBalls-j) * LIGHTERS_AM + j);
+
+    lighter[j].PosX += lighter[j].SpeedX * speedFactor;
+    lighter[j].PosY += lighter[j].SpeedY * speedFactor;
+    if (lighter[j].PosX < 0)
+    {
+      lighter[j].PosX = 0.0f;
+      lighter[j].SpeedX = -lighter[j].SpeedX;
+    }
+    if (lighter[j].PosY < 0)
+    {
+      lighter[j].PosY = 0.0f;
+      lighter[j].SpeedY = -lighter[j].SpeedY;
+    }
+    if ((uint16_t)lighter[j].PosX > EffectMath::getmaxWidthIndex())
+    {
+      lighter[j].PosX = EffectMath::getmaxWidthIndex();
+      lighter[j].SpeedX = -lighter[j].SpeedX;
+    }
+    if ((uint16_t)lighter[j].PosY > EffectMath::getmaxHeightIndex())
+    {
+      lighter[j].PosY = EffectMath::getmaxHeightIndex();
+      lighter[j].SpeedY = -lighter[j].SpeedY;
+    }
+
+    EffectMath::drawPixelXYF(lighter[j].PosX, lighter[j].PosY, CHSV(lighter[j].Color, 200U, 255));
+  }
+  EffectMath::blur2d(leds, WIDTH, HEIGHT, 5);
+  return true;
+}
+
+void EffectButterfly::regen(){
+  const bool var = (mode == 3);
+  randomSeed(millis());
+  if (var){
+    for (uint8_t i = 0U; i < LIGHTERS_AM; i++)
+    {
+      int8_t sign;
+      lighter[i].PosX = WIDTH / 2;
+      lighter[i].PosY = HEIGHT / 2;
+      random(255)%2 ? sign = 1 : sign = -1;
+      lighter[i].SpeedX = ((float)random(40, 150) / 10.0f) * sign;
+      random(255)%2 ? sign = 1 : sign = -1;
+      lighter[i].SpeedY = ((float)random(40, 150) / 10.0f) * sign;
+      lighter[i].Light = 127U;
+      lighter[i].Color = random(0, 9) * 28;
+    }
+  }
+  else {
+    for (uint8_t i = 0U; i < LIGHTERS_AM; i++)
+    {
+      lightersIdx=0;
+      lighter[i].PosX = random(0, WIDTH);
+      lighter[i].PosY = random(0, HEIGHT);
+      lighter[i].SpeedX = (float)random(-200, 200) / 10.0f;
+      lighter[i].SpeedY = (float)random(-200, 200) / 10.0f;
+      lighter[i].Color = random(0U, 255U);
+    }
+  }
+}
+
+void EffectButterfly::applySpeed()
+{
+  switch (mode) {
+    case 2:  speedFactor = (rawSpeed / 4096.0f + 0.005f) * EffectCalc::speedfactor; break;
+    case 3:  speedFactor = EffectMath::fmap(rawSpeed, 1, 255, 0.01, .1); break;
+    default: speedFactor = (rawSpeed / 2048.0f + 0.01f) * EffectCalc::speedfactor; break;
+  }
+}
+
+String EffectButterfly::setDynCtrl(UIControl*_val) {
+  if(_val->getId()==1) { rawSpeed = EffectCalc::setDynCtrl(_val).toInt(); applySpeed(); }
+  else if(_val->getId()==3) cnt = EffectCalc::setDynCtrl(_val).toInt();
+  else if(_val->getId()==4) wings = EffectCalc::setDynCtrl(_val).toInt();
+  else if(_val->getId()==5) {
+    mode = EffectCalc::setDynCtrl(_val).toInt();
+    applySpeed();
+    load();
+  }
+  else EffectCalc::setDynCtrl(_val).toInt();
+  return String();
+}
+
+void EffectButterfly::load()
+{
+  if (mode >= 2) { regen(); return; }
+  for (uint8_t i = 0U; i < BUTTERFLY_MAX_COUNT; i++)
+  {
+    lighter[i].PosX = random8(WIDTH);
+    lighter[i].PosY = random8(HEIGHT);
+    lighter[i].SpeedX = 0;
+    lighter[i].SpeedY = 0;
+    lighter[i].Turn = 0;
+    lighter[i].Color = (mode == 0) ? random8() : 0U;
+    lighter[i].Light = 255U;
+  }
+}
+
+bool EffectButterfly::run(CRGB *ledarr, EffectWorker *opt)
+{
+  switch (mode) {
+    case 2:  return firefliesRoutine(*&ledarr, &*opt);
+    case 3:  return tracersRoutine(*&ledarr, &*opt);
+    default: return mothsRoutine(*&ledarr, &*opt);
+  }
+}
+
 
 //===== Ефект Тіні =============================//
 // https://github.com/vvip-68/GyverPanelWiFi/blob/master/firmware/GyverPanelWiFi_v1.02/effects.ino
@@ -5380,7 +5387,7 @@ void EffectOscilator::setCellColors(uint8_t x, uint8_t y) {
   oscillatingWorld[x][y].blue = (oscillatingWorld[x][y].color == 2U);
 }
 
-//===== Ефект Шторм ============================// 
+//===== Ефект Шторм ============================//
 // (с)kostyamat 1.12.2020
 String EffectWrain::setDynCtrl(UIControl*_val)
 {

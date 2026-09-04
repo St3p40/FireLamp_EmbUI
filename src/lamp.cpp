@@ -1294,7 +1294,7 @@ void LAMP::show() {
         for (int x = 0; x < WIDTH; x++) {
             CRGB pixel = leds[x + (y * WIDTH)];
             uint16_t color = tft.color565(pixel.r, pixel.g, pixel.b);
-            tft.fillRect(y << 2, x << 2, 4, 4, color);
+            tft.fillRect(y << 3, x << 3, 8, 8, color);
         }
     }
 

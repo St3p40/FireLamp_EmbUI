@@ -93,9 +93,9 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed, const boo
   case EFF_ENUM::EFF_CUBE :
     worker = std::unique_ptr<EffectBall>(new EffectBall());
     break;
-  case EFF_ENUM::EFF_LIGHTER_TRACES :
-    worker = std::unique_ptr<EffectLighterTracers>(new EffectLighterTracers());
-    break;
+  //case EFF_ENUM::EFF_LIGHTER_TRACES :
+  //  worker = std::unique_ptr<EffectLighterTracers>(new EffectLighterTracers());
+  //  break;
   case EFF_ENUM::EFF_RAINBOW_2D :
     worker = std::unique_ptr<EffectRainbow>(new EffectRainbow());
     break;

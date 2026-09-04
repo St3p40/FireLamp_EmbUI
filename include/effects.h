@@ -261,20 +261,6 @@ protected:
     float speedFactor;
 };
 
-//===== Ефект Світлячки зі шлейфом =============//
-class EffectLighterTracers : public EffectLighters{
-private:
-    bool lighterTracersRoutine(CRGB *leds, EffectWorker *param);
-    bool lighterRoutine(CRGB *leds, EffectWorker *param);
-    bool var = false;
-    void regen();
-public:
-    void load() override;
-
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
-    String setDynCtrl(UIControl*_val) override;
-};
-
 //===== Ефект Матриця ==========================//
 // (c)Kostyamat
 class EffectMatrix : public EffectLighters {
@@ -729,7 +715,7 @@ private:
     const uint16_t amountDrops = (HEIGHT + WIDTH) / 6;
     const uint16_t maxRadius = WIDTH + HEIGHT;
 
-    const uint8_t _scale = 32;
+    const uint8_t _scale = 24;
     const uint8_t _speed = 3;
 
     uint16_t x;
@@ -897,8 +883,8 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-//===== Ефект Метелики =========================//
-// (с) SottNick
+// Effect Butterflyes
+// (c) SottNick, Fireflies modes by (c) kostyamat
 class EffectButterfly : public EffectLighters{
 private:
     uint8_t deltaValue;
@@ -907,11 +893,17 @@ private:
     uint8_t hue2;
     byte step = 0;
     byte csum = 0;
-    uint8_t cnt;
     bool wings = false;
-    bool isColored = true;
-	float speedFactor;
-	String setDynCtrl(UIControl*_val) override;
+
+    uint8_t rawSpeed = 127;
+    uint8_t mode = 0;
+
+    void applySpeed();
+    void regen();
+    bool mothsRoutine(CRGB *leds, EffectWorker *param);
+    bool firefliesRoutine(CRGB *leds, EffectWorker *param);
+    bool tracersRoutine(CRGB *leds, EffectWorker *param);
+    String setDynCtrl(UIControl*_val) override;
 
 public:
     void load() override;

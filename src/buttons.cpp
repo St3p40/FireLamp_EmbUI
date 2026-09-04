@@ -310,7 +310,7 @@ int Buttons::loadConfig(const char *cfg){
 			return 0;
 		}
 
-		DynamicJsonDocument doc(2048);
+		JsonDocument doc;
 		DeserializationError error = deserializeJson(doc, cfg_str);
 		if (error) {
 			LOG(print, F("deserializeJson error: "));
@@ -323,7 +323,7 @@ int Buttons::loadConfig(const char *cfg){
 			JsonObject item = arr[i];
 			uint8_t mask = item[F("flg")].as<uint8_t>();
 			BA ac = (BA)item[F("ac")].as<int>();
-			if(item.containsKey(F("p"))){
+			if(!item[F("p")].isNull()){
 				String param = item[F("p")].as<String>();
 				buttons.add(new ButtonAction(mask, ac, param));
 			} else {

@@ -713,7 +713,7 @@ void LAMP::sendStringToLamp(const char* text, const CRGB &letterColor, bool forc
       if(docArrMessages){
         arr = (*docArrMessages).as<JsonArray>(); // используем имеющийся
       } else {
-        docArrMessages = new DynamicJsonDocument(512);
+        docArrMessages = new JsonDocument();
         arr = (*docArrMessages).to<JsonArray>(); // создаем новый
       }
 
@@ -730,7 +730,7 @@ void LAMP::sendStringToLamp(const char* text, const CRGB &letterColor, bool forc
         }
       }
 
-      JsonObject var = arr.createNestedObject();
+      JsonObject var = arr.add<JsonObject>();
       var[F("s")]=text;
       var[F("c")]=((unsigned long)letterColor.r<<16)+((unsigned long)letterColor.g<<8)+(unsigned long)letterColor.b;
       var[F("o")]=textOffset;
@@ -846,12 +846,12 @@ void LAMP::newYearMessageHandle()
 // при вызове - вывозит на лампу текущее время
 void LAMP::periodicTimeHandle(char *value, bool force)
 {
-  DynamicJsonDocument doc(512);
+  JsonDocument doc;
   String buf = value;
   buf.replace("'","\"");
   deserializeJson(doc,buf);
-  bool isShowOff = (doc.containsKey(FPSTR(TCONST_0048)) ? doc[FPSTR(TCONST_0048)] : String("0")) == "1" ? true : false;
-  bool isPlayTime = (doc.containsKey(FPSTR(TCONST_0056)) ? doc[FPSTR(TCONST_0056)] : String("0"))  == "1" ? true : false;
+  bool isShowOff = (!doc[FPSTR(TCONST_0048)].isNull() ? doc[FPSTR(TCONST_0048)] : String("0")) == "1" ? true : false;
+  bool isPlayTime = (!doc[FPSTR(TCONST_0056)].isNull() ? doc[FPSTR(TCONST_0056)] : String("0"))  == "1" ? true : false;
 
   const tm* t = localtime(embui.timeProcessor.now());
   if(t->tm_sec && !force)

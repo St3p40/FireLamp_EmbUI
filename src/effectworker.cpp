@@ -359,7 +359,7 @@ void EffectWorker::initDefault(const char *folder)
 
   const uint16_t buffersize = 32;
   char storage[buffersize];
-  DynamicJsonDocument doc(buffersize*2+32);
+  JsonDocument doc;
   size_t size;
   uint32_t effcnt = 0, ntry=0;
   DeserializationError error;
@@ -390,7 +390,7 @@ void EffectWorker::initDefault(const char *folder)
       } else {
         LOG(printf_P, PSTR("DeserializeJson error: %d - %s\n"), error.code(), storage);
       }
-      doc.clear(); doc.garbageCollect();
+      doc.clear();
     }
     if(!effcnt){
       if (LittleFS.begin() && LittleFS.exists(filename))
@@ -484,7 +484,7 @@ void EffectWorker::loadeffname(String& _effectName, const uint16_t nb, const cha
   String filename = geteffectpathname(nb,folder);
   const uint32_t bufsize=EFF_BUFFER_SIZE; // повинно бути кратно 4
   //const uint32_t nbfiles=EFF_NB_PER_FILE; // EFF_BUFFER_SIZE*EFF_NB_PER_FILE десь 4-32кб
-  DynamicJsonDocument doc(bufsize*2);
+  JsonDocument doc;
   bool ok = deserializeFile(doc, filename.c_str(),nb);
   if (ok && doc[F("name")]){
     _effectName = doc[F("name")].as<String>(); // перенакрываем именем из конфига, если есть
@@ -505,7 +505,7 @@ void EffectWorker::loadsoundfile(String& _soundfile, const uint16_t nb, const ch
   String filename = geteffectpathname(nb,folder);
   const uint32_t bufsize=EFF_BUFFER_SIZE; // повинно бути кратно 4
   //const uint32_t nbfiles=EFF_NB_PER_FILE; // EFF_BUFFER_SIZE*EFF_NB_PER_FILE десь 4-32кб
-  DynamicJsonDocument doc(bufsize*2);
+  JsonDocument doc;
   bool ok = deserializeFile(doc, filename.c_str(),nb);
   LOG(printf_P,PSTR("snd: %s\n"),doc[F("snd")].as<String>().c_str());
   if (ok && doc[F("snd")]){
@@ -518,10 +518,10 @@ void EffectWorker::loadsoundfile(String& _soundfile, const uint16_t nb, const ch
 /**
  *  метод загружает и пробует десериализовать джейсон из файла в предоставленный документ,
  *  возвращает true если загрузка и десериализация прошла успешно
- *  @param doc - DynamicJsonDocument куда будет загружен джейсон
+ *  @param doc - JsonDocument куда будет загружен джейсон
  *  @param jsonfile - файл, для загрузки
  */
-bool EffectWorker::deserializeFile(DynamicJsonDocument& doc, const char* filepath, int32_t nb){
+bool EffectWorker::deserializeFile(JsonDocument& doc, const char* filepath, int32_t nb){
   if (!filepath || !*filepath)
     return false;
 
@@ -561,7 +561,7 @@ int EffectWorker::loadeffconfig(const uint16_t nb, const char *folder)
   const uint32_t bufsize=EFF_BUFFER_SIZE; // повинно бути кратно 4
   //const uint32_t nbfiles=EFF_NB_PER_FILE; // EFF_BUFFER_SIZE*EFF_NB_PER_FILE десь 4-32кб
   String filename = geteffectpathname(nb,folder);
-  DynamicJsonDocument doc(bufsize*2);
+  JsonDocument doc;
   READALLAGAIN:
 
   if (!deserializeFile(doc, filename.c_str(), nb)){
@@ -580,10 +580,10 @@ int EffectWorker::loadeffconfig(const uint16_t nb, const char *folder)
   }
 
   curEff = doc[F("nb")].as<uint16_t>();
-  //flags.mask = doc.containsKey(F("flags")) ? doc[F("flags")].as<uint8_t>() : 255;
+  //flags.mask = !doc[F("flags")].isNull() ? doc[F("flags")].as<uint8_t>() : 255;
   const char* name = doc[F("name")];
   effectName = name ? name : (String)(FPSTR(T_EFFNAMEID[(uint8_t)nb]));
-  soundfile = doc.containsKey(F("snd")) ? doc[F("snd")].as<String>() : "";
+  soundfile = !doc[F("snd")].isNull() ? doc[F("snd")].as<String>() : "";
   //LOG(printf_P, PSTR("Load MEM: %s - CFG: %s - DEF: %s\n"), effectName.c_str(), doc[F("name")].as<String>().c_str(), worker->getName().c_str());
   // вычитываею список контроллов
   // повторные - скипаем, нехватающие - создаем
@@ -596,16 +596,16 @@ int EffectWorker::loadeffconfig(const uint16_t nb, const char *folder)
       uint8_t id = item[F("id")].as<uint8_t>();
       if(!(id_tst&(1<<id))){ // проверка на существование контрола
           id_tst |= 1<<item[F("id")].as<uint8_t>(); // закладываемся не более чем на 8 контролов, этого хватит более чем :)
-          String name = item.containsKey(F("name")) ?
+          String name = !item[F("name")].isNull() ?
               item[F("name")].as<String>()
               : id == 0 ? String(FPSTR(TINTF_00D))
               : id == 1 ? String(FPSTR(TINTF_087))
               : id == 2 ? String(FPSTR(TINTF_088))
               : String(F("Доп."))+String(id);
-          String val = item.containsKey(F("val")) ? item[F("val")].as<String>() : String(1);
-          String min = item.containsKey(F("min")) && id>2 ? item[F("min")].as<String>() : String(1);
-          String max = item.containsKey(F("max")) && id>2 ? item[F("max")].as<String>() : String(255);
-          String step = item.containsKey(F("step")) && id>2 ?  item[F("step")].as<String>() : String(1);
+          String val = !item[F("val")].isNull() ? item[F("val")].as<String>() : String(1);
+          String min = !item[F("min")].isNull() && id>2 ? item[F("min")].as<String>() : String(1);
+          String max = !item[F("max")].isNull() && id>2 ? item[F("max")].as<String>() : String(255);
+          String step = !item[F("step")].isNull() && id>2 ?  item[F("step")].as<String>() : String(1);
           CONTROL_TYPE type = item[F("type")].as<CONTROL_TYPE>();
           type = ((type & 0x0F)!=CONTROL_TYPE::RANGE) && id<3 ? CONTROL_TYPE::RANGE : type;
           min = ((type & 0x0F)==CONTROL_TYPE::CHECKBOX) ? "0" : min;
@@ -740,7 +740,7 @@ String &EffectWorker::geteffconfig(uint16_t nb, uint8_t replaceBright, String &s
   // конфиг текущего эффекта
   const uint32_t bufsize=EFF_BUFFER_SIZE; // повинно бути кратно 4
   //const uint32_t nbfiles=EFF_NB_PER_FILE; // EFF_BUFFER_SIZE*EFF_NB_PER_FILE десь 4-32кб
-  DynamicJsonDocument doc(bufsize*2);
+  JsonDocument doc;
   EffectListElem *eff = getEffect(nb);
   EffectWorker *tmp=this;
   bool isFader = (curEff != nb);
@@ -756,9 +756,9 @@ String &EffectWorker::geteffconfig(uint16_t nb, uint8_t replaceBright, String &s
   doc[F("name")] = tmp->effectName;
   doc[F("ver")] = tmp->version;
   doc[F("snd")] = tmp->soundfile;
-  JsonArray arr = doc.createNestedArray(F("ctrls"));
+  JsonArray arr = doc[F("ctrls")].to<JsonArray>();
   for (int i = 0; i < tmp->controls.size(); i++) {
-    JsonObject var = arr.createNestedObject();
+    JsonObject var = arr.add<JsonObject>();
     var[F("id")]=tmp->controls[i]->getId();
     var[F("type")]=tmp->controls[i]->getType();
     var[F("name")]=tmp->controls[i]->getName();
@@ -852,7 +852,7 @@ void EffectWorker::chkdefconfigs(const char *folder){
 // #endif
 //   }
 
-  DynamicJsonDocument doc(512);
+  JsonDocument doc;
   JsonObject data = doc.to<JsonObject>();
   data[FPSTR(TCONST_00EF)] = folder ? folder : "";
   data[FPSTR(TCONST_00F0)] = EFF_ENUM::EFF_NONE;
@@ -1122,7 +1122,7 @@ void EffectWorker::makeIndexFileFromFS(const char *fromfolder,const char *tofold
 
   const uint32_t bufsize=EFF_BUFFER_SIZE; // повинно бути кратно 4
   const uint32_t nbfiles=EFF_NB_PER_FILE; // EFF_BUFFER_SIZE*EFF_NB_PER_FILE десь 4-32кб
-  DynamicJsonDocument doc(bufsize*2);
+  JsonDocument doc;
 
 #ifdef ESP8266
   while (dir.next()) {
@@ -1139,7 +1139,7 @@ void EffectWorker::makeIndexFileFromFS(const char *fromfolder,const char *tofold
         }
         uint16_t nb = doc[F("nb")].as<uint16_t>();
         uint8_t flags = doc[F("flags")].as<uint8_t>();
-        doc.clear(); doc.garbageCollect();
+        doc.clear();
         EffectListElem *eff = getEffect(nb);
         if(eff)
           flags = eff->flags.mask;
@@ -1246,7 +1246,7 @@ void EffectWorker::loadEffectsBackup(const char *filename, bool clear)
   if(!filename) return;
 //   const uint32_t bufsize=EFF_BUFFER_SIZE; // повинно бути кратно 4
 //   const uint32_t nbfiles=EFF_NB_PER_FILE; // EFF_BUFFER_SIZE*EFF_NB_PER_FILE десь 4-32кб
-//   DynamicJsonDocument doc(bufsize*2);
+//   JsonDocument doc;
 //   File bkp = LittleFS.open(filename, "r");
 //   File configFile;
 //   uint8_t *buffer = new uint8_t[bufsize];
@@ -1275,7 +1275,7 @@ void EffectWorker::loadEffectsBackup(const char *filename, bool clear)
 //       }
 //       nb=doc[F("nb")].as<uint16_t>();
 //       LOG(printf_P, PSTR("%d.%s "),nb,doc[F("name")].as<String>().c_str());
-//       doc.clear(); doc.garbageCollect(); storage=String();
+//       doc.clear(); storage=String();
 //       cfilename = geteffectpathname(nb);
 //       pos=nb>255?(((nb>>8)-1)%nbfiles):((nb&0xFF)%nbfiles);
 //       if(LittleFS.exists(cfilename))
@@ -1299,7 +1299,7 @@ void EffectWorker::loadEffectsBackup(const char *filename, bool clear)
 //   delete[] buffer;
 //   bkp.close();
 
-  DynamicJsonDocument doc(256);
+  JsonDocument doc;
   JsonObject data = doc.to<JsonObject>();
   data[FPSTR(TCONST_002A)] = filename ? filename : "";
   data[FPSTR(TCONST_005B)] = 2;
@@ -1316,7 +1316,7 @@ void EffectWorker::loadEffectsBackup(const char *filename, bool clear)
 
     const uint32_t bufsize=EFF_BUFFER_SIZE; // повинно бути кратно 4
     const uint32_t nbfiles=EFF_NB_PER_FILE; // EFF_BUFFER_SIZE*EFF_NB_PER_FILE десь 4-32кб
-    DynamicJsonDocument doc(bufsize*2);
+    JsonDocument doc;
     File bkp = LittleFS.open((*data)[FPSTR(TCONST_002A)].as<String>(), "r");
     bkp.seek((*data)[FPSTR(TCONST_005B)].as<size_t>(), SeekMode::SeekSet);
     uint8_t *buffer = new uint8_t[bufsize];
@@ -1355,7 +1355,7 @@ void EffectWorker::loadEffectsBackup(const char *filename, bool clear)
     } else {
       nb=doc[F("nb")].as<uint16_t>();
       LOG(printf_P, PSTR("%d.%s "),nb,doc[F("name")].as<String>().c_str());
-      doc.clear(); doc.garbageCollect(); storage=String();
+      doc.clear(); storage=String();
       cfilename = geteffectpathname(nb);
       pos=nb>255?(((nb>>8)-1)%nbfiles):((nb&0xFF)%nbfiles);
       if(LittleFS.exists(cfilename))

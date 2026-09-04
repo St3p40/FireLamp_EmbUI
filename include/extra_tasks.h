@@ -200,15 +200,15 @@ public:
 //-----------------------------------------------
 
 class JsonTask : public Task {
-    DynamicJsonDocument *_data = nullptr;
-    INLINE DynamicJsonDocument *makeDoc(JsonObject *data) {
-        DynamicJsonDocument *storage = new DynamicJsonDocument(data->memoryUsage()*2+32);
+    JsonDocument *_data = nullptr;
+    INLINE JsonDocument *makeDoc(JsonObject *data) {
+        JsonDocument *storage = new JsonDocument();
         if(!storage) return nullptr;
         String tmp; serializeJson(*data,tmp); //LOG(printf_P, PSTR("makeDoc: %s\n"), tmp.c_str());
         deserializeJson((*storage), tmp);
         return storage;
     }
-    INLINE void setNewData(DynamicJsonDocument *newData) {if(_data) delete _data; _data=newData;}
+    INLINE void setNewData(JsonDocument *newData) {if(_data) delete _data; _data=newData;}
 public:
     INLINE JsonObject getData() {return (_data ? _data->as<JsonObject>() : JsonObject());}
     bool replaceIfSame(JsonObject *test) {
@@ -217,13 +217,13 @@ public:
         JsonObject obj = getData();
         bool same=!obj.isNull();
         for (JsonPair kv : obj) {
-            if(!((*test)).containsKey(kv.key())){
+            if(((*test))[kv.key()].isNull()){
                 same=false;
                 break;
             }
         }
         if(same){
-            DynamicJsonDocument *doc = makeDoc(test);
+            JsonDocument *doc = makeDoc(test);
             setNewData(doc);
         }
         return same;

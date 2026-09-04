@@ -132,10 +132,10 @@ void EVENT_MANAGER::clear_events()
 /**
  *  метод загружает и пробует десериализовать джейсон из файла в предоставленный документ,
  *  возвращает true если загрузка и десериализация прошла успешно
- *  @param doc - DynamicJsonDocument куда будет загружен джейсон
+ *  @param doc - JsonDocument куда будет загружен джейсон
  *  @param jsonfile - файл, для загрузки
  */
-bool EVENT_MANAGER::deserializeFile(DynamicJsonDocument& doc, const char* filepath){
+bool EVENT_MANAGER::deserializeFile(JsonDocument& doc, const char* filepath){
   if (!filepath || !*filepath)
     return false;
 
@@ -161,7 +161,7 @@ void EVENT_MANAGER::loadConfig(const char *cfg)
 {
     if(LittleFS.begin()){
         clear_events();
-        DynamicJsonDocument doc(4096);
+        JsonDocument doc;
         String filename = cfg ? String(cfg) : String(FPSTR(TCONST_00A8));
         if (!deserializeFile(doc, filename.c_str())){
             LOG(print, F("deserializeJson error: "));

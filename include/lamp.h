@@ -217,7 +217,7 @@ private:
 #ifdef TM1637_CLOCK
     uint8_t tmBright; // яркость дисплея при вкл - старшие 4 бита и яркость дисплея при выкл - младшие 4 бита
 #endif
-    DynamicJsonDocument *docArrMessages = nullptr; // массив сообщений для вывода на лампу
+    JsonDocument *docArrMessages = nullptr; // массив сообщений для вывода на лампу
 
     timerMinim tmStringStepTime;    // шаг смещения строки, в мс
     timerMinim tmNewYearMessage;    // период вывода новогоднего сообщения
@@ -672,16 +672,16 @@ private:
     ALARMTASK() = delete;
 
     void initAlarm(char *value = nullptr){
-        DynamicJsonDocument doc(1024);
+        JsonDocument doc;
         String buf = value;
         buf.replace("'","\"");
         deserializeJson(doc,buf);
-        curAlarm.alarmP = doc.containsKey(FPSTR(TCONST_00BB)) ? doc[FPSTR(TCONST_00BB)] : lamp->getAlarmP();
-        curAlarm.alarmT = doc.containsKey(FPSTR(TCONST_00BC)) ? doc[FPSTR(TCONST_00BC)] : lamp->getAlarmT();
-        curAlarm.msg = doc.containsKey(FPSTR(TCONST_0035)) ? doc[FPSTR(TCONST_0035)] : String("");
-        curAlarm.isLimitVol = doc.containsKey(FPSTR(TCONST_00D2)) ? doc[FPSTR(TCONST_00D2)].as<String>()=="1" : lamp->getLampSettings().limitAlarmVolume;
-        curAlarm.isStartSnd = doc.containsKey(FPSTR(TCONST_00D1)) ? doc[FPSTR(TCONST_00D1)].as<String>()=="1" : true;
-        curAlarm.type = (ALARM_SOUND_TYPE)(doc.containsKey(FPSTR(TCONST_00D3)) ? doc[FPSTR(TCONST_00D3)].as<uint8_t>() : lamp->getLampSettings().alarmSound);
+        curAlarm.alarmP = !doc[FPSTR(TCONST_00BB)].isNull() ? doc[FPSTR(TCONST_00BB)] : lamp->getAlarmP();
+        curAlarm.alarmT = !doc[FPSTR(TCONST_00BC)].isNull() ? doc[FPSTR(TCONST_00BC)] : lamp->getAlarmT();
+        curAlarm.msg = !doc[FPSTR(TCONST_0035)].isNull() ? doc[FPSTR(TCONST_0035)] : String("");
+        curAlarm.isLimitVol = !doc[FPSTR(TCONST_00D2)].isNull() ? doc[FPSTR(TCONST_00D2)].as<String>()=="1" : lamp->getLampSettings().limitAlarmVolume;
+        curAlarm.isStartSnd = !doc[FPSTR(TCONST_00D1)].isNull() ? doc[FPSTR(TCONST_00D1)].as<String>()=="1" : true;
+        curAlarm.type = (ALARM_SOUND_TYPE)(!doc[FPSTR(TCONST_00D3)].isNull() ? doc[FPSTR(TCONST_00D3)].as<uint8_t>() : lamp->getLampSettings().alarmSound);
 
         lamp->setMode(LAMPMODE::MODE_ALARMCLOCK);
         lamp->demoTimer(T_DISABLE);     // гасим Демо-таймер

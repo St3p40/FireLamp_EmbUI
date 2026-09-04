@@ -463,10 +463,10 @@ private:
     /**
      *  метод загружает и пробует десериализовать джейсон из файла в предоставленный документ,
      *  возвращает true если загрузка и десериализация прошла успешно
-     *  @param doc - DynamicJsonDocument куда будет загружен джейсон
+     *  @param doc - JsonDocument куда будет загружен джейсон
      *  @param jsonfile - файл, для загрузки
      */
-    bool deserializeFile(DynamicJsonDocument& doc, const char* filepath, int32_t nb=-1);
+    bool deserializeFile(JsonDocument& doc, const char* filepath, int32_t nb=-1);
 
     /**
      * процедура открывает индекс-файл на запись в переданный хендл,

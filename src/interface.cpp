@@ -433,7 +433,7 @@ void set_effects_config_param(Interface *interf, JsonObject *data){
 void set_cur_eff_param(Interface *interf, JsonObject *data){
     String tmp; serializeJson(*data, tmp); LOG(printf_P, PSTR("set_cur_eff_param %s\n"), tmp.c_str());
     if (!data) return;
-    if(data->containsKey(FPSTR(TCONST_0005))){
+    if(!(*data)[FPSTR(TCONST_0005)].isNull()){
         set_effects_config_param(interf,data);
         return;
     }
@@ -442,28 +442,28 @@ void set_cur_eff_param(Interface *interf, JsonObject *data){
 
     if (confEff){ 
         EffectListElem *effect = confEff;
-        if(data->containsKey(FPSTR(TCONST_0006))){
+        if(!(*data)[FPSTR(TCONST_0006)].isNull()){
             bool canBeSelected = (*data)[FPSTR(TCONST_0006)] == "1";
             if(effect->flags.canBeSelected!=canBeSelected){
                 effect->canBeSelected(canBeSelected);
                 isRefresh = true;
             }
         }
-        if(data->containsKey(FPSTR(TCONST_0007))){
+        if(!(*data)[FPSTR(TCONST_0007)].isNull()){
             bool isFavorite = (*data)[FPSTR(TCONST_0007)] == "1";
             if(effect->flags.isFavorite!=isFavorite){
                 effect->isFavorite(isFavorite);
                 isRefresh = true;
             }
         }
-        if(data->containsKey(FPSTR(TCONST_00AB))){
+        if(!(*data)[FPSTR(TCONST_00AB)].isNull()){
             String snd = (*data)[FPSTR(TCONST_00AB)];
             if(myLamp.effects.getSoundfile()!=snd){
                 myLamp.effects.setSoundfile(snd, effect);
                 isRefresh = true;
             }    
         }
-        if(data->containsKey(FPSTR(TCONST_0092))){
+        if(!(*data)[FPSTR(TCONST_0092)].isNull()){
             String eff = (*data)[FPSTR(TCONST_0092)];
             if(myLamp.effects.getEffectName()!=eff){
                 myLamp.effects.setEffectName(eff, effect);
@@ -471,7 +471,7 @@ void set_cur_eff_param(Interface *interf, JsonObject *data){
             } 
         }
     }
-    if(data->containsKey(FPSTR(TCONST_0090))){
+    if(!(*data)[FPSTR(TCONST_0090)].isNull()){
         bool isNumInList =  (*data)[FPSTR(TCONST_0090)] == "1";
         if(myLamp.getLampSettings().numInList!=isNumInList){
             myLamp.setNumInList(isNumInList);
@@ -479,7 +479,7 @@ void set_cur_eff_param(Interface *interf, JsonObject *data){
         } 
     }
 #ifdef MIC_EFFECTS
-    if(data->containsKey(FPSTR(TCONST_0091))){
+    if(!(*data)[FPSTR(TCONST_0091)].isNull()){
         bool isEffHasMic =  (*data)[FPSTR(TCONST_0091)] == "1";
         if(myLamp.getLampSettings().effHasMic!=isEffHasMic){
             myLamp.setEffHasMic(isEffHasMic);
@@ -487,7 +487,7 @@ void set_cur_eff_param(Interface *interf, JsonObject *data){
         } 
     }
 #endif
-    if(data->containsKey(FPSTR(TCONST_0050))){
+    if(!(*data)[FPSTR(TCONST_0050)].isNull()){
         SORT_TYPE st = (*data)[FPSTR(TCONST_0050)].as<SORT_TYPE>();
         if(myLamp.effects.getEffSortType()!=st){
             SETPARAM(FPSTR(TCONST_0050), myLamp.effects.setEffSortType(st));
@@ -495,7 +495,7 @@ void set_cur_eff_param(Interface *interf, JsonObject *data){
         } 
     }
 
-    if(!data->containsKey(FPSTR(TCONST_00F1))){
+    if((*data)[FPSTR(TCONST_00F1)].isNull()){
         show_effects_config(interf, nullptr);
     } else if(isRefresh){
         isRefresh = (*data)[FPSTR(TCONST_00F1)].as<String>() == FPSTR(P_true) ? true : false; // override refresh
@@ -892,7 +892,7 @@ void block_effects_param(Interface *interf, JsonObject *data){
                     tmpS.replace(F("'"),F("\"")); // так делать не красиво, но шопаделаешь...
                     // Пример массива: "[{'v':'1', 'l':'option1'},{'v':'2', 'l':'option2'},{'v':'3', 'l':'option3'}]"
                     // Альтернатива - укзать путь к ФС, например: "/folde1/folder2/" чи "/animations/"
-                    StaticJsonDocument<1024> doc;
+                    JsonDocument doc;
                     deserializeJson(doc, tmpS);
                     JsonArray arr = doc.as<JsonArray>();
                     if(!arr){
@@ -983,7 +983,7 @@ void set_effects_list(Interface *interf, JsonObject *data){
 
     if(myLamp.getMode()==LAMPMODE::MODE_WHITELAMP && num!=1){
         myLamp.startNormalMode(true);
-        DynamicJsonDocument doc(512);
+        JsonDocument doc;
         JsonObject obj = doc.to<JsonObject>();
         CALL_INTF(FPSTR(TCONST_001A), myLamp.isLampOn() ? "1" : "0", set_onflag);
         return;
@@ -1019,7 +1019,7 @@ void direct_set_effects_dynCtrl(JsonObject *data){
     LList<UIControl*>&controls = myLamp.effects.getControls();
     for(int i=0; i<controls.size();i++){
         ctrlName = String(FPSTR(TCONST_0015))+String(controls[i]->getId());
-        if((*data).containsKey(ctrlName)){
+        if(!(*data)[ctrlName].isNull()){
             if(!i){ // яркость???
                 byte bright = (*data)[ctrlName];
                 if (myLamp.getNormalizedLampBrightness() != bright) {
@@ -1054,7 +1054,7 @@ void set_effects_dynCtrl(Interface *interf, JsonObject *data){
     // timeout = millis();
 
     // попытка повышения стабильности, отдаем управление браузеру как можно быстрее...
-    if((*data).containsKey(FPSTR(TCONST_00D5)))
+    if(!(*data)[FPSTR(TCONST_00D5)].isNull())
         direct_set_effects_dynCtrl(data);
 
     if(ctrlsTask){
@@ -1333,7 +1333,7 @@ void set_eff_next(Interface *interf, JsonObject *data){
  */
 void set_onflag(Interface *interf, JsonObject *data){
     if (!data) return;
-    bool ra_call = (*data).containsKey(FPSTR(TCONST_00D4));
+    bool ra_call = !(*data)[FPSTR(TCONST_00D4)].isNull();
 
     bool newpower = TOGLE_STATE((*data)[FPSTR(TCONST_001A)], myLamp.isLampOn());
     if (newpower != myLamp.isLampOn()) {
@@ -1601,7 +1601,7 @@ void edit_lamp_config(Interface *interf, JsonObject *data){
     if (!data) return;
     String act = (*data)[FPSTR(TCONST_0029)];
 
-    String name = (data->containsKey(FPSTR(TCONST_002A)) && ((*data)[FPSTR(TCONST_0029)] != FPSTR(TCONST_0030)) ? (*data)[FPSTR(TCONST_002A)] : (*data)[FPSTR(TCONST_00CF)]);
+    String name = (!(*data)[FPSTR(TCONST_002A)].isNull() && ((*data)[FPSTR(TCONST_0029)] != FPSTR(TCONST_0030)) ? (*data)[FPSTR(TCONST_002A)] : (*data)[FPSTR(TCONST_00CF)]);
     if(name.isEmpty() || act.isEmpty())
         name = (*data)[FPSTR(TCONST_00CF)].as<String>();
     LOG(printf_P, PSTR("name=%s, act=%s\n"), name.c_str(), act.c_str());
@@ -1618,7 +1618,7 @@ void edit_lamp_config(Interface *interf, JsonObject *data){
             JsonTask *task = (JsonTask *)ts.getCurrentTask();
             JsonObject storage = task->getData();
             JsonObject *data = &storage; // task->getData();
-            String name = (data->containsKey(FPSTR(TCONST_002A)) ? (*data)[FPSTR(TCONST_002A)] : (*data)[FPSTR(TCONST_00CF)]);
+            String name = (!(*data)[FPSTR(TCONST_002A)].isNull() ? (*data)[FPSTR(TCONST_002A)] : (*data)[FPSTR(TCONST_00CF)]);
             if(name.isEmpty())
                 name = (*data)[FPSTR(TCONST_00CF)].as<String>();
             String filename = String(FPSTR(TCONST_0031)) + name;
@@ -1647,7 +1647,7 @@ void edit_lamp_config(Interface *interf, JsonObject *data){
             JsonTask *task = (JsonTask *)ts.getCurrentTask();
             JsonObject storage = task->getData();
             JsonObject *data = &storage; // task->getData();
-            String name = (data->containsKey(FPSTR(TCONST_002A)) ? (*data)[FPSTR(TCONST_002A)] : (*data)[FPSTR(TCONST_00CF)]);
+            String name = (!(*data)[FPSTR(TCONST_002A)].isNull() ? (*data)[FPSTR(TCONST_002A)] : (*data)[FPSTR(TCONST_00CF)]);
             if(name.isEmpty())
                 name = (*data)[FPSTR(TCONST_00CF)].as<String>();
             resetAutoTimers();
@@ -1721,7 +1721,7 @@ void edit_lamp_config(Interface *interf, JsonObject *data){
             JsonTask *task = (JsonTask *)ts.getCurrentTask();
             JsonObject storage = task->getData();
             JsonObject *data = &storage; // task->getData();
-            String name = (data->containsKey(FPSTR(TCONST_002A)) && ((*data)[FPSTR(TCONST_0029)] != FPSTR(TCONST_0030)) ? (*data)[FPSTR(TCONST_002A)] : (*data)[FPSTR(TCONST_00CF)]);
+            String name = (!(*data)[FPSTR(TCONST_002A)].isNull() && ((*data)[FPSTR(TCONST_0029)] != FPSTR(TCONST_0030)) ? (*data)[FPSTR(TCONST_002A)] : (*data)[FPSTR(TCONST_00CF)]);
             if(name.isEmpty())
                 name = (*data)[FPSTR(TCONST_00CF)].as<String>();
             if(!name.endsWith(F(".json"))){
@@ -1815,7 +1815,7 @@ void block_drawing(Interface *interf, JsonObject *data){
     recreateoptionsTask(true); // only cancel task
     interf->json_section_main(FPSTR(TCONST_00C8), FPSTR(TINTF_0CE));
 
-    DynamicJsonDocument doc(512);
+    JsonDocument doc;
     JsonObject param = doc.to<JsonObject>();
 
     param[FPSTR(TCONST_00CD)] = WIDTH;
@@ -1835,11 +1835,11 @@ void set_drawing(Interface *interf, JsonObject *data){
     if (!data) return;
 
     String value = (*data)[FPSTR(TCONST_00C9)];
-    if((*data).containsKey(FPSTR(TCONST_00C9)) && value!=F("null"))
+    if(!(*data)[FPSTR(TCONST_00C9)].isNull() && value!=F("null"))
         remote_action(RA_DRAW, value.c_str(), NULL);
     else {
         String key = String(FPSTR(TCONST_00C9))+String(F("_fill"));
-        if((*data).containsKey(key)){
+        if(!(*data)[key].isNull()){
             value = (*data)[key].as<String>();
             remote_action(RA_FILLMATRIX, value.c_str(), NULL);
         }
@@ -2466,14 +2466,14 @@ void set_event_conf(Interface *interf, JsonObject *data){
 
     if(cur_edit_event){
         myLamp.events.delEvent(*cur_edit_event);
-    } else if (data->containsKey(FPSTR(TCONST_005E))) {
+    } else if (!(*data)[FPSTR(TCONST_005E)].isNull()) {
         int num = (*data)[FPSTR(TCONST_005E)];
         LList<DEV_EVENT *> *events = myLamp.events.getEvents();
         if(events->size()>num)
             events->remove(num);
     }
 
-    if (data->containsKey(FPSTR(TCONST_0060))) {
+    if (!(*data)[FPSTR(TCONST_0060)].isNull()) {
         event.isEnabled = ((*data)[FPSTR(TCONST_0060)] == "1");
     } else {
         event.isEnabled = true;
@@ -2510,7 +2510,7 @@ void set_event_conf(Interface *interf, JsonObject *data){
     String buf; // внешний буффер, т.к. добавление эвента ниже
     switch(event.getEvent()){
         case EVENT_TYPE::ALARM: {
-                DynamicJsonDocument doc(1024);
+                JsonDocument doc;
                 doc[FPSTR(TCONST_00BB)] = (*data)[FPSTR(TCONST_00BB)];
                 doc[FPSTR(TCONST_00BC)] = (*data)[FPSTR(TCONST_00BC)];
                 doc[FPSTR(TCONST_0035)] = (*data)[FPSTR(TCONST_0035)];
@@ -2527,7 +2527,7 @@ void set_event_conf(Interface *interf, JsonObject *data){
             }
             break;
         case EVENT_TYPE::SEND_TIME: {
-                DynamicJsonDocument doc(1024);
+                JsonDocument doc;
                 doc[FPSTR(TCONST_0048)] = (*data)[FPSTR(TCONST_0048)];
 #ifdef MP3PLAYER
                 doc[FPSTR(TCONST_0056)] = (*data)[FPSTR(TCONST_0056)];
@@ -2554,9 +2554,9 @@ void show_event_conf(Interface *interf, JsonObject *data){
     int num = 0;
     if (!interf || !data) return;
 
-    LOG(print,F("event_conf=")); LOG(println, (*data)[FPSTR(TCONST_005D)].as<String>()); //  && data->containsKey(FPSTR(TCONST_005D))
+    LOG(print,F("event_conf=")); LOG(println, (*data)[FPSTR(TCONST_005D)].as<String>()); //  && !(*data)[FPSTR(TCONST_005D)].isNull()
 
-    if (data->containsKey(FPSTR(TCONST_005E))) {
+    if (!(*data)[FPSTR(TCONST_005E)].isNull()) {
         DEV_EVENT *curr = NULL;
         num = (*data)[FPSTR(TCONST_005E)];
 
@@ -2569,7 +2569,7 @@ void show_event_conf(Interface *interf, JsonObject *data){
         cur_edit_event = curr;
         edit = true;
     } else if(cur_edit_event != NULL){
-        if(data->containsKey(FPSTR(TCONST_0068)))
+        if(!(*data)[FPSTR(TCONST_0068)].isNull())
             cur_edit_event->setEvent((*data)[FPSTR(TCONST_0068)].as<EVENT_TYPE>()); // меняем тип налету
         if(myLamp.events.isEnumerated(*cur_edit_event))
             edit = true;
@@ -2584,7 +2584,7 @@ void show_event_conf(Interface *interf, JsonObject *data){
         myLamp.events.saveConfig();
         show_settings_event(interf, data);
         return;
-    } else if (data->containsKey(FPSTR(TCONST_002E))) {
+    } else if (!(*data)[FPSTR(TCONST_002E)].isNull()) {
         set_event_conf(interf, data);
         return;
     }
@@ -2638,13 +2638,13 @@ void show_event_conf(Interface *interf, JsonObject *data){
 
     switch(cur_edit_event->getEvent()){
         case EVENT_TYPE::ALARM: {
-                DynamicJsonDocument doc(1024);
+                JsonDocument doc;
                 String buf = cur_edit_event->getMessage();
                 buf.replace("'","\"");
                 DeserializationError err = deserializeJson(doc,buf);
-                int alarmP = !err && doc.containsKey(FPSTR(TCONST_00BB)) ? doc[FPSTR(TCONST_00BB)].as<uint8_t>() : myLamp.getAlarmP();
-                int alarmT = !err && doc.containsKey(FPSTR(TCONST_00BC)) ? doc[FPSTR(TCONST_00BC)].as<uint8_t>() : myLamp.getAlarmT();
-                String msg = !err && doc.containsKey(FPSTR(TCONST_0035)) ? doc[FPSTR(TCONST_0035)] : cur_edit_event->getMessage();
+                int alarmP = !err && !doc[FPSTR(TCONST_00BB)].isNull() ? doc[FPSTR(TCONST_00BB)].as<uint8_t>() : myLamp.getAlarmP();
+                int alarmT = !err && !doc[FPSTR(TCONST_00BC)].isNull() ? doc[FPSTR(TCONST_00BC)].as<uint8_t>() : myLamp.getAlarmT();
+                String msg = !err && !doc[FPSTR(TCONST_0035)].isNull() ? doc[FPSTR(TCONST_0035)] : cur_edit_event->getMessage();
 
                 interf->spacer(FPSTR(TINTF_0BA));
                 interf->text(FPSTR(TCONST_0035), msg, FPSTR(TINTF_070), false);
@@ -2653,9 +2653,9 @@ void show_event_conf(Interface *interf, JsonObject *data){
                     interf->range(FPSTR(TCONST_00BC), String(alarmT), String(1), String(15), String(1), FPSTR(TINTF_0BC), false);
                 interf->json_section_end();
 #ifdef MP3PLAYER
-                String limitAlarmVolume = !err && doc.containsKey(FPSTR(TCONST_00D2)) ? doc[FPSTR(TCONST_00D2)] : String(myLamp.getLampSettings().limitAlarmVolume ? "1" : "0");
-                String alarmFromStart = !err && doc.containsKey(FPSTR(TCONST_00D1)) ? doc[FPSTR(TCONST_00D1)] : String("1");
-                String st = !err && doc.containsKey(FPSTR(TCONST_00D3)) ? doc[FPSTR(TCONST_00D3)] : String(myLamp.getLampSettings().alarmSound);
+                String limitAlarmVolume = !err && !doc[FPSTR(TCONST_00D2)].isNull() ? doc[FPSTR(TCONST_00D2)] : String(myLamp.getLampSettings().limitAlarmVolume ? "1" : "0");
+                String alarmFromStart = !err && !doc[FPSTR(TCONST_00D1)].isNull() ? doc[FPSTR(TCONST_00D1)] : String("1");
+                String st = !err && !doc[FPSTR(TCONST_00D3)].isNull() ? doc[FPSTR(TCONST_00D3)] : String(myLamp.getLampSettings().alarmSound);
                 interf->json_section_line();
                     interf->checkbox(FPSTR(TCONST_00D1), alarmFromStart, FPSTR(TINTF_0D1), false);
                     interf->checkbox(FPSTR(TCONST_00D2), limitAlarmVolume, FPSTR(TINTF_0D2), false);
@@ -2674,14 +2674,14 @@ void show_event_conf(Interface *interf, JsonObject *data){
             }
             break;
         case EVENT_TYPE::SEND_TIME: {
-                DynamicJsonDocument doc(1024);
+                JsonDocument doc;
                 String buf = cur_edit_event->getMessage();
                 buf.replace("'","\"");
                 DeserializationError err = deserializeJson(doc,buf);
-                String isShowOff  = !err && doc.containsKey(FPSTR(TCONST_0048)) ? doc[FPSTR(TCONST_0048)] : String("0");
-                String isPlayTime = !err && doc.containsKey(FPSTR(TCONST_0056)) ? doc[FPSTR(TCONST_0056)] : String("0");
+                String isShowOff  = !err && !doc[FPSTR(TCONST_0048)].isNull() ? doc[FPSTR(TCONST_0048)] : String("0");
+                String isPlayTime = !err && !doc[FPSTR(TCONST_0056)].isNull() ? doc[FPSTR(TCONST_0056)] : String("0");
                 
-                //String msg = !err && doc.containsKey(FPSTR(TCONST_0035)) ? doc[FPSTR(TCONST_0035)] : cur_edit_event->getMessage();
+                //String msg = !err && !doc[FPSTR(TCONST_0035)].isNull() ? doc[FPSTR(TCONST_0035)] : cur_edit_event->getMessage();
 
                 interf->spacer("");
                 //interf->text(FPSTR(TCONST_0035), msg, FPSTR(TINTF_070), false);
@@ -2729,7 +2729,7 @@ void set_eventlist(Interface *interf, JsonObject *data){
     
     if(cur_edit_event && cur_edit_event->getEvent()!=(*data)[FPSTR(TCONST_0068)].as<EVENT_TYPE>()){ // только если реально поменялось, то обновляем интерфейс
         show_event_conf(interf,data);
-    } else if((*data).containsKey(FPSTR(TCONST_002E))){ // эта часть срабатывает даже если нажата кнопка "обновить, следовательно ловим эту ситуацию"
+    } else if(!(*data)[FPSTR(TCONST_002E)].isNull()){ // эта часть срабатывает даже если нажата кнопка "обновить, следовательно ловим эту ситуацию"
         set_event_conf(interf, data); //через какую-то хитрую жопу отработает :)
     }
 }
@@ -2797,7 +2797,7 @@ void show_settings_butt(Interface *interf, JsonObject *data){
 
 void set_butt_pinconf(Interface *interf, JsonObject *data){
     if (!data) return;
-    if (!data->containsKey(FPSTR(TCONST_0097)) || !data->containsKey(FPSTR(TCONST_00F9))) return;
+    if ((*data)[FPSTR(TCONST_0097)].isNull() || (*data)[FPSTR(TCONST_00F9)].isNull()) return;
 
     uint16_t newpin = (*data)[FPSTR(TCONST_0097)].as<uint16_t>();
 #ifdef ESP32
@@ -2825,7 +2825,7 @@ void set_butt_conf(Interface *interf, JsonObject *data){
     String param = (*data)[FPSTR(TCONST_00B5)].as<String>();
     BA action = (BA)(*data)[FPSTR(TCONST_0074)].as<long>();
 
-    if (data->containsKey(FPSTR(TCONST_006F))) {
+    if (!(*data)[FPSTR(TCONST_006F)].isNull()) {
         int num = (*data)[FPSTR(TCONST_006F)];
         if (num < myButtons->size()) {
             btn = (*myButtons)[num];
@@ -2853,7 +2853,7 @@ void show_butt_conf(Interface *interf, JsonObject *data){
     String act;
     int num = 0;
 
-    if (data->containsKey(FPSTR(TCONST_006F))) {
+    if (!(*data)[FPSTR(TCONST_006F)].isNull()) {
         num = (*data)[FPSTR(TCONST_006F)];
         if (num < myButtons->size()) {
             act = (*data)[FPSTR(TCONST_006E)].as<String>();
@@ -2867,7 +2867,7 @@ void show_butt_conf(Interface *interf, JsonObject *data){
         show_settings_butt(interf, data);
         return;
     } else
-    if (data->containsKey(FPSTR(TCONST_002E))) {
+    if (!(*data)[FPSTR(TCONST_002E)].isNull()) {
         set_butt_conf(interf, data);
         return;
     }
@@ -2986,7 +2986,7 @@ void set_mp3flag(Interface *interf, JsonObject *data){
     else {
         mp3->setIsOn(myLamp.isONMP3(), false); // при выключенной - не форсировать, но произнести время, но не ранее чем через 10с после перезагрузки
         if(myLamp.isONMP3() && millis()>10000)
-            if(!data->containsKey(FPSTR(TCONST_00D5)) || (data->containsKey(FPSTR(TCONST_00D5)) && (*data)[FPSTR(TCONST_00D5)] == "1")) // при наличие force="1" или без этого ключа
+            if((*data)[FPSTR(TCONST_00D5)].isNull() || (!(*data)[FPSTR(TCONST_00D5)].isNull() && (*data)[FPSTR(TCONST_00D5)] == "1")) // при наличие force="1" или без этого ключа
                 mp3->playTime(embui.timeProcessor.getHours(), embui.timeProcessor.getMinutes(), (TIME_SOUND_TYPE)myLamp.getLampSettings().playTime);
     }
     save_lamp_flags();
@@ -3006,13 +3006,13 @@ void set_mp3_player(Interface *interf, JsonObject *data){
 
     if(!myLamp.isONMP3()) return;
     uint16_t cur_palyingnb = mp3->getCurPlayingNb();
-    if(data->containsKey(FPSTR(TCONST_00BE))){
+    if(!(*data)[FPSTR(TCONST_00BE)].isNull()){
         mp3->playEffect(cur_palyingnb-1,"");
-    } else if(data->containsKey(FPSTR(TCONST_00BF))){
+    } else if(!(*data)[FPSTR(TCONST_00BF)].isNull()){
         mp3->playEffect(cur_palyingnb+1,"");
-    } else if(data->containsKey(FPSTR(TCONST_00C0))){
+    } else if(!(*data)[FPSTR(TCONST_00C0)].isNull()){
         mp3->playEffect(cur_palyingnb-5,"");
-    } else if(data->containsKey(FPSTR(TCONST_00C1))){
+    } else if(!(*data)[FPSTR(TCONST_00C1)].isNull()){
         mp3->playEffect(cur_palyingnb+5,"");
     }
 }
@@ -3324,11 +3324,11 @@ void set_lamp_flags(Interface *interf, JsonObject *data){
 }
 
 void save_lamp_flags(){
-    DynamicJsonDocument doc(26*2+32);
+    JsonDocument doc;
     JsonObject obj = doc.to<JsonObject>();
     obj[FPSTR(TCONST_0094)] = ulltos(myLamp.getLampFlags());
     set_lamp_flags(nullptr, &obj);
-    //doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    //doc.clear(); obj = doc.to<JsonObject>();
 }
 
 // кастомный обработчик, для реализации особой обработки событий сокетов
@@ -3633,7 +3633,7 @@ void create_parameters(){
 
 void sync_parameters(){
     LOG(printf_P,PSTR("Free MEM: %d\n"),ESP.getFreeHeap());
-    DynamicJsonDocument doc(1024);
+    JsonDocument doc;
     //https://arduinojson.org/v6/api/jsondocument/
     //JsonDocument::to<T>() clears the document and converts it to the specified type. Don’t confuse this function with JsonDocument::as<T>() that returns a reference only if the requested type matches the one in the document.
     JsonObject obj = doc.to<JsonObject>();
@@ -3668,25 +3668,25 @@ void sync_parameters(){
 
     obj[FPSTR(TCONST_00C4)] = tmp.isDraw ? "1" : "0";
     set_drawflag(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>(); // https://arduinojson.org/v6/how-to/reuse-a-json-document/
+    doc.clear(); obj = doc.to<JsonObject>(); // https://arduinojson.org/v6/how-to/reuse-a-json-document/
 
 #ifdef LAMP_DEBUG
     obj[FPSTR(TCONST_0095)] = tmp.isDebug ? "1" : "0";
     set_debugflag(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear(); obj = doc.to<JsonObject>();
 #endif
 
     //LOG(printf_P,PSTR("tmp.isEventsHandled=%d\n"), tmp.isEventsHandled);
     obj[FPSTR(TCONST_001D)] = tmp.isEventsHandled ? "1" : "0";
     //CALL_INTF_OBJ(set_eventflag);
     set_eventflag(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear(); obj = doc.to<JsonObject>();
     embui.timeProcessor.attach_callback(std::bind(&LAMP::setIsEventsHandled, &myLamp, myLamp.IsEventsHandled())); // только после синка будет понятно включены ли события
 
     myLamp.setGlobalBrightness(embui.param(FPSTR(TCONST_0018)).toInt()); // починить бросок яркости в 255 при первом включении
     obj[FPSTR(TCONST_001C)] = tmp.isGlobalBrightness ? "1" : "0";
     set_gbrflag(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear(); obj = doc.to<JsonObject>();
     LOG(printf_P,PSTR("Free MEM: %d\n"),ESP.getFreeHeap());
 #ifdef RESTORE_STATE
     obj[FPSTR(TCONST_001A)] = tmp.ONflag ? "1" : "0";
@@ -3697,7 +3697,7 @@ void sync_parameters(){
     if(!tmp.ONflag){ // иначе - после
         CALL_SETTER(FPSTR(TCONST_0016), embui.param(FPSTR(TCONST_0016)), set_effects_list);
     }
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear(); obj = doc.to<JsonObject>();
     if(myLamp.isLampOn())
         CALL_SETTER(FPSTR(TCONST_001B), embui.param(FPSTR(TCONST_001B)), set_demoflag); // Демо через режимы, для него нужнен отдельный флаг :(
 #else
@@ -3718,7 +3718,7 @@ void sync_parameters(){
             }
         }
  
-        DynamicJsonDocument doc(1024);
+        JsonDocument doc;
         //https://arduinojson.org/v6/api/jsondocument/
         //JsonDocument::to<T>() clears the document and converts it to the specified type. Don’t confuse this function with JsonDocument::as<T>() that returns a reference only if the requested type matches the one in the document.
         JsonObject obj = doc.to<JsonObject>();
@@ -3734,12 +3734,12 @@ void sync_parameters(){
         obj[FPSTR(TCONST_00AF)] = tmp.limitAlarmVolume ? "1" : "0";
 
         set_settings_mp3(nullptr, &obj);
-        doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+        doc.clear(); obj = doc.to<JsonObject>();
 
         mp3->setupplayer(myLamp.effects.getEn(), myLamp.effects.getSoundfile()); // установить начальные значения звука
         obj[FPSTR(TCONST_009D)] = tmp.isOnMP3 ? "1" : "0";
         set_mp3flag(nullptr, &obj);
-        doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+        doc.clear(); obj = doc.to<JsonObject>();
 
         CALL_SETTER(FPSTR(TCONST_00A2), embui.param(FPSTR(TCONST_00A2)), set_mp3volume);
         TASK_RECYCLE;
@@ -3765,16 +3765,16 @@ void sync_parameters(){
     obj[FPSTR(TCONST_00F1)] = FPSTR(P_false); // do not re-create lists
     confEff = NULL;
     set_cur_eff_param(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear(); obj = doc.to<JsonObject>();
 #ifdef ESP_USE_BUTTON
     obj[FPSTR(TCONST_001F)] = tmp.isBtn ? "1" : "0";
     //CALL_INTF_OBJ(set_btnflag);
     set_btnflag(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear(); obj = doc.to<JsonObject>();
     obj[FPSTR(TCONST_003F)] = String(tmp.GaugeType);
     //CALL_INTF_OBJ(set_gaugetype);
     set_gaugetype(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear(); obj = doc.to<JsonObject>();
 #endif
 #ifdef ENCODER
     obj[FPSTR(TCONST_0042)] = embui.param(FPSTR(TCONST_0042));
@@ -3782,7 +3782,7 @@ void sync_parameters(){
     obj[FPSTR(TCONST_003F)] = String(tmp.GaugeType);
     obj[FPSTR(TCONST_0040)] = embui.param(FPSTR(TCONST_0040));
     set_settings_enc(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear(); obj = doc.to<JsonObject>();
 #endif
     LOG(printf_P,PSTR("Free MEM: %d\n"),ESP.getFreeHeap());
     obj[FPSTR(TCONST_0051)] = String(110U - embui.param(FPSTR(TCONST_0051)).toInt());
@@ -3795,27 +3795,27 @@ void sync_parameters(){
     obj[FPSTR(TCONST_0055)] = datetime;
     
     set_text_config(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear(); obj = doc.to<JsonObject>();
 #ifdef USE_STREAMING
     obj[FPSTR(TCONST_0046)] = tmp.isStream ? "1" : "0";
     set_streaming(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear(); obj = doc.to<JsonObject>();
 
     obj[FPSTR(TCONST_0049)] = tmp.isDirect ? "1" : "0";
     set_streaming_drirect(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear(); obj = doc.to<JsonObject>();
 
     obj[FPSTR(TCONST_004A)] = tmp.isMapping ? "1" : "0";
     set_streaming_mapping(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear(); obj = doc.to<JsonObject>();
 
     obj[FPSTR(TCONST_0047)] = embui.param(FPSTR(TCONST_0047));
     set_streaming_type(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear(); obj = doc.to<JsonObject>();
 
     obj[FPSTR(TCONST_0077)] = embui.param(FPSTR(TCONST_0077));
     set_streaming_universe(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear(); obj = doc.to<JsonObject>();
 #endif
 
 
@@ -3845,13 +3845,13 @@ void sync_parameters(){
     obj[FPSTR(TCONST_0053)] = embui.param(FPSTR(TCONST_0053));
 
     set_settings_other(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear(); obj = doc.to<JsonObject>();
 
 #ifdef MIC_EFFECTS
     obj[FPSTR(TCONST_001E)] = tmp.isMicOn ? "1" : "0";
     myLamp.getLampState().setMicAnalyseDivider(0);
     set_micflag(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear(); obj = doc.to<JsonObject>();
 
     // float scale = atof(embui.param(FPSTR(TCONST_0039)).c_str());
     // float noise = atof(embui.param(FPSTR(TCONST_003A)).c_str());
@@ -3861,7 +3861,7 @@ void sync_parameters(){
     obj[FPSTR(TCONST_003A)] = embui.param(FPSTR(TCONST_003A)); //noise;
     obj[FPSTR(TCONST_003B)] = embui.param(FPSTR(TCONST_003B)); //lvl;
     set_settings_mic(nullptr, &obj);
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear(); obj = doc.to<JsonObject>();
 #endif
 
     //save_lamp_flags(); // обновить состояние флагов (закомментированно, окончательно состояние установится через 0.3 секунды, после set_settings_other)
@@ -3927,7 +3927,7 @@ void event_worker(DEV_EVENT *event){
 
         String tmpS = event->getMessage();
         tmpS.replace(F("'"),F("\"")); // так делать не красиво, но шопаделаешь...
-        StaticJsonDocument<256> doc;
+        JsonDocument doc;
         deserializeJson(doc, tmpS);
         JsonArray arr = doc.as<JsonArray>();
         for (size_t i = 0; i < arr.size(); i++) {
@@ -3971,7 +3971,7 @@ void show_progress(Interface *interf, JsonObject *data){
 }
 
 uint8_t uploadProgress(size_t len, size_t total){
-    DynamicJsonDocument doc(256);
+    JsonDocument doc;
     JsonObject obj = doc.to<JsonObject>();
     static int prev = 0; // используется чтобы не выводить повторно предыдущее значение, хрен с ней, пусть живет
     float part = total / 50.0;
@@ -4021,7 +4021,7 @@ void default_buttons(){
 
 void remote_action(RA action, ...){
     LOG(printf_P, PSTR("RA %d: "), action);
-    DynamicJsonDocument doc(512);
+    JsonDocument doc;
     JsonObject obj = doc.to<JsonObject>();
 
     char *key = NULL, *val = NULL, *value = NULL;
@@ -4059,7 +4059,7 @@ void remote_action(RA action, ...){
                 new Task(500*(value?1:0), TASK_FOREVER, [value](){
                     if((!myLamp.isPrintingNow() && value) || !value){ // отложенное выключение только для случая когда сообщение выводится в этом же экшене, а не чужое
                         Task *task = ts.getCurrentTask();
-                        DynamicJsonDocument doc(512);
+                        JsonDocument doc;
                         JsonObject obj = doc.to<JsonObject>();
                         obj[FPSTR(TCONST_00D4)] = "1"; // ознака виклику з REMOTE ACTION
                         // LAMPMODE mode = myLamp.getMode();
@@ -4070,7 +4070,7 @@ void remote_action(RA action, ...){
                         //     }
                         // }
                         // obj.clear();
-                        // doc.garbageCollect();
+                        //
                         CALL_INTF(FPSTR(TCONST_001A), "0", set_onflag);
                         task->cancel();
                         TASK_RECYCLE;
@@ -4101,7 +4101,7 @@ void remote_action(RA action, ...){
             LAMPMODE mode=myLamp.getMode();
             if(mode==LAMPMODE::MODE_WHITELAMP && myLamp.effects.getSelected()!=1){
                 myLamp.startNormalMode(true);
-                DynamicJsonDocument doc(512);
+                JsonDocument doc;
                 JsonObject obj = doc.to<JsonObject>();
                 CALL_INTF(FPSTR(TCONST_001A), !myLamp.isLampOn() ? "1" : "0", set_onflag);
                 break;
@@ -4112,7 +4112,7 @@ void remote_action(RA action, ...){
                 pubEffTask->cancel();
             pubEffTask = new StringTask(value, myLamp.getLampSettings().isFaderON ? (FADE_TIME / 1000.0) * TASK_SECOND + 500 : 500, TASK_ONCE, [](){
                 StringTask *cur = (StringTask *)ts.getCurrentTask();
-                DynamicJsonDocument doc(512);
+                JsonDocument doc;
                 JsonObject obj = doc.to<JsonObject>();
                 LOG(printf_P,PSTR("EmbUI::GetInstance()->ws.count()=%d, %s\n"),EmbUI::GetInstance()->ws.count(),cur->getData());
                 CALL_INTF(FPSTR(TCONST_0016), String(cur->getData()), set_effects_list); // публикация будет здесь
@@ -4314,7 +4314,7 @@ void remote_action(RA action, ...){
         case RA::RA_WARNING: {
             String str=value;
             String msg;
-            DynamicJsonDocument doc(256);
+            JsonDocument doc;
             deserializeJson(doc,str);
             JsonArray arr = doc.as<JsonArray>();
             uint32_t col=CRGB::Red, dur=1000, per=250, type=0;
@@ -4341,7 +4341,7 @@ void remote_action(RA action, ...){
 
         case RA::RA_DRAW: {
             String str=value;
-            DynamicJsonDocument doc(256);
+            JsonDocument doc;
             deserializeJson(doc,str);
             JsonArray arr = doc.as<JsonArray>();
             CRGB col=CRGB::White;
@@ -4504,7 +4504,7 @@ void remote_action(RA action, ...){
         default:
             break;
     }
-    doc.clear(); doc.garbageCollect(); obj = doc.to<JsonObject>();
+    doc.clear(); obj = doc.to<JsonObject>();
 }
 
 String httpCallback(const String &param, const String &value, bool isset){
@@ -4673,7 +4673,7 @@ String httpCallback(const String &param, const String &value, bool isset){
         }
         else if (cmdParam == FPSTR(CMD_TCONST_000C) || cmdParam == FPSTR(CMD_TCONST_001C)) {
             String str=value;
-            DynamicJsonDocument doc(256);
+            JsonDocument doc;
             deserializeJson(doc,str);
             JsonArray arr = doc.as<JsonArray>();
             uint16_t id=0;
@@ -4686,7 +4686,7 @@ String httpCallback(const String &param, const String &value, bool isset){
             if(cmdParam == FPSTR(CMD_TCONST_001C)){ // это команда увеличения контрола на значение, соотвественно получаем текущее
                 val = arr[1].as<String>().toInt();
                 str = httpCallback(FPSTR(CMD_TCONST_000C), arr[0], false);
-                doc.clear(); doc.garbageCollect();
+                doc.clear();
                 deserializeJson(doc,str);
                 arr = doc.as<JsonArray>();
                 arr[1] = arr[1].as<String>().toInt()+val.toInt();

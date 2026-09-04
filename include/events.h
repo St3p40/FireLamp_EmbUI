@@ -235,10 +235,10 @@ private:
     /**
      *  метод загружает и пробует десериализовать джейсон из файла в предоставленный документ,
      *  возвращает true если загрузка и десериализация прошла успешно
-     *  @param doc - DynamicJsonDocument куда будет загружен джейсон
+     *  @param doc - JsonDocument куда будет загружен джейсон
      *  @param jsonfile - файл, для загрузки
     **/
-    bool deserializeFile(DynamicJsonDocument& doc, const char* filepath);
+    bool deserializeFile(JsonDocument& doc, const char* filepath);
     void clear_events();
 
 public:

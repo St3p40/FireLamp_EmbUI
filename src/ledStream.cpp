@@ -364,7 +364,7 @@ void Led_Stream::fillBuff(const uint8_t *col){
 }
 
 void Led_Stream::sendConfig(uint32_t id){       // TODO: доработать
-    StaticJsonDocument<EMBUI_IFACE_STA_JSON_SIZE> obj;
+    JsonDocument obj;
     obj[F("name")] = String(F("FireLamp-")) + String(embui.mc);
     // obj[F("version")] = FPSTR(PGversion);
     obj[F("version")] = F("2.5.0");

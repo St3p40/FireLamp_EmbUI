@@ -229,7 +229,7 @@ void loop() {
 String ha_autodiscovery()
 {
     LOG(println,F("MQTT: Autodiscovery"));
-    DynamicJsonDocument hass_discover(2048);
+    JsonDocument hass_discover;
     String name = embui.param(FPSTR(P_hostname));
     String unique_id = embui.mc;
 
@@ -255,7 +255,7 @@ String ha_autodiscovery()
     hass_discover[F("bri_stat_t")] = F("~pub/dynCtrl0");    // brightness_state_topic
     hass_discover[F("bri_scl")] = 255;
 
-    JsonArray data = hass_discover.createNestedArray(F("effect_list"));
+    JsonArray data = hass_discover[F("effect_list")].to<JsonArray>();
     data.add(FPSTR(TCONST_00E8));
     data.add(FPSTR(TCONST_00E9));
     data.add(FPSTR(TCONST_00EA));
@@ -275,13 +275,13 @@ String ha_autodiscovery()
     hass_discover[F("min_mireds")] = 1;
     hass_discover[F("max_mireds")] = 255;
 
-    JsonObject device = hass_discover.createNestedObject(F("device"));
+    JsonObject device = hass_discover[F("device")].to<JsonObject>();
     device[F("manufacturer")] = F("EmbUI");
     device[F("model")] = F("FireLamp");
     device[F("name")] = name;
     device[F("sw_version")] = embui.getEmbUIver();
     device[F("configuration_url")] = String(F("http://"))+WiFi.localIP().toString();
-    JsonArray identifiers = device.createNestedArray(F("identifiers"));
+    JsonArray identifiers = device[F("identifiers")].to<JsonArray>();
     identifiers.add(unique_id);
 
     // hass_discover[F("whit_val_cmd_t")] = F("~set/scale");     // scale as white level (Яркость белого)
@@ -324,7 +324,7 @@ ICACHE_FLASH_ATTR void mqttCallback(const String &topic, const String &payload){
 // Periodic MQTT publishing
 void sendData(){
     // Здесь отсылаем текущий статус лампы и признак, что она живая (keepalive)
-    DynamicJsonDocument obj(512);
+    JsonDocument obj;
     //JsonObject obj = doc.to<JsonObject>();
     obj[FPSTR(TCONST_00DD)] = myLamp.getModeDesc();
     obj[FPSTR(TCONST_00EE)] = myLamp.effects.getEffectName();

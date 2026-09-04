@@ -39,13 +39,13 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 #define __TEXT_RES_H
 #include <Arduino.h>
 
-// Здесь строковые константы общего назначения, включая константы из интерфейса, что позволит локализировать при необходимости
-// Ничего иного в данном файле не предполагается
+// There are general-use string constants, including interface constants, which will allow localization in nessessity
+// Nothing else is intended in this file
 
-/** набор строк с именами Effectов
- *  ссылки на эти строки собираются во флеш-массив в файле effect_types.h
+/** List of all effect names
+ *  Pointers to the effect names are stored in the array in effect_types.h
  */
-static const char TEFF_000[] PROGMEM = "";  // "пустышка"
+static const char TEFF_000[] PROGMEM = "";  // "stub"
 static const char TEFF_001[] PROGMEM = "White lamp";
 static const char TEFF_002[] PROGMEM = "Colors";
 static const char TEFF_003[] PROGMEM = "Rainbow";
@@ -208,7 +208,7 @@ static const char TEFF_255[] PROGMEM = "Oscilloscope";
 #define DFTINTF_118 "Signal threshold"
 #define DFTINTF_11A "Color (1: cyclical)"
 
-/** набор строк с текстовыми константами интерфейса
+/** String consts for interface
  */
 static const char TINTF_000[] PROGMEM = "Effects";
 static const char TINTF_001[] PROGMEM = "Text";

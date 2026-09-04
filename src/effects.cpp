@@ -6233,7 +6233,7 @@ bool EffectPolarL::run(CRGB *leds, EffectWorker *opt) {
   return true;
 }
 
-//===== Ефект Космо-Рейсер =====================//
+// Effect Space Racer
 // https://editor.soulmatelights.com/gallery/655
 // (c)Stepko + Kostyamat
 // void EffectRacer::setspd(const byte _spd) {
@@ -6245,14 +6245,16 @@ bool EffectPolarL::run(CRGB *leds, EffectWorker *opt) {
 String EffectRacer::setDynCtrl(UIControl*_val){
   if(_val->getId()==1) {
     uint8_t sp = EffectCalc::setDynCtrl(_val).toInt();
-    speedFactor = EffectMath::fmap(sp, 1, 255, 0.33, 2) * EffectCalc::speedfactor;
-    addRadius = _addRadius * EffectMath::fmap(sp, 1, 255, 0.33, 2);
+    float k = EffectMath::fmap(sp, 1, 255, 0.33, 2);
+    fadeAmt = constrain(16.f * k * EffectCalc::speedfactor, 1.f, 255.f);
+    speedFactor = k * 25.6f * EffectCalc::speedfactor;
+    addRadius = _addRadius * k;
   } else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
 }
 
 bool EffectRacer::run(CRGB *leds, EffectWorker *opt) {
-  fadeToBlackBy(leds, NUM_LEDS, 16. * speedFactor);
+  fadeToBlackBy(leds, NUM_LEDS, fadeAmt);
   for(int a = 0; a <speedFactor*5; a++){
   if (posX != aimX || posY != aimY) {
       int16_t error2 = error * 2;
@@ -6270,19 +6272,21 @@ bool EffectRacer::run(CRGB *leds, EffectWorker *opt) {
   }
   radius += addRadius;
   angle += radius;
+  float _aimX = aimX / 256.0;
+  float _aimY = aimY / 256.0;
   switch (hue%3)
   {
   case 0:
-    EffectMath::drawCircleF(aimX/10, aimY/10, radius, color); // рисуем круг
-    break;  
+    EffectMath::drawCircleF(_aimX, _aimY, radius, color);
+    break;
   case 1:
-    drawStarF(aimX/10, aimY/10, 1.3 * radius, radius, 4, angle, color); // рисуем квадрат
+    drawStarF(_aimX, _aimY, 1.3 * radius, radius, 4, angle, color);
     break;
   case 2:
-    drawStarF(aimX/10, aimY/10, 2 * radius, radius, starPoints, angle, color); // рисуем звезду
+    drawStarF(_aimX, _aimY, 2 * radius, radius, starPoints, angle, color);
     break;
   }
-  EffectMath::drawPixelXYF(posX/10.0, posY/10.0, CHSV(0, 0, 255)); // отрисовываем бегуна
+  EffectMath::wu_pixel(posX, posY, CRGB::White);
   return true;
 }
 
@@ -6292,12 +6296,12 @@ void EffectRacer::load() {
 }
 
 void EffectRacer::aimChange() {
-  aimX = random(0, EffectMath::getmaxWidthIndex())*10;  // позиция цели 
-  aimY = random(0, EffectMath::getmaxHeightIndex())*10;
-  radius = 1; // начальный размер цели = 1 пиксель
-  hue = millis()>>1; //random(0, 255);
+  aimX = random(0, EffectMath::getmaxWidthIndex()) << 8;
+  aimY = random(0, EffectMath::getmaxHeightIndex()) << 8;
+  radius = 1;
+  hue = millis()>>1;
   color = ColorFromPalette(*curPalette, hue, 180);
-  starPoints = random(3, 7); // количество лучей у звезды
+  starPoints = random(3, 7);
    deltaX = abs(aimX - posX);
    deltaY = abs(aimY - posY);
    signX = posX < aimX ? 1 : -1;
@@ -7280,7 +7284,7 @@ bool EffectMirage::run(CRGB *leds, EffectWorker *param) {
   return true;
 }
 
-//===== Ефект Акварель =========================//
+// Effect Aquarelle
 // https://editor.soulmatelights.com/gallery/1587-oil
 // (c) kostyamat 26.12.2021
 String EffectWcolor::setDynCtrl(UIControl*_val){

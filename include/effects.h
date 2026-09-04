@@ -1535,20 +1535,21 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-//===== Ефект Космо-Рейсер =====================//
+// Effect Space Racer
 // https://editor.soulmatelights.com/gallery/655
 // (c)Stepko + Kostyamat
 class EffectRacer: public EffectCalc {
 private:
-    uint16_t posX = random(0, WIDTH-1)*10;
-    uint16_t posY = random(0, HEIGHT-1)*10;
-    uint16_t aimX = random(0, WIDTH-1)*10;
-    uint16_t aimY = random(0, HEIGHT-1)*10;
+    uint16_t posX = random(0,  EffectMath::getmaxWidthIndex()) << 8;
+    uint16_t posY = random(0, EffectMath::getmaxHeightIndex()) << 8;
+    uint16_t aimX = random(0, EffectMath::getmaxWidthIndex()) << 8;
+    uint16_t aimY = random(0, EffectMath::getmaxHeightIndex()) << 8;
 	int16_t deltaX, deltaY, signX, signY, error;
     float radius = 0;
     byte hue = millis()>>1; //random(0, 255);
     CRGB color;
     float speedFactor;
+    uint8_t fadeAmt = 32;
     float addRadius;
     float angle;
     byte starPoints = random(3, 7);
@@ -1950,7 +1951,7 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-//===== Ефект Акварель =========================//
+// Effect Aquarelle
 // https://editor.soulmatelights.com/gallery/1587-oil
 // (c) kostyamat 26.12.2021
 #define BLOT_SIZE WIDTH/2
@@ -2007,7 +2008,7 @@ private:
             for (uint8_t i = 0; i < BLOT_SIZE; i++) {
                 byte bright = constrain((float)bri / (float)HEIGHT * (y[i] + HEIGHT - y0), 32, 255);
                 if (y[i] > -0.1)
-                    EffectMath::drawPixelXYF(x[i], y[i], CHSV(hue, sat, bright), 0);
+                    EffectMath::drawPixelXYF(x[i], y[i], CHSV(hue, sat, bright), 0, true);
             }
         }
     };

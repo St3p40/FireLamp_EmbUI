@@ -4246,7 +4246,7 @@ String EffectSnake::setDynCtrl(UIControl*_val) {
 }
 
 bool EffectSnake::run(CRGB *leds, EffectWorker *param) {
-  fadeToBlackBy(leds, NUM_LEDS, speed<25 ? 5 : speed/2 ); // длина хвоста будет зависеть от скорости
+  fadeToBlackBy(leds, NUM_LEDS, speed<25 ? 5 : speed/2 );
 #ifdef MIC_EFFECTS
   hue+=(speedFactor/snakeCount+(isMicOn() ? getMicMapFreq()/127.0 : 0));
 #else
@@ -4263,63 +4263,43 @@ bool EffectSnake::run(CRGB *leds, EffectWorker *param) {
     } else {
       fill_palette(colors, SNAKE_LENGTH, (
         (speed<25 || speed>230) ? (i%2 ? hue : 255-hue) : (i%2 ? hue*(i+1) : (255-hue)*(i+1))
-      ), 1, *curPalette, 255-(i*8), LINEARBLEND); // вообще в цикле заполнять палитры может быть немножко тяжело... но зато разнообразнее по цветам
+      ), 1, *curPalette, 255-(i*8), LINEARBLEND);
     }
-    snake.shuffleDown(speedFactor, false);//subPix
 
 #ifdef MIC_EFFECTS
     if(getMicMapMaxPeak()>speed/3.0+75.0 && isMicOn()) {
-      snake.newDirection();
-    } else if (random((speed<25)?speed*50:speed*10) < speed && !isMicOn()) {// как часто будут повороты :), логика загадочная, но на малой скорости лучше змейкам круги не наматывать :)
-      snake.newDirection();
+      snake.turnPending = true;
+    } else if (random((speed<25)?speed*50:speed*10) < speed && !isMicOn()) {
+      snake.turnPending = true;
     }
 #else
-    if (random((speed<25)?speed*50:speed*10) < speed){ // как часто будут повороты :), логика загадочная, но на малой скорости лучше змейкам круги не наматывать :)
-      snake.newDirection();
+    if (random((speed<25)?speed*50:speed*10) < speed){
+      snake.turnPending = true;
     }
 #endif
 
-    snake.move(speedFactor);
-    snake.draw(colors, i, false, false /*isDebug()*/);//subPix
+    snake.advance(speedFactor);
+    snake.draw(colors, i); //subPix
   }
   return true;
 }
 
-// Допоміжна функція для "кільцевої" дельти
-float shortDist(float d, int size) {
-    if (d >  size / 2.0f) return d - size;
-    if (d < -size / 2.0f) return d + size;
-    return d;
-}
 
-void EffectSnake::Snake::draw(CRGB colors[SNAKE_LENGTH], int snakenb, bool subpix, bool isDebug)
+void EffectSnake::Snake::draw(CRGB colors[SNAKE_LENGTH], int snakenb)
 {
-  if(direction<LEFT)
-    EffectMath::drawPixelXYF_Y(pixels[0].x, pixels[0].y, colors[0]);
-  else
-    EffectMath::drawPixelXYF_X(pixels[0].x, pixels[0].y, colors[0]); // head
+  uint8_t idx = head;
   for (int i = 1; i < (int)SNAKE_LENGTH; i++)
   {
-    Pixel dpixel = Pixel{pixels[i].x - pixels[i-1].x, pixels[i].y - pixels[i-1].y};
-
-    float steps = max(fabs(dpixel.x), fabs(dpixel.y));
-
-    if (steps > 1.0f) {
-      if (fabs(dpixel.x) < WIDTH * 0.8 && fabs(dpixel.y) < HEIGHT * 0.8) {
-        for (int s = 0; s <= (int)steps; s++) {
-            float t = (float)s / steps;
-            float currX = pixels[i-1].x + t * dpixel.x;
-            float currY = pixels[i-1].y + t * dpixel.y;
-
-            int16_t outX = ((int16_t)currX % WIDTH + WIDTH) % WIDTH;
-            int16_t outY = ((int16_t)currY % HEIGHT + HEIGHT) % HEIGHT;
-
-            EffectMath::drawPixelXY(outX, outY, colors[i]);
-        }
-      }
-    } else
-        EffectMath::drawPixelXY(pixels[i].x, pixels[i].y, colors[i]);
+    idx = back(idx);
+    const Pixel &a = pixels[idx];
+    EffectMath::drawPixelXY(a.x, a.y, colors[i]);
   }
+
+  const Pixel &h = pixels[head];
+  if(direction < 2)
+    EffectMath::drawPixelXYF_Y(h.x, h.y, colors[0], 0);
+  else
+    EffectMath::drawPixelXYF_X(h.x, h.y, colors[0], 0);
 }
 
 //===== Ефект Nexus ============================//

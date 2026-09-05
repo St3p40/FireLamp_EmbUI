@@ -1011,17 +1011,17 @@ public:
 // subbpixel and new behavior by kDn
 class EffectSnake : public EffectCalc {
 private:
-    float hue;
+    float hue = 0;
     float speedFactor;
     int snakeCount;
     //bool subPix = false;
     bool onecolor = false;
     enum Direction
 {
-  UP,
-  DOWN,
-  LEFT,
-  RIGHT
+  UP = 0,
+  DOWN = 1,
+  LEFT = 2,
+  RIGHT = 3
 };
 
 struct Pixel
@@ -1036,8 +1036,12 @@ struct Snake
   float internal_counter = 0.0;
   float internal_speedf = 1.0;
   Pixel pixels[SNAKE_LENGTH];
+  uint8_t head = 0;
+  bool turnPending = false;
 
   Direction direction;
+
+ inline uint8_t back(uint8_t idx) const { return idx ? idx - 1 : (uint8_t)SNAKE_LENGTH - 1; }
 
   void newDirection()
   {
@@ -1047,38 +1051,63 @@ struct Snake
     case DOWN:
       direction = random(0, 2) == 1 ? RIGHT : LEFT;
       break;
-
     case LEFT:
     case RIGHT:
       direction = random(0, 2) == 1 ? DOWN : UP;
-
+      break;
     default:
       break;
     }
   };
 
-  void shuffleDown(float speedy, bool subpix)
+  void stepHead(float dist)
   {
-    internal_counter+=speedy*internal_speedf;
-
-    if(internal_counter>1.0){
-        for (byte i = (byte)SNAKE_LENGTH - 1; i > 0; i--)
-        {
-            if(subpix)
-                pixels[i] = pixels[i - 1];
-            else {
-                pixels[i].x = (uint8_t)pixels[i - 1].x;
-                pixels[i].y = (uint8_t)pixels[i - 1].y;
-            }
-        }
-        double f;
-        internal_counter=modf(internal_counter, &f);
+    Pixel &h = pixels[head];
+    switch (direction)
+    {
+    case UP:    h.y += dist; if (h.y >= HEIGHT) h.y -= HEIGHT; break;
+    case DOWN:  h.y -= dist; if (h.y <  0)      h.y += HEIGHT; break;
+    case LEFT:  h.x += dist; if (h.x >= WIDTH)  h.x -= WIDTH;  break;
+    case RIGHT: h.x -= dist; if (h.x <  0)      h.x += WIDTH;  break;
     }
+  }
+
+  void pushSample()
+  {
+    uint8_t prev = head;
+    if (++head >= (uint8_t)SNAKE_LENGTH) head = 0;
+    pixels[head] = pixels[prev];
+  }
+
+ void advance(float speedy)
+  {
+    float dist = speedy * internal_speedf;
+    if (dist > (float)SNAKE_LENGTH) dist = SNAKE_LENGTH;
+
+    while (internal_counter + dist >= 1.0f)
+    {
+      float step = 1.0f - internal_counter;
+      stepHead(step);
+
+      Pixel &h = pixels[head];
+      h.x = round(h.x);
+      h.y = round(h.y);
+      if (turnPending) { newDirection(); turnPending = false; }
+
+      pushSample();
+      dist -= step;
+      internal_counter = 0.0f;
+    }
+    stepHead(dist);
+    internal_counter += dist;
   }
 
   void reset()
   {
     direction = UP;
+    head = 0;
+    internal_counter = 0.0;
+    turnPending = false;
     for (int i = 0; i < (int)SNAKE_LENGTH; i++)
     {
       pixels[i].x = 0;
@@ -1086,28 +1115,7 @@ struct Snake
     }
   }
 
-  void move(float speedy)
-  {
-    float inc = speedy*internal_speedf;
-
-    switch (direction)
-    {
-    case UP:
-      pixels[0].y = pixels[0].y >= HEIGHT ? inc : (pixels[0].y + inc);
-      break;
-    case LEFT:
-      pixels[0].x = pixels[0].x >= WIDTH ? inc : (pixels[0].x + inc);
-      break;
-    case DOWN:
-      pixels[0].y = pixels[0].y <= 0 ? HEIGHT - inc : pixels[0].y - inc;
-      break;
-    case RIGHT:
-      pixels[0].x = pixels[0].x <= 0 ? WIDTH - inc : pixels[0].x - inc;
-      break;
-    }
-  }
-
-  void draw(CRGB colors[SNAKE_LENGTH], int snakenb, bool subpix, bool isDebug=false);
+  void draw(CRGB colors[SNAKE_LENGTH], int snakenb);
 };
 
     Snake snakes[MAX_SNAKES];

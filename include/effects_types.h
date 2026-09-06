@@ -453,9 +453,8 @@ EFF_RACER,                                    // Космо-Рейсер
 EFF_SMOKER,                                   // Дим
 EFF_FIRE2021,                                 // Вогняна лампа
 EFF_MIRAGE,                                   // Міраж
-EFF_KALEIDOSCOPE,                             // Калейдоскоп
+EFF_KALEIDOSCOPE                              // Калейдоскоп
 //...
-EFF_TIME = (250U)                             // Годинник(службовий, тягнемо в кінець)
 #ifdef RGB_PLAYER
 ,EEF_RGBPLAYER = (251)                        // Програвач "гіфок"
 #endif
@@ -511,7 +510,7 @@ static const uint8_t T_EFFVER[] PROGMEM = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 192 - 207
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 208 - 223
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 224 - 239
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 7, 0, 0, 2, 2, // 240 - 255
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 2, 2, // 240 - 255
 };
 
 
@@ -648,7 +647,7 @@ static const char* const T_EFFUICFG[] PROGMEM = {
   E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, // 192 - 207
   E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, // 208 - 223
   E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, // 224 - 39
-  E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_3PAL,  E_PLAYER,     E_DEFUI, E_DEFUI, E_FREQ,  E_OSC  // 240 - 255
+  E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI,  E_PLAYER,     E_DEFUI, E_DEFUI, E_FREQ,  E_OSC  // 240 - 255
 };
 
 /**

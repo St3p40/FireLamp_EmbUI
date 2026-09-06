@@ -57,9 +57,9 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed, const boo
 
   switch (static_cast<EFF_ENUM>(effect%256)) // номер может быть больше чем ENUM из-за копирований, находим эффект по модулю
   {
-  case EFF_ENUM::EFF_TIME :
-    worker = std::unique_ptr<EffectTime>(new EffectTime());
-    break;
+//  case EFF_ENUM::EFF_TIME :
+//    worker = std::unique_ptr<EffectTime>(new EffectTime());
+//    break;
 //  case EFF_ENUM::EFF_SWIRL :
 //    worker = std::unique_ptr<EffectSwirl>(new EffectSwirl());
 //    break;

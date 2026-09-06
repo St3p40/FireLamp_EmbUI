@@ -55,24 +55,6 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override {return true;};
 };
 
-//===== Ефект Годинник =========================//
-class EffectTime : public EffectCalc {
-private:
-    bool timeShiftDir; // Напрямок зсуву
-    float curTimePos;  // Позиція вводу
-    float color_idx;   // Індекс кольору
-    CRGB hColor[1];    // Колір годин
-    CRGB mColor[1];    // Колір хвилин
-    uint32_t lastrun=0;// Лічильник часу для ефектів з "затримкою"
-    bool isMinute=false;
-
-    bool timePrintRoutine(CRGB *leds, EffectWorker *param);
-    bool palleteTest(CRGB *leds, EffectWorker *param);
-    void load() override;
-public:
-    bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
-};
-
 // Effect Sinusoid
 /*
  Sinusoid3 by Stefan Petrick

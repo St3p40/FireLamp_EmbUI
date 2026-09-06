@@ -941,7 +941,7 @@ private:
     bool dir = false;
     byte csum = 0;
     byte _bri = 255U;
-    byte buff[20 * 20];
+    uint8_t _size = 2;
     float xsin, ysin;
     unsigned long lastrun2;
     byte _sc = 0;

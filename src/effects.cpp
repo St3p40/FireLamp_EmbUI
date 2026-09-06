@@ -4096,7 +4096,7 @@ bool EffectShadows::run(CRGB *leds, EffectWorker *param) {
 // (c) kostyamat (Kostyantyn Matviyevskyy) 2020
 // перероблено kDn
 String EffectPatterns::setDynCtrl(UIControl*_val) {
-  if(_val->getId()==3) _speed = EffectCalc::setDynCtrl(_val).toInt();
+  if(_val->getId()==2) _size = constrain(EffectCalc::setDynCtrl(_val).toInt(), 1, 8);
   else if(_val->getId()==4) _scale = EffectCalc::setDynCtrl(_val).toInt();
   else if(_val->getId()==5) _sc = EffectCalc::setDynCtrl(_val).toInt();
   else if(_val->getId()==6) _subpixel = EffectCalc::setDynCtrl(_val).toInt();
@@ -4110,30 +4110,30 @@ bool EffectPatterns::run(CRGB *ledarr, EffectWorker *opt) {
 }
 
 void EffectPatterns::drawPicture_XY() {
-  float vx, vy, f;
-  vx = modff(xsin, &f);
-  vy = modff(ysin, &f);
-  //myLamp.clear();
-  EffectMath::dimAll(127);
 
-  for (int16_t x = -1; x < (int)WIDTH+1; x++)
-  {
-    for (int16_t y = -1; y < (int)HEIGHT+1; y++)
-    {
-      byte in = buff[EffectMath::getPixelNumberBuff((int)(xsin + x) % 20U, (int)(ysin + y) % 20U, 20U, 20U)];
-      CHSV color2 = colorMR[in]; // CHSV(HUE_BLUE, 255, 255);
+  const uint8_t fx = (uint8_t)((xsin - (int16_t)xsin) * 255);
+  const uint8_t fy = (uint8_t)((ysin - (int16_t)ysin) * 255);
+  const int16_t ox = (int16_t)xsin, oy = (int16_t)ysin;
 
-      if(_subpixel){
-        if(!_speed)
-          EffectMath::drawPixelXYF_X(((float)x-vx), (float)((float)y-vy), color2, 0);
-        else if(!_scale)
-          EffectMath::drawPixelXYF_Y(((float)x-vx), (float)((float)y-vy), color2, 0);
-        else{
-            EffectMath::drawPixelXYF(((float)x-vx), (float)((float)y-vy), color2, 0);
-        }
-      } else {
-        EffectMath::drawPixelXY(x, y, color2);
+  CRGB pal[12];
+  for (uint8_t i = 0; i < 12; i++) pal[i] = colorMR[i];
+
+  for (int16_t y = 0; y < (int16_t)HEIGHT; y++) {
+    const int16_t j = HEIGHT - 1 - y;
+    const uint8_t py0 = ((oy + j) / _size) % 10;
+    const uint8_t py1 = ((oy + j + 1) / _size) % 10;
+    for (int16_t x = 0; x < (int16_t)WIDTH; x++) {
+      const uint8_t px0 = ((ox + x) / _size) % 10;
+      if (!_subpixel) {
+        EffectMath::drawPixelXY(x, y, pal[pgm_read_byte(&patterns[patternIdx][py0][px0])]);
+        continue;
       }
+      const uint8_t px1 = ((ox + x + 1) / _size) % 10;
+      const CRGB top = blend(pal[pgm_read_byte(&patterns[patternIdx][py0][px0])],
+                             pal[pgm_read_byte(&patterns[patternIdx][py0][px1])], fx);
+      const CRGB bot = blend(pal[pgm_read_byte(&patterns[patternIdx][py1][px0])],
+                             pal[pgm_read_byte(&patterns[patternIdx][py1][px1])], fx);
+      EffectMath::drawPixelXY(x, y, blend(top, bot, fy));
     }
   }
 }
@@ -4141,16 +4141,11 @@ void EffectPatterns::drawPicture_XY() {
 void EffectPatterns::load() {
   if (_sc == 0)
     patternIdx = random(0, MAX_PATTERN);
+  else
+    patternIdx = _sc % MAX_PATTERN;
    // Цвета с индексом 6 и 7 - случайные, определяются в момент настройки эффекта
   colorMR[6] = CHSV(random8(), 255U, 255U);
   colorMR[7].hue = colorMR[6].hue + 96; //(beatsin8(1, 0, 255, 0, 127), 255U, 255U);
-  for (byte x = 0; x < 20U; x++)
-  {
-    for (byte y = 0; y < 20U; y++)
-    {
-      buff[EffectMath::getPixelNumberBuff(x, 19-y, 20U, 20U)] = (pgm_read_byte(&patterns[patternIdx][y % 10U][x % 10U]));
-    }
-  }
 }
 
 bool EffectPatterns::patternsRoutine(CRGB *leds, EffectWorker *param)
@@ -4161,32 +4156,26 @@ bool EffectPatterns::patternsRoutine(CRGB *leds, EffectWorker *param)
   if(!_sinMove){
     xsin += _speedX;
     ysin += _speedY;
+
   } else {
     xsin = float(beatsin16(5, 0, abs(_scale)*30)) /10; // for X and Y texture move
     ysin = float(beatsin16(6, 0, abs(_speed)*30))/10; // for X and Y texture move
   }
-  int8_t chkIdx = patternIdx;
+  const float period = 10.f * _size;
+  xsin = fmodf(xsin, period); if (xsin < 0) xsin += period;
+  ysin = fmodf(ysin, period); if (ysin < 0) ysin += period;
+
   if (_sc == 0) {
     EVERY_N_SECONDS(10) {
       patternIdx ++;
       if (patternIdx >= MAX_PATTERN) patternIdx = 0;
     }
-  } else patternIdx = _sc%(sizeof(patterns)/sizeof(Pattern));
-
-  if(chkIdx != patternIdx){
-    for (byte x = 0; x < 20U; x++)
-    {
-      for (byte y = 0; y < 20U; y++)
-      {
-        buff[EffectMath::getPixelNumberBuff(x, 19-y, 20U, 20U)] = (pgm_read_byte(&patterns[patternIdx][y % 10U][x % 10U]));
-      }
-    }
-  }
+  } else patternIdx = _sc % MAX_PATTERN;
 
   double corr = fabs(_speedX) + fabs(_speedY);
 
   colorMR[6] = CHSV(beatsin88(EffectMath::fmap(corr, 0.1, 1.5, 350., 1200.), 0, 255), 255, 255);
-  colorMR[7].hue = colorMR[6].hue + 96; 
+  colorMR[7].hue = colorMR[6].hue + 96;
   colorMR[7].sat = beatsin88(EffectMath::fmap(corr, 0.1, 1.5, 150, 900), 0, 255);
   colorMR[7].val = beatsin88(EffectMath::fmap(corr, 0.1, 1.5, 450, 1300), 0, 255);
   drawPicture_XY();

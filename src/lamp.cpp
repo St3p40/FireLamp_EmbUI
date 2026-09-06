@@ -753,6 +753,8 @@ void LAMP::drawClockOverlay()
 {
   String t = embui.timeProcessor.getFormattedShortTime();
   if (t.length() < 5) return;
+
+  if ((millis() / 500) & 1) t.setCharAt(2, ' ');
   const CRGB c = CHSV(0, 0, 160);
   if (WIDTH >= LET_WIDTH * 5) {
     fillStringManual(t.c_str(), c, true, false,

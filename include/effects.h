@@ -717,7 +717,6 @@ class EffectAquarium : public EffectCalc
 {
 private:
     float hue = 0.;
-    const uint16_t maxRadius = WIDTH + HEIGHT;
 
     const uint8_t _scale = 24;
     const uint8_t _speed = 3;
@@ -725,24 +724,21 @@ private:
     uint16_t x = 0;
     uint16_t y = 0;
     uint16_t z = 0;
-    uint8_t noise[2][WIDTH + 1][HEIGHT + 1];
-    int16_t sh[WIDTH + 1][HEIGHT + 1];
-    int16_t sv[WIDTH + 1][HEIGHT + 1];
+    uint8_t noise[WIDTH + 1][HEIGHT + 1];
+    using SpringRow = int16_t[HEIGHT + 1];
+    std::unique_ptr<int16_t[]> springBuf;
+    SpringRow *sh = nullptr;
+    SpringRow *sv = nullptr;
     bool satur;
 
     uint8_t glare = 0;
-    uint8_t iconIdx = 0;
     bool firstDrop = true;
     float speedFactor = 1.;
 
     void nGlare(uint8_t bri);
     void nDrops(uint8_t bri);
-    void renderLight(uint8_t bri);
-    void causticSplat(uint8_t *light, uint8_t w, uint8_t h,
-                      int32_t x, int32_t y, uint8_t amount, uint8_t periodY);
-    void causticGather(const uint8_t *height, uint8_t *light,
-                       uint8_t w, uint8_t h, uint8_t power, uint8_t amount = 96,
-                       bool cyclicY = false);
+    void causticGather(const uint8_t *height, uint8_t w, uint8_t h,
+                       uint8_t power, const CRGB &glow);
     void springStep(int16_t *height, int16_t *vel, uint8_t *out,
                     uint8_t w, uint8_t h, uint8_t friction,
                     bool cyclicY = false);

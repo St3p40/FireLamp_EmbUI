@@ -2911,17 +2911,30 @@ bool EffectWhirl::whirlRoutine(CRGB *leds, EffectWorker *param) {
 // Generated Glares by @st3p40(aka Stepko)
 void EffectAquarium::load()
 {
+  const uint16_t cells = (WIDTH + 1) * (HEIGHT + 1);
   memset(noise, 0, sizeof(noise));
-  memset(sh, 0, sizeof(sh));
-  memset(sv, 0, sizeof(sv));
   firstDrop = true;
-  if (glare != 2)
+  if (glare && glare != 2)
   {
-    for (uint16_t i = 0; i < (WIDTH + 1) * (HEIGHT + 1); i++)
-      (&sh[0][0])[i] = SPRING_REST;
-    memset(noise[0], 128, sizeof(noise[0]));
+    if (!springBuf)
+      springBuf.reset(new (std::nothrow) int16_t[cells * 2]);
+    sh = reinterpret_cast<SpringRow *>(springBuf.get());
+    sv = sh ? sh + (WIDTH + 1) : nullptr;
+    if (sh)
+    {
+      for (uint16_t i = 0; i < cells; i++)
+        (&sh[0][0])[i] = SPRING_REST;
+      memset(&sv[0][0], 0, cells * sizeof(int16_t));
+    }
   }
+  else
+  {
+    springBuf.reset();
+    sh = sv = nullptr;
   }
+  if (glare != 2)
+    memset(noise, 128, sizeof(noise));
+}
 
 // !++
 String EffectAquarium::setDynCtrl(UIControl *_val)
@@ -2946,14 +2959,13 @@ void EffectAquarium::nGlare(uint8_t bri)
 {
   for(uint8_t i = 0; i < 4; i++)
     fillNoise();
-  memset(noise[1], 0, sizeof(noise[1]));
-  causticGather(&noise[0][0][0], &noise[1][0][0],
-                            HEIGHT + 1, WIDTH + 1, 64);
-  renderLight(bri);
+  CRGB glow = CHSV((uint8_t)hue, satur ? 255 : 0, bri);
+  causticGather(&noise[0][0], HEIGHT + 1, WIDTH + 1, 64, glow.nscale8(24));
 }
 
 void EffectAquarium::nDrops(uint8_t bri)
 {
+  if (!sh) return;
 
   static CEveryNMillis dropTimer(1800);
   if (firstDrop) { firstDrop = false; dropTimer.trigger(); }
@@ -2968,54 +2980,15 @@ void EffectAquarium::nDrops(uint8_t bri)
         sv[dx + a][dy + b] -= (a || b) ? hit >> 1 : hit;
   }
 
-  springStep(&sh[0][0], &sv[0][0], &noise[0][0][0],
+  springStep(&sh[0][0], &sv[0][0], &noise[0][0],
              HEIGHT + 1, WIDTH + 1, 1, false);
 
-  memset(noise[1], 0, sizeof(noise[1]));
-  causticGather(&noise[0][0][0], &noise[1][0][0],
-                HEIGHT + 1, WIDTH + 1, 64, 128, false);
-  renderLight(bri);
+  CRGB glow = CHSV((uint8_t)hue, satur ? 255 : 0, bri);
+  causticGather(&noise[0][0], HEIGHT + 1, WIDTH + 1, 32, glow.nscale8(24));
 }
-
-void EffectAquarium::renderLight(uint8_t bri)
+void EffectAquarium::causticGather(const uint8_t *height, uint8_t w, uint8_t h,
+                                   uint8_t power, const CRGB &glow)
 {
-  for (uint8_t i = 0; i < WIDTH; i++) {
-    for (uint8_t j = 0; j < HEIGHT; j++) {
-      uint8_t col = noise[1][i][j];
-      nblend(EffectMath::getPixel(i, j), CHSV((uint8_t)hue,  (satur) ? col : ~col, bri), 64);
-    }
-  }
-}
-
-
-void EffectAquarium::causticSplat(uint8_t *light, uint8_t w, uint8_t h,
-                                  int32_t x, int32_t y, uint8_t amount, uint8_t periodY)
-{
-  uint8_t xx = x & 0xff, yy = y & 0xff, ix = 255 - xx, iy = 255 - yy;
-#define WU_WEIGHT(a, b) ((uint8_t)(((a) * (b) + (a) + (b)) >> 8))
-  uint8_t wu[4] = {WU_WEIGHT(ix, iy), WU_WEIGHT(xx, iy),
-                   WU_WEIGHT(ix, yy), WU_WEIGHT(xx, yy)};
-#undef WU_WEIGHT
-  for (uint8_t i = 0; i < 4; i++) {
-    int32_t xn = (x >> 8) + (i & 1);
-    int32_t yn = (y >> 8) + ((i >> 1) & 1);
-    if (periodY) {
-      yn %= (int32_t)periodY;
-      if (yn < 0) yn += periodY;
-    }
-    if (xn >= 0 && xn < (int32_t)w && yn >= 0 && yn < (int32_t)h) {
-      uint8_t &dst = light[yn * w + xn];
-      dst = qadd8(dst, scale8(wu[i], amount));
-    }
-  }
-}
-
-void EffectAquarium::causticGather(const uint8_t *height, uint8_t *light,
-                               uint8_t w, uint8_t h, uint8_t power, uint8_t amount,
-                               bool cyclicY)
-{
-
-  const uint8_t periodY = cyclicY ? h - 1 : 0;
   for (uint8_t x = 0; x + 1 < w; x++) {
     for (uint8_t y = 0; y + 1 < h; y++) {
       uint8_t n0 = height[y * w + x];
@@ -3026,7 +2999,7 @@ void EffectAquarium::causticGather(const uint8_t *height, uint8_t *light,
 
       int32_t xa = ((int32_t)x << 8) + (((int32_t)xl * (n0 + n1) * power) >> 8);
       int32_t ya = ((int32_t)y << 8) + (((int32_t)yl * (n0 + n2) * power) >> 8);
-      causticSplat(light, w, h, xa, ya, amount, periodY);
+      EffectMath::wu_pixel(ya, xa, glow);
     }
   }
 }
@@ -3107,9 +3080,9 @@ void EffectAquarium::fillNoise()
       data = qsub8(data, 16);
       data = qadd8(data, scale8(data, 39));
 
-      data = scale8(noise[0][i][j], dataSmoothing) + scale8(data, 256 - dataSmoothing);
+      data = scale8(noise[i][j], dataSmoothing) + scale8(data, 256 - dataSmoothing);
 
-      noise[0][i][j] = data;
+      noise[i][j] = data;
     }
   }
   z += _speed;
@@ -3124,6 +3097,30 @@ bool EffectAquarium::run(CRGB *leds, EffectWorker *param)
 #else
   byte _video = 255;
 #endif
+
+  if (!glare)
+  {
+#ifdef MIC_EFFECTS
+    if (isMicOn())
+    {
+      hue = getMicMapFreq();
+      EffectMath::fillAll(CHSV((uint8_t)hue, satur ? 255 : 0, _video));
+    }
+    else
+      EffectMath::fillAll(CHSV((uint8_t)hue, satur ? 255 : 0, 255U));
+#else
+    EffectMath::fillAll(CHSV((uint8_t)hue, satur ? 255 : 0, 255U));
+#endif
+  }
+  else
+  {
+    const CRGB water = CHSV((uint8_t)hue, satur ? 0 : 255,
+                            (_video >> 1) + (_video >> 3));
+    for (uint8_t i = 0; i < WIDTH; i++)
+      for (uint8_t j = 0; j < HEIGHT; j++)
+        nblend(EffectMath::getPixel(i, j), water, 128);
+  }
+
   switch (glare)
   { //
   case 0:
@@ -3134,21 +3131,6 @@ bool EffectAquarium::run(CRGB *leds, EffectWorker *param)
   default:
     nDrops(_video);
     break;
-  }
-
-  if (!glare)
-  { // якщо відблиски відключені
-#ifdef MIC_EFFECTS
-        if (isMicOn())
-        {
-          hue = getMicMapFreq();
-          EffectMath::fillAll(CHSV((uint8_t)hue, satur ? 255 : 0, _video));
-        }
-        else
-          EffectMath::fillAll(CHSV((uint8_t)hue, satur ? 255 : 0, 255U));
-#else
-        EffectMath::fillAll(CHSV((uint8_t)hue, satur ? 255 : 0, 255U));
-#endif
   }
   if (speed == 1)
   {

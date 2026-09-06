@@ -352,7 +352,7 @@ void EffectMath::drawPixelXY(int16_t x, int16_t y, const CRGB &color) // фун�
   getPixel(x,y) = color;
 }
 
-void EffectMath::wu_pixel(uint32_t x, uint32_t y, CRGB col) {      //awesome wu_pixel procedure by reddit u/sutaburosu
+void EffectMath::wu_pixel(uint32_t x, uint32_t y, CRGB col, uint8_t darklevel, bool variant) {      //awesome wu_pixel procedure by reddit u/sutaburosu
   // extract the fractional parts and derive their inverses
   uint8_t xx = x & 0xff, yy = y & 0xff, ix = 255 - xx, iy = 255 - yy;
   // calculate the intensities for each affected pixel
@@ -363,10 +363,14 @@ void EffectMath::wu_pixel(uint32_t x, uint32_t y, CRGB col) {      //awesome wu_
   for (uint8_t i = 0; i < 4; i++) {
     uint16_t xn = (x >> 8) + (i & 1); uint16_t yn = (y >> 8) + ((i >> 1) & 1);
     CRGB &px = getPixel(xn, yn);
-    px.r = qadd8(px.r, (col.r * wu[i]) >> 8);
-    px.g = qadd8(px.g, (col.g * wu[i]) >> 8);
-    px.b = qadd8(px.b, (col.b * wu[i]) >> 8);
-  }
+    if(variant){
+      nblend(px, col, scale8(wu[i], (uint8_t)~darklevel));
+    } else {
+      px.r = qadd8(px.r, (col.r * wu[i]) >> 8);
+      px.g = qadd8(px.g, (col.g * wu[i]) >> 8);
+      px.b = qadd8(px.b, (col.b * wu[i]) >> 8);
+    }
+}
   #undef WU_WEIGHT
 }
 
@@ -421,7 +425,7 @@ void EffectMath::drawPixelXYF(float x, float y, const CRGB &color, uint8_t darkl
     CRGB &px = getPixel(xn, yn);
     CRGB clr = px;
     if(variant){
-      clr = blend(clr, color, wu[i]);
+      nblend(clr, color, wu[i]);
     }
     else{
     clr.r = qadd8(clr.r, (color.r * wu[i]) >> 8);

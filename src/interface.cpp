@@ -1141,7 +1141,7 @@ void block_main_flags(Interface *interf, JsonObject *data){
     interf->checkbox(FPSTR(TCONST_009D), myLamp.isONMP3()? "1" : "0", FPSTR(TINTF_099), true);
 #endif
 #ifdef LAMP_DEBUG
-    interf->checkbox(FPSTR(TCONST_0095), myLamp.isDebugOn()? "1" : "0", FPSTR(TINTF_08E), true);
+    interf->checkbox(FPSTR(TCONST_0095), myLamp.isClockOverlayOn()? "1" : "0", FPSTR(TINTF_08E), true);
 #endif
     interf->json_section_end();
 #ifdef MP3PLAYER
@@ -2967,7 +2967,7 @@ void set_settings_enc(Interface *interf, JsonObject *data){
 
 void set_debugflag(Interface *interf, JsonObject *data){
     if (!data) return;
-    myLamp.setDebug((*data)[FPSTR(TCONST_0095)] == "1");
+    myLamp.setClockOverlay((*data)[FPSTR(TCONST_0095)] == "1");
     save_lamp_flags();
 }
 
@@ -3671,7 +3671,7 @@ void sync_parameters(){
     doc.clear(); obj = doc.to<JsonObject>(); // https://arduinojson.org/v6/how-to/reuse-a-json-document/
 
 #ifdef LAMP_DEBUG
-    obj[FPSTR(TCONST_0095)] = tmp.isDebug ? "1" : "0";
+    obj[FPSTR(TCONST_0095)] = tmp.clockOverlay ? "1" : "0";
     set_debugflag(nullptr, &obj);
     doc.clear(); obj = doc.to<JsonObject>();
 #endif

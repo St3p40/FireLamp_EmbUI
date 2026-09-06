@@ -1236,7 +1236,6 @@ bool EffectComet::rainbowCometRoutine(CRGB *leds, EffectWorker *param)
   }
 
   drawFillRect2_fast(e_centerX, e_centerY, e_centerX + 1, e_centerY + 1, _eNs_color);
-  isDebug();
 
   // if(!isDebug()){
     // Noise

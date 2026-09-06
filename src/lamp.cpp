@@ -231,6 +231,9 @@ void LAMP::effectsTick(){
   if (isAlarm() || lampState.isStringPrinting) { // isWarning() || 
     doPrintStringToLamp(); // обработчик печати строки
   }
+  else if (flags.clockOverlay && !isWarning()) {
+    drawClockOverlay();
+  }
 
   GAUGE::GetGaugeInstance()->GaugeMix((GAUGETYPE)flags.GaugeType);
 
@@ -743,6 +746,27 @@ void LAMP::sendStringToLamp(const char* text, const CRGB &letterColor, bool forc
       LOG(print, F("Array: "));
       LOG(println, (*docArrMessages).as<String>());
     }
+  }
+}
+
+void LAMP::drawClockOverlay()
+{
+  String t = embui.timeProcessor.getFormattedShortTime();
+  if (t.length() < 5) return;
+  const CRGB c = CHSV(0, 0, 160);
+  if (WIDTH >= LET_WIDTH * 5) {
+    fillStringManual(t.c_str(), c, true, false,
+                     (WIDTH + LET_WIDTH * 5) / 2, 0, (HEIGHT - LET_HEIGHT) / 2);
+  } else if (HEIGHT >= LET_HEIGHT * 2) {
+    fillStringManual(t.substring(0, 2).c_str(), c, true, false,
+                     (WIDTH + LET_WIDTH * 2) / 2, 0, HEIGHT - LET_HEIGHT);
+    fillStringManual(t.substring(3, 5).c_str(), c, true, false,
+                     (WIDTH + LET_WIDTH * 2) / 2, 0, HEIGHT - LET_HEIGHT * 2);
+  } else {
+    static bool half = false;
+    EVERY_N_SECONDS(5) { half = !half; }
+    fillStringManual((half ? t.substring(3, 5) : t.substring(0, 2)).c_str(), c, true, false,
+                     (WIDTH + LET_WIDTH * 2) / 2, 0, (HEIGHT - LET_HEIGHT) / 2);
   }
 }
 

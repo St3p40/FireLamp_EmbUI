@@ -56,7 +56,6 @@ typedef struct _LAMPSTATE{
     union {
         struct {
             bool isMicOn:1;
-            bool isDebug:1;
             bool isRandDemo:1;
 
             bool isInitCompleted:1; // завершилась ли инициализация лампы
@@ -215,7 +214,6 @@ private:
     bool isMicOnState() {return lampstate!=nullptr ? lampstate->isMicOn : false;}
 protected:
     EFF_ENUM effect;        /**< энумератор эффекта */
-    bool isDebug() {return lampstate!=nullptr ? lampstate->isDebug : false;}
     bool isRandDemo() {return lampstate!=nullptr ? lampstate->isRandDemo : false;}
     float getSpeedFactor() {return lampstate!=nullptr ? lampstate->speedfactor : 1.0;}
     float getBrightness() {return lampstate!=nullptr ? lampstate->brightness : 127;}

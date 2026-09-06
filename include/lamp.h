@@ -120,7 +120,7 @@ struct {
     bool limitAlarmVolume:1; // ограничивать громкость будильника
     bool isEventsHandled:1; // глобальный признак обработки событий
     bool isEffClearing:1; // признак очистки эффектов при переходе с одного на другой
-    bool isDebug:1; // признак режима отладки
+    bool clockOverlay:1;
     bool numInList:1; // нумерация в списке
     bool effHasMic:1; // значек микрофона в списке
     bool dRand:1; // случайный порядок демо
@@ -151,7 +151,7 @@ _LAMPFLAGS(){
     MIRR_V = false; // отзрекаливание по V
     MIRR_H = false; // отзрекаливание по H
     ONflag = false; // флаг включения/выключения
-    isDebug = false; // флаг отладки
+    clockOverlay = false;
     isFaderON = true; // признак того, что используется фейдер для смены эффектов
     isEffClearing = false; // нужно ли очищать эффекты при переходах с одного на другой
     isGlobalBrightness = true; // признак использования глобальной яркости для всех режимов
@@ -236,6 +236,7 @@ private:
     OtaManager otaManager;
 #endif
     String &prepareText(String &source);
+    void drawClockOverlay();
     void doPrintStringToLamp(const char* text = nullptr,  const CRGB &letterColor = CRGB::Black, const int8_t textOffset = -128, const int16_t fixedPos = 0);
     bool fillStringManual(const char* text,  const CRGB &letterColor, bool stopText = false, bool isInverse = false, int32_t pos = 0, int8_t letSpace = LET_SPACE, int8_t txtOffset = TEXT_OFFSET, int8_t letWidth = LET_WIDTH, int8_t letHeight = LET_HEIGHT); // -2147483648
     void drawLetter(uint8_t bcount, uint16_t letter, int16_t offset,  const CRGB &letterColor, uint8_t letSpace, int8_t txtOffset, bool isInverse, int8_t letWidth, int8_t letHeight, uint8_t flSymb=0);
@@ -393,10 +394,9 @@ public:
     void setIsEventsHandled(bool flag) {flags.isEventsHandled = flag;}
     bool IsEventsHandled() {return flags.isEventsHandled;} // LOG(printf_P,PSTR("flags.isEventsHandled=%d\n"), flags.isEventsHandled);
     bool isLampOn() {return flags.ONflag;}
-    bool isDebugOn() {return flags.isDebug;}
-    bool isDebug() {return lampState.isDebug;}
+    bool isClockOverlayOn() {return flags.clockOverlay;}
     bool isDrawOn() {return flags.isDraw;}
-    void setDebug(bool flag) {flags.isDebug=flag; lampState.isDebug=flag;}
+    void setClockOverlay(bool flag) {flags.clockOverlay=flag;}
     void setButton(bool flag) {flags.isBtn=flag;}
     void setDraw(bool flag){
         flags.isDraw=flag;

@@ -749,26 +749,70 @@ void LAMP::sendStringToLamp(const char* text, const CRGB &letterColor, bool forc
   }
 }
 
+#define SML_WIDTH             (3)
+#define SML_HEIGHT            (5)
+#define SML_PAIR_WIDTH        (SML_WIDTH * 2 + 1)
+#define SML_TIME_WIDTH        (SML_PAIR_WIDTH * 2 + 1)
+#define SML_TIME_HEIGHT       (SML_HEIGHT * 2 + 1)
+
+void LAMP::drawSmallPixel(int16_t x, int16_t y, const CRGB &letterColor, bool on)
+{
+  if (x < 0 || y < 0 || x >= (int16_t)WIDTH || y >= (int16_t)HEIGHT) return;
+  if (flags.MIRR_V) x = WIDTH - 1 - x;
+  if (flags.MIRR_H) y = HEIGHT - 1 - y;
+  if (on)
+    EffectMath::drawPixelXY(x, y, letterColor);
+  else
+    EffectMath::getPixel(x, y).fadeToBlackBy(getBFade());
+}
+
+void LAMP::drawSmallDigits(const char *digits, int16_t x, int16_t y, const CRGB &letterColor)
+{
+  for (int8_t i = 0; i < SML_PAIR_WIDTH; i++)
+  {
+    int8_t n = i / (SML_WIDTH + 1);
+    int8_t p = i % (SML_WIDTH + 1);
+    uint8_t col = (p < SML_WIDTH && digits[n] >= '0' && digits[n] <= '9') ? pgm_read_byte(&(fontHEX3x5[digits[n] - '0'][p])) : 0x00;
+    for (int8_t j = 0; j < SML_HEIGHT; j++)
+      drawSmallPixel(x + i, y + j, letterColor, col & (1 << (SML_HEIGHT - 1 - j)));
+  }
+}
+
 void LAMP::drawClockOverlay()
 {
   String t = embui.timeProcessor.getFormattedShortTime();
   if (t.length() < 5) return;
 
-  if ((millis() / 500) & 1) t.setCharAt(2, ' ');
+  const bool blink = (millis() / 500) & 1;
   const CRGB c = CHSV(0, 0, 160);
-  if (WIDTH >= LET_WIDTH * 5) {
+  if (WIDTH >= LET_WIDTH * 5 && HEIGHT >= LET_HEIGHT) {
+    if (blink) t.setCharAt(2, ' ');
     fillStringManual(t.c_str(), c, true, false,
                      (WIDTH + LET_WIDTH * 5) / 2, 0, (HEIGHT - LET_HEIGHT) / 2);
-  } else if (HEIGHT >= LET_HEIGHT * 2) {
+  } else if (HEIGHT >= LET_HEIGHT * 2 && WIDTH >= LET_WIDTH * 2) {
     fillStringManual(t.substring(0, 2).c_str(), c, true, false,
                      (WIDTH + LET_WIDTH * 2) / 2, 0, HEIGHT - LET_HEIGHT);
     fillStringManual(t.substring(3, 5).c_str(), c, true, false,
                      (WIDTH + LET_WIDTH * 2) / 2, 0, HEIGHT - LET_HEIGHT * 2);
-  } else {
+  } else if (WIDTH >= SML_TIME_WIDTH && HEIGHT >= SML_HEIGHT) {
+    int16_t x = (WIDTH - SML_TIME_WIDTH) / 2, y = (HEIGHT - SML_HEIGHT) / 2;
+    drawSmallDigits(t.c_str(), x, y, c);
+    drawSmallDigits(t.c_str() + 3, x + SML_PAIR_WIDTH + 1, y, c);
+    for (int8_t j = 0; j < SML_HEIGHT; j++)
+      drawSmallPixel(x + SML_PAIR_WIDTH, y + j, c, !blink && (j == 1 || j == 3));
+  } else if (WIDTH >= SML_PAIR_WIDTH && HEIGHT >= SML_TIME_HEIGHT) {
+    int16_t x = (WIDTH - SML_PAIR_WIDTH) / 2, y = (HEIGHT - SML_TIME_HEIGHT) / 2;
+    drawSmallDigits(t.c_str(), x, y + SML_HEIGHT + 1, c);
+    drawSmallDigits(t.c_str() + 3, x, y, c);
+  } else if (WIDTH >= LET_WIDTH * 2 && HEIGHT >= LET_HEIGHT) {
     static bool half = false;
     EVERY_N_SECONDS(5) { half = !half; }
     fillStringManual((half ? t.substring(3, 5) : t.substring(0, 2)).c_str(), c, true, false,
                      (WIDTH + LET_WIDTH * 2) / 2, 0, (HEIGHT - LET_HEIGHT) / 2);
+  } else {
+    static bool half = false;
+    EVERY_N_SECONDS(5) { half = !half; }
+    drawSmallDigits(t.c_str() + (half ? 3 : 0), (WIDTH - SML_PAIR_WIDTH) / 2, (HEIGHT - SML_HEIGHT) / 2, c);
   }
 }
 

@@ -882,7 +882,7 @@ void EffectWorker::chkdefconfigs(const char *folder){
     }
 
     uint16_t chk=i+1;
-    while(!strlen_P(T_EFFNAMEID[chk]) && chk<256){   // пропускаем индексы-"пустышки" без названия, кроме EFF_NONE
+    while(chk<256 && !strlen_P(T_EFFNAMEID[chk])){   // пропускаем индексы-"пустышки" без названия, кроме EFF_NONE
       chk++;
     }
     (*data)[FPSTR(TCONST_00F0)]=chk;
@@ -1031,7 +1031,7 @@ void EffectWorker::makeIndexFile(const char *folder, const bool forcechkdef)
     if(i==251U) continue; // пропускаем плеер, если отключен
 #endif
 #ifndef MIC_EFFECTS
-    if(i>254U) continue; // пропускаем эффекты для микрофона, если отключен микрофон
+    if(i>=254U) continue; // пропускаем эффекты для микрофона, если отключен микрофон
 #endif
 
     eff = getEffect(i);

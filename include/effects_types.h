@@ -378,7 +378,7 @@ EFF_PILE,                                     // Кольорові драже
 EFF_SNOWSTORMSTARFALL,                        // Хурделиця, Зіркопад, Метеори
 EFF_MATRIX,                                   // Матриця
 EFF_WATERCOLORS,                              // Акварель
-EFF_LIGHTER_TRACES,                           // Світлячки зі шлейфом
+EFF_FIRE2021,                                 // Вогняна лампа
 // 10
 EFF_CUBE,                                     // Блукаючий кубик
 EFF_PULSE,                                    // Пульс
@@ -397,25 +397,25 @@ EFF_FAIRY,                                    // Фея
 EFF_FOUNT,                                    // Джерело
 EFF_BBALS,                                    // Стрибаючі м'ячики
 EFF_SINUSOID,                                 // Синусоїд
-EFF_METABALLS,                                // Метасфери
-EFF_SPIRO,                                    // Спіраль
+EFF_SOAP,                                     // Мильні розводи
+EFF_SMOKEBALLS,                               // Полумняні мрії
 EFF_COMET,                                    // Комети, Витаючі вогні +
 EFF_CIRCLES,                                  // Бульбулятор
 //30
-EFF_PRIZMATA,                                 // Призмата
+EFF_PICASSO4,                                 // Метакулі
 EFF_FLOCK,                                    // Стая і Хижак
-EFF_SWIRL,                                    // Водоверть
+EFF_LIQUIDLAMP,                               // Лаво-лампа
 EFF_DRIFT,                                    // Дрифт
 EFF_POPCORN,                                  // Попкорн
 EFF_TWINKLES,                                 // Мерехтіння
-EFF_RADAR,                                    // Радар
+EFF_RACER,                                    // Космо-Рейсер
 EFF_WAVES,                                    // Хвилі
 EFF_FIRE2012,                                 // Вогонь 2012
-EFF_BENGALL,                                  // Бенгальські вогні
+EFF_MIRAGE,                                   // Міраж
 //40
 EFF_BALLS,                                    // Кульки
 EFF_DNA,                                      // ДНК
-EFF_FIRE2018,                                 // Вогонь 2018
+EFF_KALEIDOSCOPE,                             // Калейдоскоп
 EFF_RINGS,                                    // Кодовий замок
 EFF_CUBE2,                                    // Куб 2D
 EFF_MAGMA,                                    // Магма
@@ -435,25 +435,11 @@ EFF_BUTTERFLY,                                // Мотильки
 EFF_SHADOWS,                                  // Тіні
 EFF_PATTERNS,                                 // Візерунки
 //60
-EFF_ARROWS,                                   // Стрілки
-EFF_NBALLS,                                   // Дикі кульки
 EFF_ATTRACT,                                  // Притягування
 EFF_SNAKE,                                    // Змійки
 EFF_NEXUS,                                    // Nexus
 EFF_MAZE,                                     // Лабіринт
-EFF_FRIZZLES,                                 // В'юнкі кольори
-EFF_POLARL,                                   // Північне сяйво
-EFF_SOAP,                                     // Мильні розводи
-EFF_SNK_ISLAND,                               // Зміїний острів
-//70
-EFF_SMOKEBALLS,                               // Полумняні мрії
-EFF_PICASSO4,                                 // Метакулі
-EFF_LIQUIDLAMP,                               // Лаво-лампа
-EFF_RACER,                                    // Космо-Рейсер
-EFF_SMOKER,                                   // Дим
-EFF_FIRE2021,                                 // Вогняна лампа
-EFF_MIRAGE,                                   // Міраж
-EFF_KALEIDOSCOPE                              // Калейдоскоп
+EFF_POLARL                                    // Північне сяйво
 //...
 #ifdef RGB_PLAYER
 ,EEF_RGBPLAYER = (251)                        // Програвач "гіфок"
@@ -465,15 +451,15 @@ EFF_KALEIDOSCOPE                              // Калейдоскоп
 } EFF_ENUM;
 
 /** набор указателей на строки с именами эффектов
- * индекс элемента массива составляет id из EFF_ENUM
+ * индекс элемента массива составляет id из EFF_ENUM, TEFF_xxx - лише ім'я рядка, його номер може не збігатися з id
  * вместо несуществующих эффектов ставим указатель на 0-ю пустышку
  */
 static const char* const T_EFFNAMEID[] PROGMEM = {
-  TEFF_000, TEFF_001, TEFF_002, TEFF_003, TEFF_004, TEFF_005, TEFF_006, TEFF_007, TEFF_008, TEFF_000, TEFF_010, TEFF_011, TEFF_012, TEFF_013, TEFF_014, TEFF_015, // 0-15
-  TEFF_016, TEFF_017, TEFF_018, TEFF_019, TEFF_020, TEFF_021, TEFF_022, TEFF_023, TEFF_024, TEFF_025, TEFF_000, TEFF_000, TEFF_028, TEFF_029, TEFF_000, TEFF_031, // 16-31
-  TEFF_032, TEFF_033, TEFF_034, TEFF_035, TEFF_000, TEFF_037, TEFF_038, TEFF_000, TEFF_040, TEFF_041, TEFF_000, TEFF_043, TEFF_044, TEFF_045, TEFF_046, TEFF_047, // 32 - 47
-  TEFF_048, TEFF_049, TEFF_050, TEFF_051, TEFF_052, TEFF_053, TEFF_054, TEFF_055, TEFF_056, TEFF_057, TEFF_058, TEFF_059, TEFF_060, TEFF_061, TEFF_062, TEFF_063, // 48 - 63
-  TEFF_064, TEFF_065, TEFF_000, TEFF_067, TEFF_068, TEFF_069, TEFF_070, TEFF_071, TEFF_072, TEFF_073, TEFF_074, TEFF_075, TEFF_076, TEFF_077, TEFF_000, TEFF_000, // 64 - 79
+  TEFF_000, TEFF_001, TEFF_002, TEFF_003, TEFF_004, TEFF_005, TEFF_006, TEFF_007, TEFF_008, TEFF_075, TEFF_010, TEFF_011, TEFF_012, TEFF_013, TEFF_014, TEFF_015, // 0-15
+  TEFF_016, TEFF_017, TEFF_018, TEFF_019, TEFF_020, TEFF_021, TEFF_022, TEFF_023, TEFF_024, TEFF_025, TEFF_068, TEFF_070, TEFF_028, TEFF_029, TEFF_071, TEFF_031, // 16-31
+  TEFF_072, TEFF_033, TEFF_034, TEFF_035, TEFF_073, TEFF_037, TEFF_038, TEFF_076, TEFF_040, TEFF_041, TEFF_077, TEFF_043, TEFF_044, TEFF_045, TEFF_046, TEFF_047, // 32 - 47
+  TEFF_048, TEFF_049, TEFF_050, TEFF_051, TEFF_052, TEFF_053, TEFF_054, TEFF_055, TEFF_056, TEFF_057, TEFF_058, TEFF_059, TEFF_062, TEFF_063, TEFF_064, TEFF_065, // 48 - 63
+  TEFF_067, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, // 64 - 79
   TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, // 80 - 95
   TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, // 96 - 111
   TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, // 112 - 127
@@ -483,7 +469,7 @@ static const char* const T_EFFNAMEID[] PROGMEM = {
   TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, // 176 - 191
   TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, // 192 - 207
   TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, // 208 - 223
-  TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, // 224 - 39
+  TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, // 224 - 239
   TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_000, TEFF_251, TEFF_000, TEFF_000, TEFF_254, TEFF_255  // 240 - 255
 };
 
@@ -495,11 +481,11 @@ static const char* const T_EFFNAMEID[] PROGMEM = {
  *  Не хочу создавать дополнительные массивы и лайеры существующих - kostyamat
  */
 static const uint8_t T_EFFVER[] PROGMEM = {
-  0, 6, 6, 4, 4, 1, 3, 5, 3, 7, 1, 6, 5, 5, 0, 10, // 0-15
-  3, 1, 3, 1, 5, 9, 5, 2, 5, 5, 0, 7, 7, 2, 0, 7, // 16-31
-  5, 1, 5, 3, 9, 3, 4, 3, 0, 1, 0, 5, 7, 1, 1, 3, // 32 - 47
-  1, 8, 6, 6, 4, 7, 5, 4, 1, 7, 6, 1, 1, 5, 7, 6, // 48 - 63
-  5, 5, 0, 5, 3, 1, 9, 3, 3, 1, 1, 1, 1, 1, 0, 0, // 64 - 79
+  0, 6, 6, 4, 4, 1, 3, 5, 3, 1, 1, 6, 5, 5, 0, 10, // 0-15
+  3, 1, 3, 1, 5, 9, 5, 2, 5, 5, 3, 9, 7, 2, 3, 7, // 16-31
+  3, 1, 5, 3, 1, 3, 4, 1, 0, 1, 1, 5, 7, 1, 1, 3, // 32 - 47
+  1, 8, 6, 6, 4, 7, 5, 4, 1, 7, 6, 1, 7, 6, 5, 5, // 48 - 63
+  5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 64 - 79
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 80 - 95
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 96 - 111
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 112 - 127
@@ -633,11 +619,11 @@ static const char E_TEST2[]     PROGMEM = "{" COTNROLS_PREFIX SF(SET_ALL_EFFFLAG
  * не обязательно каждому эффекту лепить свой конфиг, можно ставить указатели на эффекты с похожими контролами
  */
 static const char* const T_EFFUICFG[] PROGMEM = {
-  E_DEFUI, E_WHITE,   E_COLORS,   E_RAINBOW, E_SPARCLES, E_4PAL, E_STARFAIL,   E_MATRIX,  E_WCOLOR,    E_DEFUI,    E_CUBE,   E_PULS,  E_4PAL,   E_BBUSH,    E_DEFUI,        E_PALMICUI, // 0-15
-  E_CELL,  E_PUZZLES, E_TLAND,    E_SPBALS,   E_OSCIL,    E_WRAIN, E_FAIRY,      E_FOUNT,  E_BBALLS,    E_SINUS,     E_DEFUI,   E_3PAL,  E_COMET,  E_4PAL_MIC, E_DEFUI, E_FLOCK, // 16-31
-  E_3PAL,  E_DRIFT,   E_POPCORN,  E_4PAL,     E_RADAR255, E_WAVES, E_F2012_MIC,  E_DEFUI,  E_4PAL,      E_DNA,       E_DEFUI,  E_CLOCK, E_CUBE2D, E_NFIRE,    E_PICAS,    E_SSHIPS, // 32 - 47
-  E_FLAGS, E_LEAPERS, E_3PAL_MIC, E_3PAL_MIC, E_AQUARIUM, E_FWORK, E_2,          E_MUNCH,  E_CNOISE,    E_BUTTERFLY, E_SHAD,   E_PATT,  E_ARR,    E_NBAL,     E_ATTRACT,  E_SNAKE, // 48 - 63
-  E_NEXUS, E_MAZE,    E_DEFUI,    E_POLAR,    E_3PAL,    E_DEFUI, E_SMOKBALLS,  E_MBL,    E_LIQLAM,    E_3PAL,      E_SMOKER, E_NFIRE, E_MIRAGE, E_KALEID,    E_DEFUI,    E_DEFUI, // 64 - 79
+  E_DEFUI, E_WHITE,   E_COLORS,   E_RAINBOW, E_SPARCLES, E_4PAL, E_STARFAIL,   E_MATRIX,  E_WCOLOR,    E_NFIRE,    E_CUBE,   E_PULS,  E_4PAL,   E_BBUSH,    E_DEFUI,        E_PALMICUI, // 0-15
+  E_CELL,  E_PUZZLES, E_TLAND,    E_SPBALS,   E_OSCIL,    E_WRAIN, E_FAIRY,      E_FOUNT,  E_BBALLS,    E_SINUS,     E_3PAL,   E_SMOKBALLS, E_COMET, E_4PAL_MIC, E_MBL, E_FLOCK, // 16-31
+  E_LIQLAM, E_DRIFT,  E_POPCORN,  E_4PAL,     E_3PAL,     E_WAVES, E_F2012_MIC,  E_MIRAGE, E_4PAL,      E_DNA,       E_KALEID, E_CLOCK, E_CUBE2D, E_NFIRE,    E_PICAS,    E_SSHIPS, // 32 - 47
+  E_FLAGS, E_LEAPERS, E_3PAL_MIC, E_3PAL_MIC, E_AQUARIUM, E_FWORK, E_2,          E_MUNCH,  E_CNOISE,    E_BUTTERFLY, E_SHAD,   E_PATT,  E_ATTRACT, E_SNAKE,  E_NEXUS,    E_MAZE, // 48 - 63
+  E_POLAR, E_DEFUI,   E_DEFUI,    E_DEFUI,    E_DEFUI,   E_DEFUI, E_DEFUI,      E_DEFUI,  E_DEFUI,     E_DEFUI,     E_DEFUI,  E_DEFUI, E_DEFUI,  E_DEFUI,    E_DEFUI,    E_DEFUI, // 64 - 79
   E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, // 80 - 95
   E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, // 96 - 111
   E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, // 112 - 127

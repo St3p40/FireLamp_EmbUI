@@ -703,9 +703,9 @@ private:
     const uint8_t _scale = 24;
     const uint8_t _speed = 3;
 
-    uint16_t x = 0;
-    uint16_t y = 0;
-    uint16_t z = 0;
+    uint32_t x = 0;
+    uint32_t y = 0;
+    uint32_t z = 0;
     uint8_t noise[WIDTH + 1][HEIGHT + 1];
     using SpringRow = int16_t[HEIGHT + 1];
     std::unique_ptr<int16_t[]> springBuf;
@@ -1484,16 +1484,20 @@ public:
 class EffectMaze : public EffectCalc {
 private:
     bool start = true;
-	bool checkFlag;
+	bool firstPerson = false;
 	uint8_t posX, posY;
 	uint8_t color;
 	uint8_t Lookdir;
 	uint8_t _speed;
 	uint16_t SubPos;
-	bool maze[M_WIDTH][M_HEIGHT];
+	int8_t turn;
+	float camTurn;
+	uint8_t maze[M_WIDTH][M_HEIGHT];
 
-	void digMaze(int x, int y);
+	bool isWall(int16_t x, int16_t y);
+	void chooseDir();
 	void generateMaze();
+	void drawFirstPerson();
 
     String setDynCtrl(UIControl*_val) override;
     //void setspd(const byte _spd) override; // перегрузка для скорости

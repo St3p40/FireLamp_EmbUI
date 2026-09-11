@@ -499,7 +499,7 @@ static const uint8_t T_EFFVER[] PROGMEM = {
   3, 1, 3, 1, 5, 9, 5, 2, 5, 5, 0, 7, 7, 2, 0, 7, // 16-31
   5, 1, 5, 3, 9, 3, 4, 3, 0, 1, 0, 5, 7, 1, 1, 3, // 32 - 47
   1, 8, 6, 6, 4, 7, 5, 4, 1, 7, 6, 1, 1, 5, 7, 6, // 48 - 63
-  5, 3, 0, 5, 3, 1, 9, 3, 3, 1, 1, 1, 1, 1, 0, 0, // 64 - 79
+  5, 5, 0, 5, 3, 1, 9, 3, 3, 1, 1, 1, 1, 1, 0, 0, // 64 - 79
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 80 - 95
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 96 - 111
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 112 - 127
@@ -585,6 +585,7 @@ static const char E_CUBE2D[]    PROGMEM = "{" COTNROLS_PREFIX SF(SET_ALL_EFFFLAG
 static const char E_CUBE[]      PROGMEM = "{" COTNROLS_PREFIX SF(SET_ALL_EFFFLAGS) ",\"ctrls\":[{\"id\":2,\"type\":48},  {\"id\":3,\"val\":2,\"min\":1,\"max\":6,\"name\":\"" DFTINTF_10D "\"}, {\"id\":4,\"val\":2,\"min\":0,\"max\":2,\"name\":\"" DFTINTF_0F1 "\"}, {\"id\":5,\"max\":" SF(FASTLED_PALETTS_COUNT) ",\"name\":\"" DFTINTF_084 "\"}]}";
 static const char E_STARFAIL[]  PROGMEM = "{" COTNROLS_PREFIX SF(SET_ALL_EFFFLAGS) ",\"ctrls\":[{\"id\":2,\"type\":48},  {\"id\":3,\"val\":5,\"max\":10,\"name\":\"" DFTINTF_0EF "\"} , {\"id\":4,\"max\":3,\"name\":\"" DFTINTF_0FD "\"} ,{\"id\":5,\"type\":2,\"val\":1,\"name\":\"" DFTINTF_108 "\"}]}";
 static const char E_SNAKE[]     PROGMEM = "{" COTNROLS_PREFIX SF(SET_ALL_EFFFLAGS) ",\"ctrls\":[{\"id\":2,\"type\":48},  {\"id\":3,\"max\":" SF(FASTLED_PALETTS_COUNT) ",\"name\":\"" DFTINTF_084 "\"},  {\"id\":4,\"val\":4,\"max\":16,\"name\":\"" DFTINTF_0FE "\"}, {\"id\":5,\"type\":2,\"val\":1,\"name\":\"" DFTINTF_111 "\"},  {\"id\":7,\"type\":18,\"val\":1,\"name\":\"" DFTINTF_020 "\"}]}";
+static const char E_MAZE[]      PROGMEM = "{" COTNROLS_PREFIX SF(SET_ALL_EFFFLAGS) ",\"ctrls\":[{\"id\":2,\"type\":48},  {\"id\":3,\"type\":2,\"val\":1,\"name\":\"" DFTINTF_00A "\"}]}";
 static const char E_NEXUS[]     PROGMEM = "{" COTNROLS_PREFIX SF(SET_ALL_EFFFLAGS) ",\"ctrls\":[{\"id\":2,\"type\":48},  {\"id\":3,\"val\":5,\"max\":10,\"name\":\"" DFTINTF_0EF "\"},  {\"id\":4,\"max\":" SF(FASTLED_PALETTS_COUNT) ",\"name\":\"" DFTINTF_084 "\"}]}";
 static const char E_FWORK[]     PROGMEM = "{" COTNROLS_PREFIX SF(SET_ALL_EFFFLAGS) ",\"ctrls\":[{\"id\":1,\"val\":127,\"name\":\"" DFTINTF_0F2 "\"},  {\"id\":2,\"type\":48},  {\"id\":3,\"max\":8,\"val\":4,\"name\":\"" DFTINTF_10C "\"},  {\"id\":4,\"type\":2,\"val\":0,\"name\":\"" DFTINTF_109 "\"}]}";
 static const char E_MATRIX[]    PROGMEM = "{" COTNROLS_PREFIX SF(SET_ALL_EFFFLAGS) ",\"ctrls\":[{\"id\":2,\"type\":48},  {\"id\":3,\"val\":12,\"max\":32,\"name\":\"" DFTINTF_0EF "\"},  {\"id\":4,\"val\":90,\"name\":\"" DFTINTF_0FC "\"},  {\"id\":5,\"val\":20,\"max\":60,\"name\":\"" DFTINTF_10A "\"},  {\"id\":6,\"type\":2,\"val\":1,\"name\":\"" DFTINTF_111 "\"}]}";
@@ -636,7 +637,7 @@ static const char* const T_EFFUICFG[] PROGMEM = {
   E_CELL,  E_PUZZLES, E_TLAND,    E_SPBALS,   E_OSCIL,    E_WRAIN, E_FAIRY,      E_FOUNT,  E_BBALLS,    E_SINUS,     E_DEFUI,   E_3PAL,  E_COMET,  E_4PAL_MIC, E_DEFUI, E_FLOCK, // 16-31
   E_3PAL,  E_DRIFT,   E_POPCORN,  E_4PAL,     E_RADAR255, E_WAVES, E_F2012_MIC,  E_DEFUI,  E_4PAL,      E_DNA,       E_DEFUI,  E_CLOCK, E_CUBE2D, E_NFIRE,    E_PICAS,    E_SSHIPS, // 32 - 47
   E_FLAGS, E_LEAPERS, E_3PAL_MIC, E_3PAL_MIC, E_AQUARIUM, E_FWORK, E_2,          E_MUNCH,  E_CNOISE,    E_BUTTERFLY, E_SHAD,   E_PATT,  E_ARR,    E_NBAL,     E_ATTRACT,  E_SNAKE, // 48 - 63
-  E_NEXUS, E_2,       E_DEFUI,    E_POLAR,    E_3PAL,    E_DEFUI, E_SMOKBALLS,  E_MBL,    E_LIQLAM,    E_3PAL,      E_SMOKER, E_NFIRE, E_MIRAGE, E_KALEID,    E_DEFUI,    E_DEFUI, // 64 - 79
+  E_NEXUS, E_MAZE,    E_DEFUI,    E_POLAR,    E_3PAL,    E_DEFUI, E_SMOKBALLS,  E_MBL,    E_LIQLAM,    E_3PAL,      E_SMOKER, E_NFIRE, E_MIRAGE, E_KALEID,    E_DEFUI,    E_DEFUI, // 64 - 79
   E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, // 80 - 95
   E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, // 96 - 111
   E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, E_DEFUI, // 112 - 127
@@ -1310,10 +1311,10 @@ const uint8_t CENTER_Y_MAJOR =  HEIGHT / 2  + (HEIGHT % 2);          // цент
 
 
 // ***************** НАСТРОЙКИ ГЕНЕРАЦИИ ЛАБИРИНТА *****************
-#define M_HEIGHT HEIGHT + !(HEIGHT % 2)
-#define M_WIDTH WIDTH + !(WIDTH % 2)
-#define M_SHIFT_X !(WIDTH % 2)
-#define M_SHIFT_Y !(HEIGHT % 2)
+#define M_HEIGHT (HEIGHT + !(HEIGHT % 2))
+#define M_WIDTH (WIDTH + !(WIDTH % 2))
+#define M_SHIFT_X (!(WIDTH % 2))
+#define M_SHIFT_Y (!(HEIGHT % 2))
 
 
 // VU-meter

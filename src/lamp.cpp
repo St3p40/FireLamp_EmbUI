@@ -53,6 +53,10 @@ void LAMP::lamp_init(const uint16_t curlimit)
     tft.init();
     tft.setRotation(0);
     tft.fillScreen(TFT_BLACK);
+#ifdef LAMP_TFT_RGB666
+    tft.writecommand(0x3A);
+    tft.writedata(0x66);
+#endif
 
     pinMode(TFT_BL, OUTPUT);
     digitalWrite(TFT_BL, LOW);
@@ -1360,6 +1364,22 @@ void LAMP::showWarning(
 void LAMP::show() {
 #ifdef DLAMP_USE_TFT
   tft.startWrite();
+#ifdef LAMP_TFT_RGB666
+    constexpr size_t lineBytes = (HEIGHT << 3) * 3;
+    static uint8_t line[lineBytes + 4] __attribute__((aligned(4)));
+    tft.setAddrWindow(0, 0, HEIGHT << 3, WIDTH << 3);
+    for (int x = 0; x < WIDTH; x++) {
+        uint8_t *p = line;
+        for (int y = 0; y < HEIGHT; y++) {
+            const CRGB &pixel = leds[x + (y * WIDTH)];
+            for (int i = 0; i < 8; i++) {
+                *p++ = pixel.r; *p++ = pixel.g; *p++ = pixel.b;
+            }
+        }
+        for (int i = 0; i < 8; i++)
+            tft.pushPixels(line, lineBytes / 2);
+    }
+#else
     for (int y = 0; y < HEIGHT; y++) {
         for (int x = 0; x < WIDTH; x++) {
             CRGB pixel = leds[x + (y * WIDTH)];
@@ -1367,6 +1387,7 @@ void LAMP::show() {
             tft.fillRect(y << 3, x << 3, 8, 8, color);
         }
     }
+#endif
 
     tft.endWrite();
 #else

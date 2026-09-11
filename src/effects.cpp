@@ -2857,8 +2857,7 @@ String EffectAquarium::setDynCtrl(UIControl *_val)
 
 void EffectAquarium::nGlare(uint8_t bri)
 {
-  for(uint8_t i = 0; i < 4; i++)
-    fillNoise();
+  fillNoise();
   CRGB glow = CHSV((uint8_t)hue, satur ? 255 : 0, bri);
   causticGather(&noise[0][0], HEIGHT + 1, WIDTH + 1, 64, glow.nscale8(24));
 }
@@ -2967,27 +2966,18 @@ void EffectAquarium::springStep(int16_t *height, int16_t *vel, uint8_t *out,
 
 void EffectAquarium::fillNoise()
 {
-  uint8_t dataSmoothing = 200 - (_speed << 2);
   for (uint8_t i = 0; i < WIDTH + 1; i++)
   {
-    uint32_t ioffset = _scale * i;
+    uint32_t ioffset = ((uint32_t)_scale * i) << 8;
     for (uint8_t j = 0; j < HEIGHT + 1; j++)
     {
-      uint32_t joffset = _scale * j;
+      uint32_t joffset = ((uint32_t)_scale * j) << 8;
+      int32_t data = ((int32_t)inoise16(x + ioffset, y + joffset, z) - 8400) * 87 >> 14;
 
-      uint8_t data = inoise8(x + ioffset, y + joffset, z);
-
-      data = qsub8(data, 16);
-      data = qadd8(data, scale8(data, 39));
-
-      data = scale8(noise[i][j], dataSmoothing) + scale8(data, 256 - dataSmoothing);
-
-      noise[i][j] = data;
+      noise[i][j] = constrain(data, 0, 255);
     }
   }
-  z += _speed;
-  x += _speed >> 3;
-  y -= _speed >> 4;
+  z += (uint32_t)_speed << 10;
 }
 
 bool EffectAquarium::run(CRGB *leds, EffectWorker *param)
@@ -5880,171 +5870,162 @@ bool EffectBalls::run(CRGB *leds, EffectWorker *opt) {
 
 //===== Ефект Лабіринт =========================//
 // solving algorithm by Stepko
-void EffectMaze::digMaze(int x, int y) {
-  int x1, y1;
-  uint16_t x2, y2;
-  int dx, dy;
-  int dir, count;
-  
-  dir = random8() % 4;
-  count = 0;
-  while (count < 4) {
-    dx = 0;
-    dy = 0;
-    switch (dir) {
-      case 0:
-        dx = 1;
-        break;
-      case 1:
-        dy = 1;
-        break;
-      case 2:
-        dx = -1;
-        break;
-      default:
-        dy = -1;
-        break;
-    }
-    x1 = x + dx;
-    y1 = y + dy;
-    x2 = x1 + dx;
-    y2 = y1 + dy;
-    if (x2 > 0 && x2 < M_WIDTH && y2 > 0 && y2 < M_HEIGHT &&
-      maze[x1][y1] && maze[x2][y2]) {
-      maze[x1][y1] = 0;
-      maze[x2][y2] = 0;
-      x = x2;
-      y = y2;
-      dir = random(10) % 4;
-      count = 0;
-    } else {
-      dir = (dir + 1) % 4;
-      count += 1;
-    }
-  }
+static const int8_t MAZE_DX[4] = {1, 0, -1, 0};
+static const int8_t MAZE_DY[4] = {0, -1, 0, 1};
+
+bool EffectMaze::isWall(int16_t x, int16_t y) {
+  return x < 0 || y < 0 || x >= M_WIDTH || y >= M_HEIGHT || maze[x][y];
 }
 
 void EffectMaze::generateMaze() {
-  randomSeed(millis());
-  uint16_t x, y;
-  for (x = 0; x < M_WIDTH; x++) {
-    for (y = 0; y < M_HEIGHT; y++) {
-      maze[x][y] = 1;
+  memset(maze, 1, sizeof(maze));
+  uint8_t x = 1, y = 1;
+  maze[x][y] = 6;
+  while (true) {
+    uint8_t dirs[4], n = 0;
+    for (uint8_t d = 0; d < 4; d++) {
+      int16_t nx = x + 2 * MAZE_DX[d], ny = y + 2 * MAZE_DY[d];
+      if (nx > 0 && ny > 0 && nx < M_WIDTH - 1 && ny < M_HEIGHT - 1 && maze[nx][ny] == 1)
+        dirs[n++] = d;
+    }
+    if (n) {
+      uint8_t d = dirs[random(n)];
+      maze[x + MAZE_DX[d]][y + MAZE_DY[d]] = 0;
+      x += 2 * MAZE_DX[d];
+      y += 2 * MAZE_DY[d];
+      maze[x][y] = 2 + ((d + 2) & 3);
+    } else {
+      uint8_t back = maze[x][y] - 2;
+      if (back > 3) break;
+      x += 2 * MAZE_DX[back];
+      y += 2 * MAZE_DY[back];
     }
   }
-  maze[1][1] = 0;
-  for (y = 1; y < M_HEIGHT; y += 2) {
-    for (x = 1; x < M_WIDTH; x += 2) {
-      digMaze(x, y);
-    }
-  }
+  for (uint8_t i = 0; i < M_WIDTH; i++)
+    for (uint8_t j = 0; j < M_HEIGHT; j++)
+      if (maze[i][j] != 1) maze[i][j] = 0;
   maze[0][1] = 0;
   maze[M_WIDTH - 2][M_HEIGHT - 1] = 0;
 }
 
+void EffectMaze::chooseDir() {
+  uint8_t side = (Lookdir + 1) & 3;
+  if (!isWall(posX + MAZE_DX[side], posY + MAZE_DY[side])) {
+    Lookdir = side;
+    turn--;
+  } else {
+    for (uint8_t i = 0; i < 4 && isWall(posX + MAZE_DX[Lookdir], posY + MAZE_DY[Lookdir]); i++) {
+      Lookdir = (Lookdir + 3) & 3;
+      turn++;
+    }
+  }
+  if (turn >= 4 || turn <= -4) {
+    int8_t full = turn / 4 * 4;
+    turn -= full;
+    camTurn -= full;
+  }
+}
+
+void EffectMaze::drawFirstPerson() {
+  const float fov = 0.66f;
+  const float focal = WIDTH * 0.5f / fov;
+  const float horizon = HEIGHT * 0.5f;
+
+  float a = camTurn * HALF_PI;
+  float dirX = cosf(a), dirY = sinf(a);
+  float s = SubPos / 255.f;
+  float px = posX + 0.5f + MAZE_DX[Lookdir] * s;
+  float py = posY + 0.5f + MAZE_DY[Lookdir] * s;
+
+  CRGB bg[HEIGHT];
+  for (uint8_t y = 0; y < HEIGHT; y++) {
+    float off = y + 0.5f - horizon;
+    float d = focal * 0.5f / (off < 0 ? -off : off);
+    uint8_t f = 255.f / (1.f + d * d * 0.125f);
+    bg[y] = off < 0 ? CHSV(color, 120, scale8(f, 90)) : CHSV(color + 128, 160, scale8(f, 40));
+  }
+
+  for (uint8_t x = 0; x < WIDTH; x++) {
+    float cam = 2.f * (x + 0.5f) / WIDTH - 1.f;
+    float rx = dirX + dirY * fov * cam;
+    float ry = dirY - dirX * fov * cam;
+    int16_t mx = px, my = py;
+    float ddx = rx == 0.f ? 1e30f : fabsf(1.f / rx);
+    float ddy = ry == 0.f ? 1e30f : fabsf(1.f / ry);
+    int8_t sx = rx < 0 ? -1 : 1, sy = ry < 0 ? -1 : 1;
+    float sdx = (rx < 0 ? px - mx : mx + 1 - px) * ddx;
+    float sdy = (ry < 0 ? py - my : my + 1 - py) * ddy;
+    bool side = false, outside = false;
+    for (uint16_t n = 0; n < M_WIDTH + M_HEIGHT; n++) {
+      if (sdx < sdy) { sdx += ddx; mx += sx; side = false; }
+      else           { sdy += ddy; my += sy; side = true; }
+      if (mx < 0 || my < 0 || mx >= M_WIDTH || my >= M_HEIGHT) { outside = true; break; }
+      if (maze[mx][my]) break;
+    }
+    float dist = side ? sdy - ddy : sdx - ddx;
+    if (dist < 0.05f) dist = 0.05f;
+    uint8_t fog = 255.f / (1.f + dist * dist * 0.125f);
+    float h = focal / dist * 0.5f;
+    float top = horizon + h, bottom = horizon - h;
+    CRGB wall = outside ? CHSV(color + 128, 60, 255) : CHSV(color, 200, side ? scale8(fog, 150) : fog);
+
+    for (uint8_t y = 0; y < HEIGHT; y++) {
+     float cover = (top < y + 1 ? top : y + 1) - (bottom > y ? bottom : y);
+      CRGB c = bg[y];
+      if (cover >= 1.f) c = wall;
+      else if (cover > 0.f) c = blend(bg[y], wall, cover * 255);
+      EffectMath::drawPixelXY(x, y, c);
+    }
+  }
+}
+
 bool EffectMaze::run(CRGB *ledarr, EffectWorker *opt) {
-    if (start) {
-    start = 0;
+  if (start) {
+    start = false;
     color = random8();
     generateMaze();
     posX = 0, posY = 1;
-    checkFlag = 1;
+    Lookdir = 0;
+    turn = 0;
+    SubPos = 0;
+    chooseDir();
+    camTurn = turn;
+  }
+
+  uint8_t step = firstPerson ? _speed / 5 + 1 : _speed;
+  float left = turn - camTurn;
+  if (firstPerson && (left > 0.01f || left < -0.01f)) {
+    float rot = step / 170.f;
+    camTurn += left > rot ? rot : (left < -rot ? -rot : left);
+  } else {
+    camTurn = turn;
+    SubPos += step;
+    if (SubPos >= 255) {
+      SubPos -= 255;
+      posX += MAZE_DX[Lookdir];
+      posY += MAZE_DY[Lookdir];
+      if (posX == M_WIDTH - 2 && posY == M_HEIGHT - 1) {
+        start = true;
+        SubPos = 0;
+      } else {
+        uint8_t dir = Lookdir;
+        chooseDir();
+        if (Lookdir != dir) SubPos = 0;
+      }
+    }
+  }
+
+  if (firstPerson) {
+    drawFirstPerson();
+    return true;
   }
   for (byte x = 0; x < WIDTH; x++) {
     for (byte y = 0; y < HEIGHT; y++) {
       EffectMath::drawPixelXY(x, y,(maze[x + M_SHIFT_X][y + M_SHIFT_Y]) ? CHSV(color, 200, 255) : CHSV(0, 0, 0));
     }
   }
-  if (checkFlag) {
-    switch (Lookdir) {
-      case 0:
-        if (!maze[posX][posY - 1]) {
-          Lookdir = 1;
-        }
-        break;
-      case 1:
-        if (!maze[posX - 1][posY]) {
-          Lookdir = 2;
-        }
-        break;
-      case 2:
-        if (!maze[posX][posY + 1]) {
-          Lookdir = 3;
-        }
-        break;
-      case 3:
-        if (!maze[posX + 1][posY]) {
-          Lookdir = 0;
-        }
-        break;
-    }
-    while (true) {
-      bool et1 = 0;
-      switch (Lookdir) {
-        case 0:
-          if (maze[posX + 1][posY]) {
-            Lookdir = 3;
-            et1 = 1;
-          }
-          break;
-        case 1:
-          if (maze[posX][posY - 1]) {
-            Lookdir = 0;
-            et1 = 1;
-          }
-          break;
-        case 2:
-          if (maze[posX - 1][posY]) {
-            Lookdir = 1;
-            et1 = 1;
-          }
-          break;
-        case 3:
-          if (maze[posX][posY + 1]) {
-            Lookdir = 2;
-            et1 = 1;
-          }
-          break;
-      }
-      if (!et1) break;
-    }
-    checkFlag = 0;
-  }
-  SubPos += _speed;
-  if (SubPos >= 255) {
-    SubPos %= 255;
-    checkFlag = 1;
-    switch (Lookdir) {
-      case 0:
-        posX += 1;
-        break;
-      case 1:
-        posY -= 1;
-        break;
-      case 2:
-        posX -= 1;
-        break;
-      case 3:
-        posY += 1;
-        break;
-    }
-  }
-  switch (Lookdir) {
-    case 0:
-      EffectMath::drawPixelXYF(float(posX - M_SHIFT_X) + (float(SubPos) / 255.), (posY - M_SHIFT_Y), CHSV(0, 0, 255));
-      break;
-    case 1:
-      EffectMath::drawPixelXYF((posX - M_SHIFT_X), float(posY - M_SHIFT_Y) - (float(SubPos) / 255.), CHSV(0, 0, 255));
-      break;
-    case 2:
-      EffectMath::drawPixelXYF(float(posX - M_SHIFT_X) - (float(SubPos) / 255.), (posY - M_SHIFT_Y), CHSV(0, 0, 255));
-      break;
-    case 3:
-      EffectMath::drawPixelXYF((posX - M_SHIFT_X), float(posY - M_SHIFT_Y) + (float(SubPos) / 255.), CHSV(0, 0, 255));
-      break;
-  }
-  if ((posX == M_WIDTH - 2) & (posY == M_HEIGHT - 1))
-    start = 1;
+  float s = SubPos / 255.f;
+  EffectMath::drawPixelXYF(posX - M_SHIFT_X + MAZE_DX[Lookdir] * s, posY - M_SHIFT_Y + MAZE_DY[Lookdir] * s, CHSV(0, 0, 255));
   return true;
 }
 
@@ -6052,6 +6033,8 @@ bool EffectMaze::run(CRGB *ledarr, EffectWorker *opt) {
 String EffectMaze::setDynCtrl(UIControl*_val){
   if(_val->getId()==1)
    _speed = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 20, 147);   // установить скорость
+  else if(_val->getId()==3)
+   firstPerson = EffectCalc::setDynCtrl(_val).toInt();
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
 }

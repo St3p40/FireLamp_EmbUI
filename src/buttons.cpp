@@ -166,6 +166,37 @@ String ButtonAction::getName(){
 		return buffer;
 };
 
+#ifdef LAMP_TFT_TOUCH
+#ifndef XPT2046_Z_THRESHOLD
+#define XPT2046_Z_THRESHOLD   (400)
+#endif
+
+static uint16_t xpt2046Read(uint8_t cmd){
+	for (int8_t i = 7; i >= 0; i--) {
+		digitalWrite(XPT2046_MOSI, (cmd >> i) & 1);
+		digitalWrite(XPT2046_CLK, HIGH); delayMicroseconds(1);
+		digitalWrite(XPT2046_CLK, LOW);  delayMicroseconds(1);
+	}
+	digitalWrite(XPT2046_MOSI, LOW);
+	uint16_t data = 0;
+	for (int8_t i = 0; i < 16; i++) {
+		digitalWrite(XPT2046_CLK, HIGH); delayMicroseconds(1);
+		data = (data << 1) | digitalRead(XPT2046_MISO);
+		digitalWrite(XPT2046_CLK, LOW);  delayMicroseconds(1);
+	}
+	return (data >> 3) & 0x0FFF;
+}
+
+static bool xpt2046Pressed(){
+	static bool pressed = false;
+	digitalWrite(XPT2046_CS, LOW);
+	int z = xpt2046Read(0xB1) + 4095;
+	z -= xpt2046Read(0xC0);
+	digitalWrite(XPT2046_CS, HIGH);
+	pressed = z > (pressed ? XPT2046_Z_THRESHOLD / 2 : XPT2046_Z_THRESHOLD);
+}
+#endif
+
 Buttons::Buttons(uint8_t _pin, uint8_t _pullmode, uint8_t _state): buttons() {
 	pin = _pin;
 	pullmode = _pullmode;
@@ -185,6 +216,14 @@ Buttons::Buttons(uint8_t _pin, uint8_t _pullmode, uint8_t _state): buttons() {
 		pinMode(pin, INPUT);
 	else
 		pinMode(pin, INPUT_PULLUP);
+#ifdef LAMP_TFT_TOUCH
+	pinMode(XPT2046_CS, OUTPUT);
+	digitalWrite(XPT2046_CS, HIGH);
+	pinMode(XPT2046_CLK, OUTPUT);
+	digitalWrite(XPT2046_CLK, LOW);
+	pinMode(XPT2046_MOSI, OUTPUT);
+	pinMode(XPT2046_MISO, INPUT);
+#endif
 
 	touch.stepTime = BUTTON_STEP_TIMEOUT;
 	touch.releaseTime = BUTTON_CLICK_TIMEOUT;
@@ -200,6 +239,9 @@ void Buttons::buttonTick(){
 	if (!buttonEnabled) return;
 
 	btnread = digitalRead(pin) ^ (!pullmode ^ !state);
+#ifdef LAMP_TFT_TOUCH
+	btnread |= xpt2046Pressed();
+#endif
 
 	embButtonTick(&touch);
 	bool reverse = false;
@@ -372,11 +414,16 @@ void IRAM_ATTR Buttons::isrPress() {
 }
 
 void Buttons::isrEnable(){
+#ifdef LAMP_TFT_TOUCH
+	if(!tButton)
+		tButton = new Task(20, TASK_FOREVER, std::bind(&Buttons::buttonTick, this), &ts, true, nullptr, [this](){TASK_RECYCLE; tButton=nullptr;});
+#else
 	LOG(println,F("Button switch to isr"));
 	attachInterrupt(pin, std::bind(&Buttons::isrPress,this), pullmode==1 ? RISING : FALLING );
 	if(tButton)
 		tButton->cancel();
 	tButton = new Task(500, 4, std::bind(&Buttons::buttonTick, this), &ts, true, nullptr, [this](){TASK_RECYCLE; tButton=nullptr;});	// "ленивый" опрос 4 раза в течение 2 секунд
+#endif
 }
 
 void Buttons::setButtonOn(bool flag) {

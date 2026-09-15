@@ -43,12 +43,6 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 // EffectCalc::~EffectCalc(){LOG(println, "Effect object destroyed");}
 
 //===== Ефект Конфеті ==========================//
-bool EffectSparcles::run(CRGB *ledarr, EffectWorker *opt){
-  if (dryrun(3.0))
-    return false;
-  return sparklesRoutine(*&ledarr, &*opt);
-}
-
 // !--
 String EffectSparcles::setDynCtrl(UIControl*_val){
   if(_val->getId()==3) eff = EffectCalc::setDynCtrl(_val).toInt();
@@ -56,8 +50,10 @@ String EffectSparcles::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectSparcles::sparklesRoutine(CRGB *leds, EffectWorker *param)
+bool EffectSparcles::run(CRGB *leds, EffectWorker *param)
 {
+  if (dryrun(3.0))
+    return false;
 
 #ifdef MIC_EFFECTS
   uint8_t mic = getMicMapMaxPeak();
@@ -117,10 +113,6 @@ bool EffectSparcles::sparklesRoutine(CRGB *leds, EffectWorker *param)
 }
 
 //===== Ефект Біла лампа =======================//
-bool EffectWhiteColorStripe::run(CRGB *ledarr, EffectWorker *opt){
-  return whiteColorStripeRoutine(*&ledarr, &*opt);
-}
-
 // !--
 String EffectWhiteColorStripe::setDynCtrl(UIControl*_val){
   if(_val->getId()==3) shift = EffectCalc::setDynCtrl(_val).toInt();
@@ -128,7 +120,7 @@ String EffectWhiteColorStripe::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectWhiteColorStripe::whiteColorStripeRoutine(CRGB *leds, EffectWorker *param)
+bool EffectWhiteColorStripe::run(CRGB *leds, EffectWorker *param)
 {
   myLamp.clear();
 
@@ -314,10 +306,6 @@ void EffectColors::load(){
     EffectMath::fillAll(CHSV(scale, 255U, 55U));
 }
 
-bool EffectColors::run(CRGB *ledarr, EffectWorker *opt){
-  return colorsRoutine(*&ledarr, &*opt);
-}
-
 // void EffectColors::setscl(const byte _scl){
 //   EffectCalc::setscl(_scl);
 //   modeColor = scale;
@@ -331,7 +319,7 @@ String EffectColors::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectColors::colorsRoutine(CRGB *leds, EffectWorker *param)
+bool EffectColors::run(CRGB *leds, EffectWorker *param)
 {
   static unsigned int step = 0; // доп. задержка
   unsigned int delay = (speed==1)?4294967294:255-speed+1; // на скорости 1 будет очень долгое ожидание)))
@@ -431,10 +419,6 @@ String EffectMatrix::setDynCtrl(UIControl*_val)
   return String();
 }
 
-bool EffectMatrix::run(CRGB *ledarr, EffectWorker *opt){
-  return matrixRoutine(*&ledarr, &*opt);
-}
-
 void EffectMatrix::load(){
   randomSeed(millis());
   for (uint8_t i = 0U; i < LIGHTERS_AM; i++)
@@ -448,7 +432,7 @@ void EffectMatrix::load(){
   }
 }
 
-bool EffectMatrix::matrixRoutine(CRGB *leds, EffectWorker *param)
+bool EffectMatrix::run(CRGB *leds, EffectWorker *param)
 {
 
   CHSV color;
@@ -512,10 +496,6 @@ void EffectMatrix::fillPix(CRGB color)
 
 //===== Ефект Хурделиця, Зіркопад, Метеори =====//
 // (c)Kostyamat
-bool EffectStarFall::run(CRGB *ledarr, EffectWorker *opt){
-  return snowStormStarfallRoutine(*&ledarr, &*opt);
-}
-
 void EffectStarFall::load(){
   randomSeed(millis());
   for (uint8_t i = 0U; i < LIGHTERS_AM; i++)
@@ -539,7 +519,7 @@ String EffectStarFall::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool EffectStarFall::snowStormStarfallRoutine(CRGB *leds, EffectWorker *param)
+bool EffectStarFall::run(CRGB *leds, EffectWorker *param)
 {
   EffectMath::dimAll(255 - (effId == 2 ? 70 : 60) * speedFactor);
   CHSV color;
@@ -677,63 +657,7 @@ bool EffectBall::run(CRGB *leds, EffectWorker *param) {
   return true;
 }
 
-//===== Ефект Шум 3D ===========================//
-void Effect3DNoise::fillNoiseLED()
-{
-  uint8_t dataSmoothing = 0;
-  if (speed < 50)
-  {
-    dataSmoothing = speed * 3;
-  }
-  for (uint8_t i = 0; i < maxDim; i++)
-  {
-    int32_t ioffset = _scale * i;
-    for (uint8_t j = 0; j < maxDim; j++)
-    {
-      int32_t joffset = _scale * j;
-
-      uint8_t data = inoise8(x + ioffset, y + joffset, z);
-      uint8_t data1 = inoise8(y + joffset, x + ioffset, z);
-
-      data = qsub8(data, 16);
-      data = qadd8(data, scale8(data, 39));
-
-      data1 = qsub8(data1, 16);
-      data1 = qadd8(data1, scale8(data1, 39));
-
-
-      uint8_t index = data;
-      uint8_t bri = data1;
-      // if this palette is a 'loop', add a slowly-changing base value
-      if ( colorLoop)
-      {
-        index += ihue;
-      }
-      // brighten up, as the color palette itself often contains the
-      // light/dark dynamic range desired
-      if ( bri > 127 && blurIm)
-      {
-        bri = 255;
-      }
-      else
-      {
-        bri = dim8_raw( bri * 2);
-      }
-      CRGB color = ColorFromPalette( *curPalette, index, bri);
-      if (dataSmoothing)
-      {
-        nblend(EffectMath::getPixel(i, j), color, dataSmoothing);
-      }
-      else EffectMath::drawPixelXY(i, j, color);
-    }
-  }
-  z += _speed;
-
-  // apply slow drift to X and Y, just for visual variation.
-  x += _speed * 0.125; // 1/8
-  y -= _speed * 0.0625; // 1/16
-  ihue += 1;
-}
+// Effect Noise
 
 void Effect3DNoise::load(){
   palettesload();
@@ -749,19 +673,57 @@ String Effect3DNoise::setDynCtrl(UIControl*_val) {
   return String();
 }
 
+void Effect3DNoise::fillNoiseLEDs() {
+uint8_t dataSmoothing = (speed < 50)? speed * 3 : 0;
+  for (uint8_t i = 0; i < WIDTH; i++)
+  {
+    int32_t ioffset = _scale * i;
+    for (uint8_t j = 0; j < HEIGHT; j++)
+    {
+      int32_t joffset = _scale * j;
+
+      uint8_t index = inoise8(x + ioffset, y + joffset, z);
+      uint8_t bri = inoise8(y + joffset, x + ioffset, z);
+
+      index = qsub8(index, 16);
+      index = qadd8(index, scale8(index, 39));
+
+      bri = qsub8(bri, 16);
+      bri = qadd8(bri, scale8(bri, 39));
+
+      if (colorLoop)
+        index += ihue;
+
+      if ( bri > 127 && blurIm)
+        bri = 255;
+      else
+        bri = dim8_raw( bri * 2);
+      CRGB color = ColorFromPalette( *curPalette, index, bri);
+      if (dataSmoothing)
+        nblend(EffectMath::getPixel(i, j), color, dataSmoothing);
+      else
+       EffectMath::drawPixelXY(i, j, color);
+    }
+  }
+  z += _speed;
+  x += _speed * 0.125;
+  y -= _speed * 0.0625;
+  ihue++;
+
+}
+
 bool Effect3DNoise::run(CRGB *ledarr, EffectWorker *opt){
   #ifdef MIC_EFFECTS
     uint8_t mmf = isMicOn() ? getMicMapFreq() : 0;
     uint8_t mmp = isMicOn() ? getMicMapMaxPeak() : 0;
-    //_scale = (NOISE_SCALE_AMP*(float)scale/255.0+NOISE_SCALE_ADD)*(mmf>0?(1.5*mmf/255.0):1);
-    _scale = NOISE_SCALE_AMP*scale/255.0+NOISE_SCALE_ADD; // scale changing was too much
+    //_scale = (NOISE_SCALE_AMP*(float)scale/255.0+NOISE_SCALE_ADD)*(mmf>0?(1.5*mmf/255.0):1); // scale changing was too much
     _speed = NOISE_SCALE_AMP*(float)speed/512.0*(mmf<LOW_FREQ_MAP_VAL && mmp>MIN_PEAK_LEVEL?10:2.5*mmp/255.0+1);
   #else
-    _scale = NOISE_SCALE_AMP*scale/255.0+NOISE_SCALE_ADD;
+
     _speed = NOISE_SCALE_AMP*speed/512.0;
   #endif
-
-  fillNoiseLED();
+      _scale = NOISE_SCALE_AMP * scale/255.0 + NOISE_SCALE_ADD;
+  fillNoiseLEDs();
   return true;
 }
 
@@ -772,10 +734,6 @@ bool Effect3DNoise::run(CRGB *ledarr, EffectWorker *opt){
 //  https://github.com/githubcdr/Arduino/blob/master/bouncingballs/bouncingballs.ino
 //  With BIG thanks to the FastLED community!
 //  переведено на субпіксельну графіку kostyamat
-bool EffectBBalls::run(CRGB *ledarr, EffectWorker *opt){
-  return bBallsRoutine(ledarr, opt);
-}
-
 void EffectBBalls::regen(){
   myLamp.clear();
   randomSeed(millis());
@@ -807,7 +765,7 @@ void EffectBBalls::load(){
   regen();
 }
 
-bool EffectBBalls::bBallsRoutine(CRGB *leds, EffectWorker *param)
+bool EffectBBalls::run(CRGB *leds, EffectWorker *param)
 {
   fadeToBlackBy(leds, NUM_LEDS, bluring ? 50 : 255);
   hue += (float)speed/ 1024;
@@ -896,12 +854,12 @@ switch (type) {
           CRGB color = 0;
           float cx = (y - semiHeightMajor) + sshft[0].X; // the 8 centers the middle on a 16x16
           float cy = (x - semiWidthMajor) + sshft[0].Y;
-          int8_t v = 127 * (1 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy)))) / 32767.0);
+          int8_t v = (int)(32767 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))))) >> 8;
           color.r = ~v;
 
           cx = (y - semiHeightMajor) + sshft[1].X;
           cy = (x - semiWidthMajor) + sshft[1].Y;
-          v = 127 * (1 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy)))) / 32767.0);
+          v = (int)(32767 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))))) >> 8;
           color.b = ~v;
           EffectMath::drawPixelXY(x, y, color);
         }
@@ -913,14 +871,14 @@ switch (type) {
 		  CRGB color = 0;
           float cx = (y - semiHeightMajor) + sshft[0].X;
           float cy = (x - semiWidthMajor) + sshft[0].Y;
-          int8_t v = 127 * (shift1 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy)))) / 32767.0);
+          int8_t v = (int)(shift1 * 127) + (sin16(_scale * EffectMath::sqrt(cx * cx + cy * cy)) >> 8);
           color.r = ~v;
 
           cx = (y - semiHeightMajor) + sshft[1].X;
           cy = (x - semiWidthMajor) + sshft[1].Y;
-          v = 127 * (shift2 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy)))) / 32767.0);
+          v = (int)(shift2 * 127) + (sin16(_scale * EffectMath::sqrt(cx * cx + cy * cy)) >> 8);
           color.r = (uint8_t(~v)>color.r)?~v:color.r;
-		      color.g = uint8_t(~v)/2;
+		      color.g = uint8_t(~v) >> 1;
 		      EffectMath::drawPixelXY(x, y, color);
         }
       }
@@ -931,17 +889,17 @@ switch (type) {
           CRGB color;
           float cx = (y - semiHeightMajor) + sshft[0].X;
           float cy = (x - semiWidthMajor) + sshft[0].Y;
-          int8_t v = 127 * (1 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy)))) / 32767.0);
+          int8_t v = (int)(32767 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))))) >> 8;
           color.r = ~v;
 
           cx = (y - semiHeightMajor) + sshft[1].X;
           cy = (x - semiWidthMajor) + sshft[1].Y;
-          v = 127 * (1 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy)))) / 32767.0);
+          v = (int)(32767 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))))) >> 8;
           color.g = ~v;
 
           cx = (y - semiHeightMajor) + sshft[2].X;
           cy = (x - semiWidthMajor) + sshft[2].Y;
-          v = 127 * (1 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy)))) / 32767.0);
+          v = (int)(32767 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))))) >> 8;
           color.b = ~v;
           EffectMath::drawPixelXY(x, y, color);
         }
@@ -953,17 +911,17 @@ switch (type) {
           CRGB color;
           float cx = (y - semiHeightMajor) + sshft[0].X;
           float cy = (x - semiWidthMajor) + sshft[0].Y;
-          int8_t v = 127 * (1 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))) + shift3) / 32767.0);
+          int8_t v = (int)(32767 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))) + shift3)) >> 8;
           color.r = ~v;
 
           cx = (y - semiHeightMajor) + sshft[1].X;
           cy = (x - semiWidthMajor) + sshft[1].Y;
-          v = 127 * (1 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))) + shift3) / 32767.0);
+          v = (int)(32767 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))) + shift3)) >> 8;
           color.g = ~v;
 
           cx = (y - semiHeightMajor);
           cy = (x - semiWidthMajor);
-          v = 127 * (1 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))) + shift3) / 32767.0);
+          v = (int)(32767 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))) + shift3)) >> 8;
           color.b = ~v;
           EffectMath::drawPixelXY(x, y, color);
         }
@@ -1341,14 +1299,10 @@ String EffectFlock::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool EffectFlock::run(CRGB *ledarr, EffectWorker *opt){
+bool EffectFlock::run(CRGB *leds, EffectWorker *param) {
   if (curPalette == nullptr) {
     return false;
   }
-  return flockRoutine(*&ledarr, &*opt);
-}
-
-bool EffectFlock::flockRoutine(CRGB *leds, EffectWorker *param) {
   hueoffset += (speedFactor/5.0+0.1);
 
   fadeToBlackBy(leds, NUM_LEDS, map(scale, 1, 255, 220, 10));
@@ -1527,11 +1481,7 @@ String EffectTwinkles::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool EffectTwinkles::run(CRGB *ledarr, EffectWorker *opt){
-  return twinklesRoutine(*&ledarr, &*opt);
-}
-
-bool EffectTwinkles::twinklesRoutine(CRGB *leds, EffectWorker *param)
+bool EffectTwinkles::run(CRGB *leds, EffectWorker *param)
 {
   if (curPalette == nullptr) {
     return false;
@@ -1576,11 +1526,6 @@ void EffectWaves::load(){
   palettesload();    // подгружаем дефолтные палитры
 }
 
-bool EffectWaves::run(CRGB *ledarr, EffectWorker *opt){
-  //fpsmeter();
-  return wavesRoutine(*&ledarr, &*opt);
-}
-
 // !++
 String EffectWaves::setDynCtrl(UIControl*_val){
   if(_val->getId()==1) speedFactor = EffectMath::fmap(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 0.25, 1)*EffectCalc::speedfactor;
@@ -1589,7 +1534,7 @@ String EffectWaves::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectWaves::wavesRoutine(CRGB *leds, EffectWorker *param) {
+bool EffectWaves::run(CRGB *leds, EffectWorker *param) {
   if (curPalette == nullptr) {
     return false;
   }
@@ -1673,7 +1618,7 @@ String EffectFire2012::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectFire2012::run(CRGB *ledarr, EffectWorker *opt) {
+bool EffectFire2012::run(CRGB *leds, EffectWorker *opt) {
   if (curPalette == nullptr) {
     return false;
   }
@@ -1682,10 +1627,6 @@ bool EffectFire2012::run(CRGB *ledarr, EffectWorker *opt) {
 #ifdef MIC_EFFECTS
   cooling = isMicOn() ? 255 - getMicMapMaxPeak() : 130;
 #endif
-  return fire2012Routine(*&ledarr, &*opt);
-}
-
-bool EffectFire2012::fire2012Routine(CRGB *leds, EffectWorker *opt) {
   sparking = 64 + _scale;
 
 #if HEIGHT / 6 > 6
@@ -1740,12 +1681,6 @@ bool EffectFire2012::fire2012Routine(CRGB *leds, EffectWorker *opt) {
 
 //===== Ефект Кодовий замок ====================//
 // (c) SottNick
-bool EffectRingsLock::run(CRGB *ledarr, EffectWorker *opt){
-  if (dryrun(3.0))
-    return false;
-  return ringsRoutine(*&ledarr, &*opt);
-}
-
 void EffectRingsLock::load(){
   palettesload();
   ringsSet();
@@ -1780,8 +1715,10 @@ void EffectRingsLock::ringsSet(){
   }
 }
 
-bool EffectRingsLock::ringsRoutine(CRGB *leds, EffectWorker *param)
+bool EffectRingsLock::run(CRGB *leds, EffectWorker *param)
 {
+  if (dryrun(3.0))
+    return false;
   uint8_t h, x, y;
   myLamp.clear();
 
@@ -2681,7 +2618,7 @@ String EffectLiquidLamp::setDynCtrl(UIControl*_val) {
   return String();
 }
 
-bool EffectLiquidLamp::Routine(CRGB *leds, EffectWorker *param){
+bool EffectLiquidLamp::run(CRGB *leds, EffectWorker *param){
   generate();
   position();
   if (physic_on) {
@@ -2734,19 +2671,10 @@ bool EffectLiquidLamp::Routine(CRGB *leds, EffectWorker *param){
   return true;
 }
 
-bool EffectLiquidLamp::run(CRGB *ledarr, EffectWorker *opt){
-  return Routine(*&ledarr, &*opt);
-}
-
 //===== Ефект Вихори ===========================//
 // https://github.com/pixelmatix/aurora/blob/master/PatternFlowField.h
 // Copyright(c) 2014 Jason Coon
 // адаптація SottNick
-bool EffectWhirl::run(CRGB *ledarr, EffectWorker *opt){
-
-  return whirlRoutine(*&ledarr, &*opt);
-}
-
 void EffectWhirl::load(){
   palettesload();    // подгружаем дефолтные палитры
   ff_x = random16();
@@ -2765,7 +2693,7 @@ String EffectWhirl::setDynCtrl(UIControl*_val){
   return String();
 }
 
-bool EffectWhirl::whirlRoutine(CRGB *leds, EffectWorker *param) {
+bool EffectWhirl::run(CRGB *leds, EffectWorker *param) {
 #ifdef MIC_EFFECTS
   micPick = isMicOn() ? getMicMaxPeak() : 0;
 #endif
@@ -3269,19 +3197,6 @@ void Dot::Draw(CRGB *leds)
     piXY(leds, ix + 1, iy + 1) += c11;
   }
 
-bool EffectFireworks::run(CRGB *ledarr, EffectWorker *opt)
-{
-  random16_add_entropy(millis());
-  dim = beatsin8(100, 20, 100);
-  EVERY_N_MILLISECONDS(EFFECTS_RUN_TIMER * 10) {
-    valDim = random8(25, 50);
-  }
-  EVERY_N_MILLISECONDS(10) {
-    return fireworksRoutine(*&ledarr, &*opt);
-  }
-  return false;
-}
-
 void EffectFireworks::sparkGen() {
   for (byte c = 0; c < cnt; c++) {
     if( gDot[c].show == 0 ) {
@@ -3306,8 +3221,16 @@ void EffectFireworks::sparkGen() {
   //EffectMath::blur2d(20);
 }
 
-bool EffectFireworks::fireworksRoutine(CRGB *leds, EffectWorker *param)
+bool EffectFireworks::run(CRGB *leds, EffectWorker *param)
 {
+  random16_add_entropy(millis());
+  dim = beatsin8(100, 20, 100);
+  EVERY_N_MILLISECONDS(EFFECTS_RUN_TIMER * 10) {
+    valDim = random8(25, 50);
+  }
+  static CEveryNMillis every10ms(10);
+  if (!every10ms)
+    return false;
   fadeToBlackBy(leds, NUM_LEDS, valDim);
   sparkGen();
   //memset8( leds, 0, NUM_LEDS * 3);
@@ -3499,13 +3422,9 @@ String EffectMunch::setDynCtrl(UIControl*_val){
   return String();
 }
 
- bool EffectMunch::run(CRGB *ledarr, EffectWorker *opt) {
-   if (dryrun(2.0))
+bool EffectMunch::run(CRGB *leds, EffectWorker *param) {
+  if (dryrun(2.0))
     return false;
-  return munchRoutine(*&ledarr, &*opt);
-}
-
-bool EffectMunch::munchRoutine(CRGB *leds, EffectWorker *param) {
   //fadeToBlackBy(leds, NUM_LEDS, 200); EffectMath::setPixel(
   if (flag) rand = beat8(5)/32; // Хрень, конечно, но хоть какое-то разнообразие.
   CRGB color;
@@ -5819,8 +5738,8 @@ bool EffectBalls::run(CRGB *leds, EffectWorker *opt) {
   return true;
 }
 
-//===== Ефект Лабіринт =========================//
-// solving algorithm by Stepko
+// Effect Maze
+// First person view by st3p40
 static const int8_t MAZE_DX[4] = {1, 0, -1, 0};
 static const int8_t MAZE_DY[4] = {0, -1, 0, 1};
 

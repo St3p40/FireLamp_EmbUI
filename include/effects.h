@@ -106,7 +106,6 @@ private:
     bool bluring = false;
     uint8_t _scale=1;
     uint16_t _speed;
-    bool bBallsRoutine(CRGB *leds, EffectWorker *param);
     void regen();
     void load() override;
 	String setDynCtrl(UIControl*_val) override;
@@ -168,8 +167,6 @@ private:
     uint8_t mode;
     uint8_t modeColor;
 
-    bool colorsRoutine(CRGB *leds, EffectWorker *param);
-    //void setscl(const byte _scl) override;
     String setDynCtrl(UIControl*_val) override;
 public:
     void load() override;
@@ -180,7 +177,6 @@ public:
 class EffectWhiteColorStripe : public EffectCalc {
 private:
     uint8_t shift=0;
-    bool whiteColorStripeRoutine(CRGB *leds, EffectWorker *param);
     String setDynCtrl(UIControl*_val) override;
 public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
@@ -190,7 +186,6 @@ public:
 class EffectSparcles : public EffectCalc {
 private:
     uint8_t eff = 1;
-    bool sparklesRoutine(CRGB *leds, EffectWorker *param);
 
 public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
@@ -220,7 +215,6 @@ private:
     uint8_t _scale = 1;
     const uint8_t fireSmoothing = 60U; // 90
     uint8_t heat[WIDTH][HEIGHT];
-    bool fire2012Routine(CRGB *leds, EffectWorker *param);
     String setDynCtrl(UIControl*_val) override;
 public:
     void load() override;
@@ -247,7 +241,6 @@ protected:
 // (c)Kostyamat
 class EffectMatrix : public EffectLighters {
 private:
-    bool matrixRoutine(CRGB *leds, EffectWorker *param);
     uint8_t _scale = 1;
     byte gluk = 1;
     uint8_t hue, _hue;
@@ -273,7 +266,6 @@ private:
     bool isNew = true;
     float fade;
     float speedFactor;
-    bool snowStormStarfallRoutine(CRGB *leds, EffectWorker *param);
     String setDynCtrl(UIControl*_val) override;
 
 public:
@@ -281,19 +273,16 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-//===== Ефект Шум 3D ===========================//
+// Effect Noise
 class Effect3DNoise : public EffectCalc {
 private:
-    void fillNoiseLED();
-
     uint8_t ihue;
     bool colorLoop;
 	bool blurIm;
-    float _speed;             // speed is set dynamically once we've started up
-    float _scale;             // scale is set dynamically once we've started up
-    float x;
-    float y;
-    float z;
+    float _speed;
+    float _scale;
+    float x, y, z;
+    void fillNoiseLEDs();
 
 public:
     void load() override;
@@ -315,7 +304,6 @@ private:
   bool predatorPresent;
   float hueoffset;
 
-  bool flockRoutine(CRGB *leds, EffectWorker *param);
   String setDynCtrl(UIControl*_val) override;
   //void setspd(const byte _spd) override;
 public:
@@ -416,7 +404,6 @@ private:
   uint16_t curtnum = 0;
 
   float speedFactor;
-  bool twinklesRoutine(CRGB *leds, EffectWorker *param);
   String setDynCtrl(UIControl*_val) override;
 public:
     void load() override;
@@ -435,7 +422,6 @@ private:
   float waveTheta;
   uint8_t _scale=1;
   float speedFactor;
-  bool wavesRoutine(CRGB *leds, EffectWorker *param);
   String setDynCtrl(UIControl*_val) override;
 public:
     void load() override;
@@ -459,7 +445,6 @@ private:
   uint8_t currentRing; // кольцо, которое в настоящий момент нужно провернуть
   uint8_t stepCount; // оставшееся количество шагов, на которое нужно провернуть активное кольцо - случайное от WIDTH/5 до WIDTH-3
   void ringsSet();
-  bool ringsRoutine(CRGB *leds, EffectWorker *param);
   String setDynCtrl(UIControl*_val) override;
 public:
     void load() override;
@@ -620,7 +605,6 @@ private:
     void generate(bool reset = false);
     void position();
     void physic();
-    bool Routine(CRGB *leds, EffectWorker *param);
 
     GradientPaletteList *palettes;
 public:
@@ -679,7 +663,6 @@ private:
     const uint8_t ff_speed = 1; // чем выше этот параметр, тем короче переходы (градиенты) между цветами. 1 - это самое красивое
     const uint8_t ff_scale = 26; // чем больше этот параметр, тем больше "языков пламени" или как-то так. 26 - это норм
 
-    bool whirlRoutine(CRGB *leds, EffectWorker *param);
     String setDynCtrl(UIControl*_val) override;
 public:
     void load() override;
@@ -775,7 +758,6 @@ private:
     uint8_t valDim;
     uint8_t cnt;
     bool flashing = false;
-    bool fireworksRoutine(CRGB *leds, EffectWorker *param);
     void sparkGen();
     Dot gDot[SPARK];
     Dot gSparks[NUM_SPARKS];
@@ -840,7 +822,6 @@ private:
     uint8_t minDimLocal = maxDim > 32 ? 32 : 16;
 
     String setDynCtrl(UIControl*_val) override;
-    bool munchRoutine(CRGB *leds, EffectWorker *param);
 
 public:
     void load() override;

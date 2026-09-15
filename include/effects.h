@@ -909,10 +909,9 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-//===== Ефект Візерунки ========================//
-// Ідея https://github.com/vvip-68/GyverPanelWiFi/
-// (c) kostyamat (Kostyantyn Matviyevskyy) 2020
-// перероблено kDn
+// Effect Patterns
+// idea from https://github.com/vvip-68/GyverPanelWiFi/
+// made by kostyamat, updated by kDn, by st3p40
 class EffectPatterns : public EffectCalc {
 private:
     int8_t patternIdx = -1;
@@ -923,30 +922,28 @@ private:
     bool dir = false;
     byte csum = 0;
     byte _bri = 255U;
-    uint8_t _size = 2;
     float xsin, ysin;
     unsigned long lastrun2;
     byte _sc = 0;
     float _speedX, _speedY;
 
-    CHSV colorMR[12] = {
-        CHSV(0, 0, 0),              // 0 - Black
-        CHSV(HUE_RED, 255, 255),    // 1 - Red
-        CHSV(HUE_GREEN , 255, 255),  // 2 - Green
-        CHSV(HUE_BLUE, 255, 255),   // 3 - Blue
-        CHSV(HUE_YELLOW, 255, 255), // 4 - Yellow
-        CHSV(0, 0, 220),            // 5 - White
-        CHSV(0, 255, 255),              // 6 - плавно меняеться в цикле (фон)
-        CHSV(0, 255, 255),              // 7 - цвет равен 6 но +64
-        CHSV(HUE_ORANGE, 255, 255),
-        CHSV(HUE_PINK, 255, 255),
-        CHSV(HUE_PURPLE, 255, 255),
-        CHSV(HUE_AQUA, 255, 255),
+    CRGB colorMR[12] = {
+        CRGB::Black,                    // 0 - Black
+        CRGB::Red,                      // 1 - Red
+        CRGB::Green,                    // 2 - Green
+        CRGB::Blue,                     // 3 - Blue
+        CRGB::Yellow,                   // 4 - Yellow
+        CRGB::White,                    // 5 - White
+        CRGB(0,0,0),                    // 6 - color changing (background)
+        CRGB(0,0,0),                    // 7 - color 6 +64 hue
+        CRGB::Orange,                   // 8 - orange
+        CRGB::Pink,                     // 9 - pink
+        CRGB::Purple,                   // 10 - purple
+        CRGB::Aqua,                     // 11 - aqua
     };
 
     String setDynCtrl(UIControl*_val) override;
     void drawPicture_XY();
-    bool patternsRoutine(CRGB *leds, EffectWorker *param);
 
 public:
     void load() override;

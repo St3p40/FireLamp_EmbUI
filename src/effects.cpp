@@ -4239,27 +4239,29 @@ bool EffectNexus::run(CRGB *leds, EffectWorker *opt) {
   fadeToBlackBy(leds, NUM_LEDS, map(speed, 1, 255, 11, 33));
 
   for (byte i = 0; i < map(_scale, 1, 10, 4, NEXUS); i++) {
+    float pixadj = speedFactor + dot[i].Accel;
+
     switch (dot[i].Direct)
     {
     case 0:   // вверх
-      dot[i].PosY += (speedFactor + dot[i].Accel);
+      dot[i].PosY += pixadj;
       break;
-    case 1:   //  вниз 
-      dot[i].PosY -= (speedFactor + dot[i].Accel);
+    case 1:   //  вниз
+      dot[i].PosY -= pixadj;
       break;
     case 2:   // вправо
-      dot[i].PosX += (speedFactor + dot[i].Accel);
+      dot[i].PosX += pixadj;
       break;
     case 3:   // влево
-      dot[i].PosX -= (speedFactor + dot[i].Accel);
+      dot[i].PosX -= pixadj;
       break;
     default:
       break;
-    } 
+    }
 
     // Обеспечиваем бесшовность по Y. И переносим каплю в начало трека
     if (dot[i].PosY < 0) {
-      dot[i].PosY = (float)EffectMath::getmaxHeightIndex();    
+      dot[i].PosY = (float)EffectMath::getmaxHeightIndex();
       resetDot(i);
     }
 
@@ -4281,7 +4283,7 @@ bool EffectNexus::run(CRGB *leds, EffectWorker *opt) {
    switch (dot[i].Direct)
   {
   case 0:   // вверх
-  case 1:   //  вниз 
+  case 1:   //  вниз
     EffectMath::drawPixelXYF_Y(dot[i].PosX, dot[i].PosY, dot[i].Color, 0);
     break;
   case 2:   // вправо
@@ -4290,7 +4292,7 @@ bool EffectNexus::run(CRGB *leds, EffectWorker *opt) {
     break;
   default:
     break;
-  } 
+  }
 
 
   }
@@ -4300,8 +4302,8 @@ bool EffectNexus::run(CRGB *leds, EffectWorker *opt) {
 void EffectNexus::resetDot(uint8_t idx) {
   randomSeed(micros());
   dot[idx].Direct = random8(0, 4);                     // задаем направление
-  dot[idx].Color = ColorFromPalette(*curPalette, random(0, 9) * 31, 255);              // цвет 
-  dot[idx].Accel = (float)random(5, 10) / 70;     // делаем частицам немного разное ускорение 
+  dot[idx].Color = ColorFromPalette(*curPalette, random(0, 9) * 31, 255);              // цвет
+  dot[idx].Accel = (float)random(5, 10) / 70;     // делаем частицам немного разное ускорение
   switch (dot[idx].Direct)
   {
   case 0:   // вверх
@@ -4796,7 +4798,7 @@ void EffectCell::swirl(CRGB *leds)
   EffectMath::drawPixelXY(nxi, yj, CRGB(EffectMath::getPixColorXY(nxi, yj)) + ColorFromPalette(*curPalette, ms / 41));
 }
 
-//===== Ефект Тіксі Ленд =======================//
+// Effect Tixy.land
 // https://github.com/owenmcateer/tixy.land-display
 // (c)Martin Kleppe @aemkei
 String EffectTLand::setDynCtrl(UIControl*_val){
@@ -4809,19 +4811,21 @@ String EffectTLand::setDynCtrl(UIControl*_val){
 }
 
 bool EffectTLand::run(CRGB *leds, EffectWorker *opt) {
-  t = (double)(millis()&0xFFFFF) / map(speed, 1, 255, 1200, 128); ; // на больших значениях будет странное поведение, поэтому уменьшаем точность, хоть и будет иногда срыв картинки, но в 18 минут, так что - хрен с ним
+  t = (float)(millis()&0xFFFFF) / map(speed, 1, 255, 1200, 128);
   shift = (shift+1)%fine; // 0...3
   if(!ishue) hue++;
   if(!ishue2) hue2++;
 
-  for( byte x = 0; x < WIDTH; x++) {
-    for( byte y = 0; y < HEIGHT; y++) {
+  for( uint8_t y = 0; y < HEIGHT; y++) {
+    uint16_t iy = (y * WIDTH);
+    for(uint8_t x = 0; x < WIDTH; x++) {
       //if(myLamp.getPixelNumber(x,y)%fine==shift)
+      uint16_t i = iy + x;
       if((x*WIDTH+y)%fine==shift)
-        processFrame(leds, t, x, y);
+        processFrame(leds, t, x, y, i);
     }
   }
-  
+
   if (isSeq) {
     EVERY_N_SECONDS(30) {
       animation++;
@@ -4830,8 +4834,7 @@ bool EffectTLand::run(CRGB *leds, EffectWorker *opt) {
   return true;
 }
 
-void EffectTLand::processFrame(CRGB *leds, double t, double x, double y) {
-  double i = (y * WIDTH) + x;
+void EffectTLand::processFrame(CRGB *leds, float t, float x, float y, float i) {
   int16_t frame = constrain(code(i, x, y), -1, 1) * 255;
 
   if (frame > 0) {
@@ -4842,7 +4845,7 @@ void EffectTLand::processFrame(CRGB *leds, double t, double x, double y) {
   } else EffectMath::drawPixelXY(x, y, CRGB::Black);
 }
 
-float EffectTLand::code(double i, double x, double y) {
+float EffectTLand::code(float i, float x, float y) {
 
   switch (animation) {
     /**
@@ -4876,42 +4879,30 @@ float EffectTLand::code(double i, double x, double y) {
       break;
 
     case 5:
-      // Rotation
-      //return sin(PI * 2 * atan((y - 8) / (x - 8)) + 5 * t);
-      return sin16((PI * 2.5 * EffectMath::atan_fast((y - (HEIGHT/2)) / (x - (WIDTH/2))) + 5 * t) * 8192.0)/32767.0;
-      break;
-
-    case 6:
       // Vertical fade
       //return sin(y / 8 + t);
       return sin16((y / 8 + t)*8192.0)/32767.0;
       break;
 
-    case 7:
+    case 6:
       // Smooth noise
       //return cos(t + i + x * y);
       return cos16((t + i + x * y)*8192.0)/32767.0;
       break;
 
-    case 8:
+    case 7:
       // Waves
       //return sin(x / 2) - sin(x - t) - y + 6;
       return (sin16(x * 4096.0) - sin16((x - t) * 8192.0)) / 32767.0 - y + (HEIGHT/2);
       break;
 
-    case 9:
+    case 8:
       // Drop
       //return fmod(8 * t, 13) - hypot(x - 7.5, y - 7.5);
       return fmod(8 * t, 13) - EffectMath::sqrt((x - (WIDTH/2))*(x - (WIDTH/2))+(y - (HEIGHT/2))*(y - (HEIGHT/2))); //hypot(x - (WIDTH/2), y - (HEIGHT/2));
       break;
 
-    case 10:
-      // Ripples @thespite
-      //return sin(t - EffectMath::sqrt(x * x + y * y));
-      return sin16((t - EffectMath::sqrt(x * x + y * y))*8192.0)/32767.0;
-      break;
-
-    case 11:
+    case 9:
       // Bloop bloop bloop @v21
       //return (x - 8) * (y - 8) - sin(t / 2.) * 64;
       return (x - (WIDTH/2)) * (y - (HEIGHT/2)) - sin16(t*4096.0)/512.0;
@@ -4920,30 +4911,24 @@ float EffectTLand::code(double i, double x, double y) {
     /**
      * Reddit
      */
-     case 12:
+     case 10:
       // lurkerurke https://www.reddit.com/r/programming/comments/jpqbux/minimal_16x16_dots_coding_environment/gbgcwsn/
       //return sin((x - 7.5) * (y - 7.5) / 5 * t + t);
       return sin16(((x - (WIDTH/2)) * (y - (HEIGHT/2)) / 5 * t + t)*8192.0)/32767.0;
       break;
 
-    case 13:
-      // SN0WFAKER https://www.reddit.com/r/programming/comments/jpqbux/minimal_16x16_dots_coding_environment/gbgk7c0/
-      //return sin(atan((y - 7.5) / (x - 7.5)) + t);
-      return sin16((EffectMath::atan_fast((y - (HEIGHT/2)) / (x - (WIDTH/2))) + t) * 8192.0)/32767.0;
-      break;
-
-    case 14:
+    case 11:
       //return  cos(((int)x ^ (int)y) * t); //sin(((int)(x / sin(t) / 50) ^ (int)(y / sin(t) / 50)) + t); //pow(cos(((int)y ^ (int)x) + t), cos((x > y) + t));
       return  cos16((((int)x ^ (int)y) * t)* 8192.0)/32767.0;
       break;
 
-    case 15:
+    case 12:
       // detunized https://www.reddit.com/r/programming/comments/jpqbux/minimal_16x16_dots_coding_environment/gbgk30l/
       //return sin(y / 8 + t * 0.5) + x / 16 - 0.5;
       return sin16((y / (HEIGHT/2) + t * 0.5)*8192.0)/32767.0 + x / 16 - 0.5;
       break;
 
-    case 16:
+    case 13:
       // Andres_A https://www.reddit.com/r/programming/comments/jpqbux/minimal_16x16_dots_coding_environment/gbgzdnj/
       //return 1. - hypot(sin(t) * 9 - x, cos(t) * 9 - y) / 9;
       //return 1. - hypot(sin(1.5*t) * 16 + x, cos(t*2) * 16 + y) / 4;
@@ -4957,16 +4942,7 @@ float EffectTLand::code(double i, double x, double y) {
       }
       break;
 
-    /**
-     * @akella
-     * https://twitter.com/akella/status/1323549082552619008
-     */
-    case 17:
-      //return sin(6 * atan2(y - 8, x) + t);
-      return sin16((6 * EffectMath::atan2_fast(y - (HEIGHT/2), x) + t)*8192.0)/32767.0;
-      break;
-
-    case 18:
+    case 14:
       //return sin(i / 5 + t);
       return sin16((i / 5 + t)*16384.0)/32767.0;
       break;
@@ -4976,25 +4952,25 @@ float EffectTLand::code(double i, double x, double y) {
      * https://twitter.com/P_Malin/
      */
 
-    case 19:
+    case 15:
       // Matrix Rain https://twitter.com/P_Malin/status/1323583013880553472
       //return 1. - fmod((x * x - y + t * (fmod(1 + x * x, 5)) * 6), 16) / 16;
       return 1. - fmod((x * x - (EffectMath::getmaxHeightIndex() - y) + t * (1 + fmod(x * x, 5)) * 3), WIDTH) / HEIGHT;
       break;
 
-    case 20:
+    case 16:
       // Burst https://twitter.com/P_Malin/status/1323605999274594304
       //return -10. / ((x - 8) * (x - 8) + (y - 8) * (y - 8) - fmod(t*0.3, 0.7) * 200);
       return -10. / ((x - (WIDTH/2)) * (x - (WIDTH/2)) + (y - (HEIGHT/2)) * (y - (HEIGHT/2)) - fmod(t*0.3, 0.7) * 200);
       break;
 
-    case 21:
+    case 17:
       // Rays
       //return sin(atan2(x, y) * 5 + t * 2);
       return sin16((EffectMath::atan2_fast(x, y) * 5 + t * 2)*8192.0)/32767.0;
       break;
 
-    case 22:
+    case 18:
       // Starfield https://twitter.com/P_Malin/status/1323702220320313346 
       //return !((int)(x + (t/2) * 50 / (fmod(y * y, 5.9) + 1)) & 15) / (fmod(y * y, 5.9) + 1);
       {
@@ -5004,34 +4980,29 @@ float EffectTLand::code(double i, double x, double y) {
       }
       break;
 
-    case 23:
+    case 19:
       //return sin(3 * atan2(y - 7.5 + sin(t) * 5, x - 7.5 + sin(t) * 5) + t * 5);
       //return sin(3 * atan2(y - 7.5 + sin(t) * 4, x - 7.5 + sin(t) * 4) + t * 1.5 + 5);
       return sin16((3.5*EffectMath::atan2_fast(y - (HEIGHT/2) + sin16(t*8192.0) * 0.00006, x - (WIDTH/2) + sin16(t*8192.0) * 0.00006) + t * 1.5 + 5)*8192.0)/32767.0;
       break;
 
-    case 24:
+    case 20:
       //return (y - 8) / 3 - tan(x / 6 + 1.87) * sin(t * 2);
       //return (y - 8) / 3 - tan(x / 6 + 1.87) * sin16(t * 16834.0)/32767.0;
       return (y - 8) / 3 - EffectMath::tan2pi_fast((x / 6 + 1.87)/PI*2) * sin16(t * 16834.0)/32767.0;
       break;
 
-    case 25:
+    case 21:
       //return (y - 8) / 3 - (sin(x / 4 + t * 2));
       return (y - 8) / 3 - (sin16((x / 4 + t * 2)*8192.0)/32767.0);
       break;
 
-    case 26:
+    case 22:
       //return fmod(i, 4) - fmod(y, 4) + sin(t);
       return fmod(i, 4) - fmod(y, 4) + sin16(t*8192.0)/32767.0;
       break;
 
-    case 27:
-      //return cos(sin((x * t / 10)) * PI) + cos(sin(y * t / 10 + (EffectMath::sqrt(abs(cos(x * t))))) * PI);
-      return cos(sin16(x * t * 819.2) / 32767.0 * PI) + cos16((sin16((y * t / 10 + (EffectMath::sqrt(abs(cos16(x * t * 8192.0)/32767.0))))*8192.0)/32767.0 * PI)*8192.0)/32767.0;
-      break;
-
-    case 28:
+    case 23:
       //return -.4 / (hypot(x - fmod(t, 10), y - fmod(t, 8)) - fmod(t, 2) * 9);
       {
         float _x = x - fmod(t, WIDTH);
@@ -5040,37 +5011,27 @@ float EffectTLand::code(double i, double x, double y) {
       }
       break;
 
-    case 29:
+    case 24:
       //return sin(x / 3 * sin(t / 3) * 2) + cos(y / 4 * sin(t / 2) * 2);
       return sin16(x / 3 * sin16(t * 2730.666666666667) / 2.0) / 32767.0 + cos16(y / 4 * sin16(t * 4096.0) / 2.0) / 32767.0;
       break;
 
-    case 30:
-      //return sin(x * x * 3 * i / 1e4 - y / 2 + t * 2);
-      return sin16((x * x * 3 * i / 1e4 - y / 2 + t * 2)*8192.0)/32767.0;
-      break;
-
-    case 31:
+    case 25:
       //return 1. - fabs((x - 6) * cos(t) + (y - 6) * sin(t));
       return 1. - fabs((x - (WIDTH/2)) * cos16(t*8192.0)/32767.0 + (y - (HEIGHT/2)) * sin16(t*8192.0)/32767.0);
       break;
 
-    case 32:
+    case 26:
       //return 1. / 32 * tan(t / 64 * x * tan(i - x));
       //return (((x-8)/y+t)&1^1/y*8&1)*y/5;
       return ((((uint32_t)((x-8)/(HEIGHT-y)+t) & 1 ) ^ (uint32_t)((1./(HEIGHT-y)) * 8)) & 1) * (HEIGHT-y) / 8;
       break;
 
-    case 33:
+    case 27:
       return EffectMath::atan_fast((x - (WIDTH/2)) * (y - (HEIGHT/2))) - 2.5 * sin16(t*8192.0)/32767.0;
       break;
 
-    case 34:
-      //return sin(cos(y) * t) * cos(sin(x) * t);
-      return sin16(cos16(y*8192.0)* 0.25 * t)/32767.0 * cos16(sin16(x*8192.0)* 0.25 * t)/32767.0;
-      break;
-
-    case 35:
+    case 28:
       //return sin(y * (t/4)) * cos(x * (t/4));
       return sin16(y * t * 2048.0) / 32767.0 * cos16(x * t * 2048.0) / 32767.0;
       break;
@@ -5864,38 +5825,43 @@ static const int8_t MAZE_DX[4] = {1, 0, -1, 0};
 static const int8_t MAZE_DY[4] = {0, -1, 0, 1};
 
 bool EffectMaze::isWall(int16_t x, int16_t y) {
-  return x < 0 || y < 0 || x >= M_WIDTH || y >= M_HEIGHT || maze[x][y];
+  return x < 0 || y < 0 || x >= M_WIDTH || y >= M_HEIGHT || maze[x][y >> 3] & (1 << (y & 7));
+}
+
+void EffectMaze::openCell(uint8_t x, uint8_t y) {
+  maze[x][y >> 3] &= ~(1 << (y & 7));
 }
 
 void EffectMaze::generateMaze() {
-  memset(maze, 1, sizeof(maze));
+  memset(maze, 0xFF, sizeof(maze));
   uint8_t x = 1, y = 1;
-  maze[x][y] = 6;
+  openCell(x, y);
   while (true) {
-    uint8_t dirs[4], n = 0;
+    uint8_t dirs[4], n = 0, back = 4;
     for (uint8_t d = 0; d < 4; d++) {
       int16_t nx = x + 2 * MAZE_DX[d], ny = y + 2 * MAZE_DY[d];
-      if (nx > 0 && ny > 0 && nx < M_WIDTH - 1 && ny < M_HEIGHT - 1 && maze[nx][ny] == 1)
-        dirs[n++] = d;
+      if (nx <= 0 || ny <= 0 || nx >= M_WIDTH - 1 || ny >= M_HEIGHT - 1) continue;
+      if (isWall(nx, ny)) dirs[n++] = d;
+      else if (!isWall(x + MAZE_DX[d], y + MAZE_DY[d]) && isWall(nx + 1, ny + 1)) back = d;
     }
     if (n) {
       uint8_t d = dirs[random(n)];
-      maze[x + MAZE_DX[d]][y + MAZE_DY[d]] = 0;
+      openCell(x + MAZE_DX[d], y + MAZE_DY[d]);
       x += 2 * MAZE_DX[d];
       y += 2 * MAZE_DY[d];
-      maze[x][y] = 2 + ((d + 2) & 3);
+      openCell(x, y);
     } else {
-      uint8_t back = maze[x][y] - 2;
+      openCell(x + 1, y + 1);
       if (back > 3) break;
       x += 2 * MAZE_DX[back];
       y += 2 * MAZE_DY[back];
     }
   }
-  for (uint8_t i = 0; i < M_WIDTH; i++)
-    for (uint8_t j = 0; j < M_HEIGHT; j++)
-      if (maze[i][j] != 1) maze[i][j] = 0;
-  maze[0][1] = 0;
-  maze[M_WIDTH - 2][M_HEIGHT - 1] = 0;
+  for (uint8_t i = 2; i < M_WIDTH; i += 2)
+    for (uint8_t j = 2; j < M_HEIGHT; j += 2)
+      maze[i][j >> 3] |= 1 << (j & 7);
+  openCell(0, 1);
+  openCell(M_WIDTH - 2, M_HEIGHT - 1);
 }
 
 void EffectMaze::chooseDir() {
@@ -5949,8 +5915,10 @@ void EffectMaze::drawFirstPerson() {
     for (uint16_t n = 0; n < M_WIDTH + M_HEIGHT; n++) {
       if (sdx < sdy) { sdx += ddx; mx += sx; side = false; }
       else           { sdy += ddy; my += sy; side = true; }
-      if (mx < 0 || my < 0 || mx >= M_WIDTH || my >= M_HEIGHT) { outside = true; break; }
-      if (maze[mx][my]) break;
+      if (isWall(mx, my)) {
+        outside = mx < 0 || my < 0 || mx >= M_WIDTH || my >= M_HEIGHT;
+        break;
+      }
     }
     float dist = side ? sdy - ddy : sdx - ddx;
     if (dist < 0.05f) dist = 0.05f;
@@ -6009,9 +5977,10 @@ bool EffectMaze::run(CRGB *ledarr, EffectWorker *opt) {
     drawFirstPerson();
     return true;
   }
+  const CRGB wall = CHSV(color, 200, 255);
   for (byte x = 0; x < WIDTH; x++) {
     for (byte y = 0; y < HEIGHT; y++) {
-      EffectMath::drawPixelXY(x, y,(maze[x + M_SHIFT_X][y + M_SHIFT_Y]) ? CHSV(color, 200, 255) : CHSV(0, 0, 0));
+      EffectMath::drawPixelXY(x, y, isWall(x + M_SHIFT_X, y + M_SHIFT_Y) ? wall : CRGB::Black);
     }
   }
   float s = SubPos / 255.f;
@@ -7173,7 +7142,7 @@ String EffectWcolor::setDynCtrl(UIControl*_val){
     blur = 64.f * speedFactor;
     speedFactor *= EffectCalc::speedfactor;
   }  else if(_val->getId()==3) {
-    bCounts = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 8, HEIGHT/4, HEIGHT);
+    bCounts = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 8, HEIGHT >> 2, HEIGHT);
     blots.resize(bCounts);
     load();
   }
@@ -7192,7 +7161,7 @@ bool EffectWcolor::run(CRGB *leds, EffectWorker *param) {
   fadeToBlackBy(leds, NUM_LEDS, blur);
   for (byte i = 0; i < bCounts; i++) {
     blots[i].drawing();
-    blots[i].appendXY( mode ? ((float)inoise8(t+= speedFactor, 0, i * 100) / 256) - 0.5f : 0, -speedFactor);
+    blots[i].appendXY( mode ? ((float)inoise8( t+= speedFactor, 0, i * 100) / 256) - 0.5f : 0, -speedFactor);
     if(blots[i].getY() < -0.1) {
       blots[i].reset(i, bCounts);
       random16_set_seed(millis());

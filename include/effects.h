@@ -1251,7 +1251,7 @@ class EffectCell: public EffectCalc {
     void load() override;
 };
 
-//===== Ефект Тіксі Ленд =======================//
+// Effect Tixy.land
 // https://github.com/owenmcateer/tixy.land-display
 // (c)Martin Kleppe @aemkei
 class EffectTLand: public EffectCalc {
@@ -1264,9 +1264,9 @@ class EffectTLand: public EffectCalc {
     byte hue2 = 128;
     byte shift = 0;
     byte fine = 1;
-    double t;
-    void processFrame(CRGB *leds, double t, double x, double y);
-    float code(double i, double x, double y);
+    float t;
+    void processFrame(CRGB *leds, float t, float x, float y, float i);
+    float code(float i, float x, float y);
     String setDynCtrl(UIControl*_val);
   public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
@@ -1476,8 +1476,8 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-//===== Ефект Лабіринт =========================//
-// solving algorithm by Stepko
+// Effect Maze
+// First person view by st3p40
 class EffectMaze : public EffectCalc {
 private:
     bool start = true;
@@ -1489,9 +1489,10 @@ private:
 	uint16_t SubPos;
 	int8_t turn;
 	float camTurn;
-	uint8_t maze[M_WIDTH][M_HEIGHT];
+	uint8_t maze[M_WIDTH][M_HEIGHT_BYTES];
 
 	bool isWall(int16_t x, int16_t y);
+	void openCell(uint8_t x, uint8_t y);
 	void chooseDir();
 	void generateMaze();
 	void drawFirstPerson();
@@ -1950,7 +1951,7 @@ public:
 // Effect Aquarelle
 // https://editor.soulmatelights.com/gallery/1587-oil
 // (c) kostyamat 26.12.2021
-#define BLOT_SIZE WIDTH/2
+#define BLOT_SIZE WIDTH >> 1
 class EffectWcolor : public EffectCalc {
 private:
     float speedFactor;
@@ -1975,7 +1976,7 @@ private:
             }
         }
         void reset(byte num, byte Counts) {
-            x0 = random(-5, WIDTH - 5);
+            x0 = (random() % WIDTH) - 5;
             float y0 = EffectMath::randomf(-1, HEIGHT+1);
             uint8_t dy;
             for (uint8_t i = 0; i < BLOT_SIZE; i++) {

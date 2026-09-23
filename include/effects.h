@@ -44,8 +44,8 @@ JeeUI2 lib used under MIT License Copyright (c) 2019 Marsel Akhkamov
 
 const uint8_t maxDim = (WIDTH > HEIGHT)? WIDTH : HEIGHT;
 const uint8_t minDim = (WIDTH < HEIGHT)? WIDTH : HEIGHT;
-const uint8_t width_adj = (WIDTH < HEIGHT ? (HEIGHT - WIDTH) /2 : 0);
-const uint8_t height_adj = (HEIGHT < WIDTH ? (WIDTH - HEIGHT) /2: 0);
+const uint8_t width_adj = (WIDTH < HEIGHT ? (HEIGHT - WIDTH) >> 1 : 0);
+const uint8_t height_adj = (HEIGHT < WIDTH ? (WIDTH - HEIGHT) >> 1 : 0);
 
 //===== Спеціально навчений пустий ефект :) ====//
 class EffectNone : public EffectCalc {
@@ -1055,8 +1055,8 @@ struct Snake
       stepHead(step);
 
       Pixel &h = pixels[head];
-      h.x = round(h.x);
-      h.y = round(h.y);
+      h.x = roundf(h.x);
+      h.y = roundf(h.y);
       if (turnPending) { newDirection(); turnPending = false; }
 
       pushSample();
@@ -1748,7 +1748,7 @@ private:
     float bandValues[WIDTH];
 
     float samp_freq;
-    double last_freq = 0;
+    float last_freq = 0;
     uint8_t last_min_peak, last_max_peak;
     float maxVal;
     float threshold;
@@ -1851,8 +1851,8 @@ private:
     int Erows = (HEIGHT / PSizeY);
     bool Ca = (WIDTH % PSizeX)? 1 : 0;
     bool Ra = (HEIGHT % PSizeY)? 1 : 0;
-    uint8_t PCols = round(Ecols) + Ca;
-    uint8_t PRows = round(Erows) + Ra;
+    uint8_t PCols = Ecols + Ca;
+    uint8_t PRows = Erows + Ra;
     int speedFactor = 0.1;
     std::vector<std::vector<uint8_t>> puzzle;
     byte color;
@@ -1974,8 +1974,8 @@ private:
             bri = random(128, 256);
         }
 
-        double getY() {
-            double result = y[0];
+        float getY() {
+            float result = y[0];
             for (uint8_t i = 1; i < BLOT_SIZE; i++) {
                 if (y[i] > result) result = y[i];
             }

@@ -73,7 +73,7 @@ private:
   double signalFrequency = 700;
   uint32_t samplingFrequency = SAMPLING_FREQ; // частота семплирования для esp8266 (без разгонов) скорее всего не может быть выше 9500 если чтение через analogRead(MIC_PIN);
 
-  const unsigned int sampling_period_us = round(1000000*(1.0/samplingFrequency));
+  const unsigned int sampling_period_us = roundf(1000000.0f/samplingFrequency);
   const uint8_t amplitude = 100;
   float *vReal = nullptr;
   float *vImag = nullptr;

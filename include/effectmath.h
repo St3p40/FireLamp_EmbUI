@@ -180,12 +180,12 @@ public:
     static CRGB &getLed(uint16_t idx);
     static void blur2d(uint8_t val);
 #ifdef RGB_PLAYER
-    static CRGB rgb332_To_CRGB(uint8_t value); 
+    static CRGB rgb332_To_CRGB(uint8_t value);
     static CRGB rgb565_To_CRGB(uint16_t value);
 #endif
     /** аналог ардуино функции map(), но только для float
    */
-    static double fmap(const double x, const double in_min, const double in_max, const double out_min, const double out_max){
+    static float fmap(const float x, const float in_min, const float in_max, const float out_min, const float out_max){
         return (out_max - out_min) * (x - in_min) / (in_max - in_min) + out_min;
     }
 

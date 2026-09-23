@@ -239,8 +239,8 @@ float MICWORKER::fillSizeScaledArray(float *arr, size_t size, bool bound) // bou
 
   // т.к. samplingFrequency удвоенная от реальной, то делим на 2, т.е -> samplingFrequency>>1
   float step = samplingFrequency/samples;
-  float maxFreq = bound?log((samplingFrequency>>1)):log(20000);
-  float minFreq = bound?log((step*2)):log(20);
+  float maxFreq = bound?logf((float)(samplingFrequency>>1)):logf(20000.f);
+  float minFreq = bound?logf((float)(step*2)):logf(20.f);
   float scale = (size)/(maxFreq-minFreq);
  
 

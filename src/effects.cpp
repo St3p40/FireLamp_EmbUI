@@ -67,7 +67,7 @@ bool EffectSparcles::run(CRGB *leds, EffectWorker *param)
 
   CHSV currentHSV;
 
-  for (uint8_t i = 0; i < (uint8_t)round(2.5 * (speed / 255.0) + 1); i++) {
+  for (uint8_t i = 0; i < (uint8_t)roundf(2.5f * (speed / 255.0f) + 1); i++) {
     uint8_t x = random8(0U, WIDTH);
     uint8_t y = random8(0U, HEIGHT);
 #ifdef MIC_EFFECTS
@@ -341,7 +341,7 @@ EVERY_N_SECONDS(1){
   if(isMicOn()){
     // включен микрофон
     if(scale>=127){
-      uint8_t pos = (round(3.0*(mmf+(25.0*speed/255.0))/255.0))*HEIGHT/8; // двигаем частоты по диапазону в зависимости от скорости и делим на 4 части 0...3
+      uint8_t pos = (roundf(3.0f*(mmf+(25.0f*speed/255.0f))/255.0f))*HEIGHT/8; // двигаем частоты по диапазону в зависимости от скорости и делим на 4 части 0...3
       for(uint8_t y=pos;y<pos+HEIGHT/8;y++){
         for(uint8_t x=0; x<WIDTH; x++){
           EffectMath::drawPixelXY(x, y, CHSV(mmf / 1.5, 255U, constrain(mmp * (2.0 * (scale >> 1) / 127.0 + 0.33), 1, 255)));
@@ -2208,7 +2208,7 @@ bool EffectCube2d::cube2dClassicRoutine(CRGB *leds, EffectWorker *param)
 // (c) obliterator
 // Recreated Stefan Petrick's Metaballs proof of concept by St3p40
 void EffectPicasso::generate(bool reset){
-  double minSpeed = 0.2, maxSpeed = 0.8;
+  float minSpeed = 0.2f, maxSpeed = 0.8f;
   unsigned num = map(scale, 0U, 255U, 6U, sizeof(particles) / sizeof(*particles));
 
   for (unsigned i = numParticles; i < num; i++) {
@@ -3708,8 +3708,8 @@ bool EffectButterfly::firefliesRoutine(CRGB *leds, EffectWorker *param)
     lightersIdx = (lightersIdx+1)%constrain(cnt,1,LIGHTERS_AM);
     lighter[lightersIdx].SpeedX += random(-10, 10);
     lighter[lightersIdx].SpeedY += random(-10, 10);
-    lighter[lightersIdx].SpeedX = fmod(lighter[lightersIdx].SpeedX, 21);
-    lighter[lightersIdx].SpeedY = fmod(lighter[lightersIdx].SpeedY, 21);
+    lighter[lightersIdx].SpeedX = fmodf(lighter[lightersIdx].SpeedX, 21.0f);
+    lighter[lightersIdx].SpeedY = fmodf(lighter[lightersIdx].SpeedY, 21.0f);
     lighter[lightersIdx].Light = random(255U-(cnt*8),255U);
     if(!random(cnt+3))
       lighter[lightersIdx].Light = 127;
@@ -3972,7 +3972,7 @@ bool EffectPatterns::run(CRGB *leds, EffectWorker *param)
     }
   } else patternIdx = _sc % MAX_PATTERN;
 
-  double corr = fabs(_speedX) + fabs(_speedY);
+  float corr = fabsf(_speedX) + fabsf(_speedY);
 
   uint8_t hue = beatsin88(EffectMath::fmap(corr, 0.1, 1.5, 350., 1200.), 0, 255);
 
@@ -4818,7 +4818,7 @@ float EffectTLand::code(float i, float x, float y) {
     case 8:
       // Drop
       //return fmod(8 * t, 13) - hypot(x - 7.5, y - 7.5);
-      return fmod(8 * t, 13) - EffectMath::sqrt((x - (WIDTH/2))*(x - (WIDTH/2))+(y - (HEIGHT/2))*(y - (HEIGHT/2))); //hypot(x - (WIDTH/2), y - (HEIGHT/2));
+      return fmodf(8 * t, 13.f) - EffectMath::sqrt((x - (WIDTH/2))*(x - (WIDTH/2))+(y - (HEIGHT/2))*(y - (HEIGHT/2))); //hypot(x - (WIDTH/2), y - (HEIGHT/2));
       break;
 
     case 9:
@@ -4874,13 +4874,13 @@ float EffectTLand::code(float i, float x, float y) {
     case 15:
       // Matrix Rain https://twitter.com/P_Malin/status/1323583013880553472
       //return 1. - fmod((x * x - y + t * (fmod(1 + x * x, 5)) * 6), 16) / 16;
-      return 1. - fmod((x * x - (EffectMath::getmaxHeightIndex() - y) + t * (1 + fmod(x * x, 5)) * 3), WIDTH) / HEIGHT;
+      return 1.f - fmodf((x * x - (EffectMath::getmaxHeightIndex() - y) + t * (1 + fmodf(x * x, 5.f)) * 3), WIDTH) / HEIGHT;
       break;
 
     case 16:
       // Burst https://twitter.com/P_Malin/status/1323605999274594304
       //return -10. / ((x - 8) * (x - 8) + (y - 8) * (y - 8) - fmod(t*0.3, 0.7) * 200);
-      return -10. / ((x - (WIDTH/2)) * (x - (WIDTH/2)) + (y - (HEIGHT/2)) * (y - (HEIGHT/2)) - fmod(t*0.3, 0.7) * 200);
+      return -10.f / ((x - (WIDTH/2)) * (x - (WIDTH/2)) + (y - (HEIGHT/2)) * (y - (HEIGHT/2)) - fmodf(t*0.3f, 0.7f) * 200);
       break;
 
     case 17:
@@ -4894,7 +4894,7 @@ float EffectTLand::code(float i, float x, float y) {
       //return !((int)(x + (t/2) * 50 / (fmod(y * y, 5.9) + 1)) & 15) / (fmod(y * y, 5.9) + 1);
       {
         uint16_t _y = (EffectMath::getmaxHeightIndex() - y);
-        float d = (fmod(_y * _y + 4, 4.1) + 0.85) * 0.5; // коэффициенты тут отвечают за яркость (размер), скорость, смещение, подбираются экспериментально :)
+        float d = (fmodf(_y * _y + 4, 4.1f) + 0.85f) * 0.5f; // коэффициенты тут отвечают за яркость (размер), скорость, смещение, подбираются экспериментально :)
         return !((int)(x + t * 7.0 / d) & 15) / d; // 7.0 - множитель скорости
       }
       break;
@@ -4918,15 +4918,15 @@ float EffectTLand::code(float i, float x, float y) {
 
     case 22:
       //return fmod(i, 4) - fmod(y, 4) + sin(t);
-      return fmod(i, 4) - fmod(y, 4) + sin16(t*8192.0)/32767.0;
+      return fmodf(i, 4.f) - fmodf(y, 4.f) + sin16(t*8192.f)/32767.f;
       break;
 
     case 23:
       //return -.4 / (hypot(x - fmod(t, 10), y - fmod(t, 8)) - fmod(t, 2) * 9);
       {
-        float _x = x - fmod(t, WIDTH);
-        float _y = y - fmod(t, HEIGHT);
-        return -.4 / (EffectMath::sqrt(_x*_x+_y*_y) - fmod(t, 2) * 9);
+        float _x = x - fmodf(t, WIDTH);
+        float _y = y - fmodf(t, HEIGHT);
+        return -.4f / (EffectMath::sqrt(_x*_x+_y*_y) - fmodf(t, 2.f) * 9);
       }
       break;
 
@@ -6767,8 +6767,8 @@ void EffectPuzzles::regen() {
   Erows = (HEIGHT / PSizeY);
   Ca = (WIDTH % PSizeX)? 1 : 0;
   Ra = (HEIGHT % PSizeY)? 1 : 0;
-  PCols = round(Ecols) + Ca;
-  PRows = round(Erows) + Ra;
+  PCols = Ecols + Ca;
+  PRows = Erows + Ra;
   step = 0;
   puzzle = std::vector< std::vector<uint8_t> >(PCols, std::vector<uint8_t>(PRows));
 
@@ -7107,7 +7107,7 @@ String EffectRadialFire::setDynCtrl(UIControl*_val){
 void EffectRadialFire::load() {
   for (int8_t x = -C_X; x < C_X + (int8_t)(WIDTH % 2); x++) {
     for (int8_t y = -C_Y; y < C_Y + (int8_t)(HEIGHT % 2); y++) {
-      rMap[x + C_X][y + C_Y].angle = atan2(y, x) * (180. / 2. / PI) * maxDim;
+      rMap[x + C_X][y + C_Y].angle = atan2f(y, x) * (180.f / 2.f / (float)PI) * maxDim;
       rMap[x + C_X][y + C_Y].radius = hypotf(x, y); // thanks Sutaburosu
     }
   }
@@ -7267,7 +7267,7 @@ void EffectRadialNoise::reloadMap(uint8_t var) {
   }
   for (uint8_t x = 0; x < WIDTH; x++) {
       for (uint8_t y = 0; y < HEIGHT; y++) {
-        rMap[x][y].angle = 128 * (atan2(y - YS, x - XS) / PI);
+        rMap[x][y].angle = 128 * (atan2f(y - YS, x - XS) / (float)PI);
         rMap[x][y].radius = hypot(x - XS, y - YS) * (255 / radius); //thanks Sutaburosu
       }
     }

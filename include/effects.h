@@ -1273,9 +1273,7 @@ class EffectOscilator: public EffectCalc {
 
     oscillatingCell oscillatingWorld[WIDTH][HEIGHT];
 
-    CRGBPalette16 genPalette;
     uint8_t genHue = 0;
-    void buildGenPalette();
 
     void drawPixelXYFseamless(float x, float y, CRGB color);
     int redNeighbours(uint8_t x, uint8_t y);
@@ -2129,7 +2127,7 @@ class EffectPlayer : public EffectCalc {
         uint8_t bbp = 0;
         uint8_t header_size = 0;
         File rgbFile;
-        uint8_t bufSize = 0;
+        uint16_t bufSize = 0;
         bool blur;
 
         void calc();

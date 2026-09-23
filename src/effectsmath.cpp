@@ -409,7 +409,7 @@ void EffectMath::sDrawPixelXYF_Y(int16_t x, float y, const CRGB &color) {
   getPixel(x, ay+1) += col2;
 }
 
-void EffectMath::drawPixelXYF(float x, float y, const CRGB &color, uint8_t darklevel, bool variant)
+void EffectMath::drawPixelXYF(float x, float y, const CRGB &color, uint8_t darklevel, bool variant, bool seamless)
 {
 #define WU_WEIGHT(a,b) ((uint8_t) (((a)*(b)+(a)+(b))>>8))
   // extract the fractional parts and derive their inverses
@@ -419,7 +419,8 @@ void EffectMath::drawPixelXYF(float x, float y, const CRGB &color, uint8_t darkl
                   WU_WEIGHT(ix, yy), WU_WEIGHT(xx, yy)};
   // multiply the intensities by the colour, and saturating-add them to the pixels
   for (uint8_t i = 0; i < 4; i++) {
-    int16_t xn = x + (i & 1), yn = y + ((i >> 1) & 1);
+    int16_t xn = (seamless) ? (int8_t)(x + (i & 1)) % WIDTH : (int16_t)(x + (i & 1));
+    int16_t yn = (seamless) ? (int8_t)(y + ((i >> 1) & 1)) % HEIGHT : (int16_t)(y + ((i >> 1) & 1));
     // тут нам, ИМХО, незачем гонять через прокладки, и потом сдвигать регистры. А в случае сегмента подразумевается,
     // что все ЛЕД в одном сегменте одинакового цвета, и достаточно получить цвет любого из них.
     CRGB &px = getPixel(xn, yn);

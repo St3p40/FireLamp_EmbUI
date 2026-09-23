@@ -155,7 +155,7 @@ public:
     
     static void drawPixelXY(int16_t x, int16_t y, const CRGB &color); // функция отрисовки точки по координатам X Y
     static void wu_pixel(uint32_t x, uint32_t y, CRGB col, uint8_t darklevel=0, bool variant=false);
-    static void drawPixelXYF(float x, float y, const CRGB &color, uint8_t darklevel=25, bool variant = false); // darklevel - насколько затемнять картинку
+    static void drawPixelXYF(float x, float y, const CRGB &color, uint8_t darklevel=25, bool variant = false, bool seamless = false); // darklevel - насколько затемнять картинку
     static void drawPixelXYF_Y(int16_t x, float y, const CRGB &color, uint8_t darklevel=50);
     static void drawPixelXYF_X(float x, int16_t y, const CRGB &color, uint8_t darklevel=50);
     

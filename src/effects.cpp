@@ -848,23 +848,6 @@ struct {
   float shift2 = (float(0.004 * shift));
   float shift3 = (float(100 * shift));
 switch (type) {
-    case 0: //Sinusoid I
-      for (uint8_t y = 0; y < HEIGHT; y++) {
-        for (uint8_t x = 0; x < WIDTH; x++) {
-          CRGB color = 0;
-          float cx = (y - semiHeightMajor) + sshft[0].X; // the 8 centers the middle on a 16x16
-          float cy = (x - semiWidthMajor) + sshft[0].Y;
-          int8_t v = (int)(32767 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))))) >> 8;
-          color.r = ~v;
-
-          cx = (y - semiHeightMajor) + sshft[1].X;
-          cy = (x - semiWidthMajor) + sshft[1].Y;
-          v = (int)(32767 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))))) >> 8;
-          color.b = ~v;
-          EffectMath::drawPixelXY(x, y, color);
-        }
-      }
-      break;
     case 1: //it's maybe sinusoid II
       for (uint8_t y = 0; y < HEIGHT; y++) {
         for (uint8_t x = 0; x < WIDTH; x++) {
@@ -883,7 +866,8 @@ switch (type) {
         }
       }
       break;
-    case 2: //Sinusoid III
+    case 0:
+    case 2: //Sinusoid I/III
       for (uint8_t y = 0; y < HEIGHT; y++) {
         for (uint8_t x = 0; x < WIDTH; x++) {
           CRGB color;
@@ -895,7 +879,7 @@ switch (type) {
           cx = (y - semiHeightMajor) + sshft[1].X;
           cy = (x - semiWidthMajor) + sshft[1].Y;
           v = (int)(32767 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))))) >> 8;
-          color.g = ~v;
+          color.g = (type)? ~v : 0;
 
           cx = (y - semiHeightMajor) + sshft[2].X;
           cy = (x - semiWidthMajor) + sshft[2].Y;
@@ -4969,9 +4953,16 @@ bool EffectOscilator::run(CRGB *leds, EffectWorker *opt) {
   else timer = millis(); // не могу сообразить, как по другому скоростью управлять
   CRGB currColors[3];
   // позиция 0 ползунка палитр отдана генератору цвета, остальные - штатные палитры
-  for (uint8_t c = 0; c < 3; c++)
-    currColors[c] = paletteIdx ? ColorFromPalette(*curPalette, c * 85U + hue)
-                               : ColorFromPalette(genPalette,  c * 85U + hue);
+  if(paletteIdx){
+    for (uint8_t c = 0; c < 3; c++)
+      currColors[c] = ColorFromPalette(*curPalette, c * 85U + hue);
+  }
+  else
+  {
+    currColors[0U] = CHSV((genHue - 128U) * 2, 255U, 255U);
+    currColors[1U] = CHSV((genHue - 128U) * 2, 128U, 255U);
+    currColors[2U] = CHSV((genHue - 128U) * 2, 255U, 128U);
+  }
   // расчёт химической реакции и отрисовка мира
   uint16_t colorCount[3] = {0U, 0U, 0U};
   hue++;
@@ -4993,7 +4984,7 @@ bool EffectOscilator::run(CRGB *leds, EffectWorker *opt) {
              if (redNeighbours(x, y) > 2)
                 oscillatingWorld[x][y].color = 0U;
           }
-          drawPixelXYFseamless((float)x + 0.5, (float)y + 0.5, currColors[oscillatingWorld[x][y].color]);
+          EffectMath::drawPixelXYF((float)x + 0.5, (float)y + 0.5, currColors[oscillatingWorld[x][y].color], 0, true, true);
       }
   }
   // проверка зацикливания
@@ -5054,37 +5045,17 @@ bool EffectOscilator::run(CRGB *leds, EffectWorker *opt) {
   return true;
 }
 
-// Собирает палитру из одного оттенка: три состояния автомата разнесены на треть круга,
-// поэтому берём триаду hue / hue+85 / hue+170 и замыкаем её обратно на hue.
-// Эффект сэмплит палитру в точках c*85 + hue, так что штатный "дрейф" цвета сохраняется.
-void EffectOscilator::buildGenPalette() {
-  TDynamicRGBGradientPalette_byte dynpal[16] = {
-      0,   0, 0, 0,
-      85,  0, 0, 0,
-      170, 0, 0, 0,
-      255, 0, 0, 0
-  };
-  uint8_t *ptr = (uint8_t *)dynpal + 1;
-  for (uint8_t i = 0; i < 4; i++) {
-    CRGB color = CHSV((uint8_t)(genHue + (i % 3) * 85U), 255U, 255U);
-    memcpy(ptr, color.raw, sizeof(color.raw));
-    ptr += 4;
-  }
-  genPalette.loadDynamicGradientPalette(dynpal);
-}
 
 String EffectOscilator::setDynCtrl(UIControl*_val) {
   String ret_val = EffectCalc::setDynCtrl(_val);   // палитра/скорость/яркость - базовым классом
   if (_val && _val->getId() == 4) {
     genHue = ret_val.toInt();
-    buildGenPalette();
   }
   return ret_val;
 }
 
 void EffectOscilator::load() {
   palettesload();
-  buildGenPalette();   // палитра генератора должна быть валидна до первого события контрола
   step = 0U;
  //случайное заполнение
   for (uint8_t i = 0; i < WIDTH; i++) {
@@ -5094,25 +5065,6 @@ void EffectOscilator::load() {
     }
   }
   timer = millis();
-}
-
-void EffectOscilator::drawPixelXYFseamless(float x, float y, CRGB color)
-{
-  uint8_t xx = (x - (int)x) * 255, yy = (y - (int)y) * 255, ix = 255 - xx, iy = 255 - yy;
-  // calculate the intensities for each affected pixel
-  #define WU_WEIGHT(a,b) ((uint8_t) (((a)*(b)+(a)+(b))>>8))
-  uint8_t wu[4] = {WU_WEIGHT(ix, iy), WU_WEIGHT(xx, iy),
-                   WU_WEIGHT(ix, yy), WU_WEIGHT(xx, yy)};
-  // multiply the intensities by the colour, and saturating-add them to the pixels
-  for (uint8_t i = 0; i < 4; i++) {
-    uint8_t xn = (int8_t)(x + (i & 1)) % WIDTH;
-    uint8_t yn = (int8_t)(y + ((i >> 1) & 1)) % HEIGHT;
-    CRGB clr = EffectMath::getPixColorXY(xn, yn);
-    clr.r = qadd8(clr.r, (color.r * wu[i]) >> 8);
-    clr.g = qadd8(clr.g, (color.g * wu[i]) >> 8);
-    clr.b = qadd8(clr.b, (color.b * wu[i]) >> 8);
-    EffectMath::drawPixelXY(xn, yn, clr);
-  }
 }
 
 int EffectOscilator::redNeighbours(uint8_t x, uint8_t y) {

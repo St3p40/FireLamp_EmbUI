@@ -700,8 +700,8 @@ private:
     bool firstDrop = true;
     float speedFactor = 1.;
 
-    void nGlare(uint8_t bri);
-    void nDrops(uint8_t bri);
+    void nGlare();
+    void nDrops();
     void causticGather(const uint8_t *height, uint8_t w, uint8_t h,
                        uint8_t power, const CRGB &glow);
     void springStep(int16_t *height, int16_t *vel, uint8_t *out,
@@ -1724,7 +1724,7 @@ public:
 };
 #ifdef MIC_EFFECTS
 
-//===== Ефект Частотний аналізатор =============//
+// Effect Frequency Analyzer
 /* (c) G6EJD, https://www.youtube.com/watch?v=OStljy_sUVg&t=0s
    reworked by s-marley https://github.com/s-marley/ESP32_FFT_VU
    adopted for FireLamp_EmbUI by kostyamat, kDn
@@ -1767,7 +1767,6 @@ private:
     void centerBars(uint8_t band, float barHeight, CRGBPalette16& palette, uint8_t colorShift = 0);
     void whitePeak(uint8_t band);
     void outrunPeak(uint8_t band, CRGBPalette16& palette, uint8_t colorShift = 0);
-    void waterfall(uint8_t band, uint8_t barHeight);
 
 public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
@@ -1906,8 +1905,8 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-//===== Ефект Міраж ============================//
-// based on cod by @Stepko (c) 23/12/2021
+// Effect Mirage
+// based on code by @Stepko (c) 23/12/2021
 class EffectMirage : public EffectCalc {
 private:
     const float div = 10.;

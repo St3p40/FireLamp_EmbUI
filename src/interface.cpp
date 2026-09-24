@@ -2005,12 +2005,16 @@ void block_settings_mic(Interface *interf, JsonObject *data){
 
         interf->button_submit(FPSTR(TCONST_0038), FPSTR(TINTF_008), FPSTR(P_GRAY));
         interf->json_section_end();
-
+#if MIC_PIN != -1
         interf->spacer();
         interf->button(FPSTR(TCONST_003C), FPSTR(TINTF_025), FPSTR(P_RED));
-    } else {
+#endif
+    }
+#if MIC_PIN != -1
+    else {
         interf->button(FPSTR(TCONST_003C), FPSTR(TINTF_027), FPSTR(P_RED) );
     }
+#endif
 
     interf->spacer();
     interf->button(FPSTR(TCONST_0004), FPSTR(TINTF_00B));

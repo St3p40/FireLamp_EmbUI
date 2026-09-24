@@ -55,7 +55,7 @@ ADC_MODE(ADC_TOUT);
 AsyncWebSocket wsAudio("/audio");
 
 uint16_t extMicReal[MICWORKER::samples] = {0};
-bool read_mic = true;
+volatile bool read_mic = true;
 
 void onAudioEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
     if (type == WS_EVT_DATA && read_mic) {

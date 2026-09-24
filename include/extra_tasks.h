@@ -119,7 +119,7 @@ void GaugeMix(GAUGETYPE type = GAUGETYPE::GT_NONE) {
             for (uint8_t x = 0; x <= xCol * (xStep - 1); x += xStep) {
                 for(uint8_t y = 0; y < HEIGHT; y++){
                     EffectMath::drawPixelXY(x, y, (y < ind)? ((gauge_hue)? CHSV(gauge_hue, 255, 255) : CRGB(gauge_color)):
-                     ((ind == y && subPart)? ((gauge_hue)? CHSV(gauge_hue, 255, subPart) : CRGB((uint16_t)gauge_color.r * 255 / subPart, (uint16_t)gauge_color.g * 255 / subPart, (uint16_t)gauge_color.b * 255 / subPart)):
+                     ((ind == y && subPart)? ((gauge_hue)? CHSV(gauge_hue, 255, subPart) : CRGB((uint16_t)gauge_color.r * subPart / 255, (uint16_t)gauge_color.g * subPart / 255, (uint16_t)gauge_color.b * subPart / 255)):
                       CRGB(0,0,0)));
                 }
             }
@@ -130,7 +130,7 @@ void GaugeMix(GAUGETYPE type = GAUGETYPE::GT_NONE) {
             for (uint8_t y = 0; y <= yCol * (yStep - 1); y += yStep) {
                 for(uint8_t x = 0; x < WIDTH; x++){
                     EffectMath::drawPixelXY((x + y) % WIDTH, y, (x < ind)? ((gauge_hue)? CHSV(gauge_hue, 255, 255) : CRGB(gauge_color)):
-                     ((ind == x && subPart)? ((gauge_hue)? CHSV(gauge_hue, 255, subPart) : CRGB((uint16_t)gauge_color.r * 255 / subPart, (uint16_t)gauge_color.g * 255 / subPart , (uint16_t)gauge_color.b * 255 / subPart)):
+                     ((ind == x && subPart)? ((gauge_hue)? CHSV(gauge_hue, 255, subPart) : CRGB((uint16_t)gauge_color.r * subPart / 255, (uint16_t)gauge_color.g * subPart / 255, (uint16_t)gauge_color.b * subPart / 255)):
                       CHSV(0,0,0)));
                 }
             }

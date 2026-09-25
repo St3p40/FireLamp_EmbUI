@@ -3429,86 +3429,94 @@ bool EffectMunch::run(CRGB *leds, EffectWorker *param) {
   return true;
 }
 
-//===== Ефект Кольоровий шум ===================//
-// (с) https://gist.github.com/StefanPetrick/c856b6d681ec3122e5551403aabfcc68
-DEFINE_GRADIENT_PALETTE( pit ) {
-  0,     3,   3,   3,
-  64,   13,   13, 255,  //blue
-  128,   3,   3,   3,
-  192, 255, 130,   3 ,  //orange
-  255,   3,   3,   3
-};
-
-// !++
-String EffectNoise::setDynCtrl(UIControl*_val){
-  if(_val->getId()==1) speedFactor = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 2, 16 );
-  else if(_val->getId()==4) type = EffectCalc::setDynCtrl(_val).toInt();
-  else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
+// Effect Retro demos
+//
+String EffectDemo::setDynCtrl(UIControl*_val){
+  if(_val->getId()==1) speedFactor = map(EffectCalc::setDynCtrl(_val).toInt(), 1, 255, 1, 16);
+  else if(_val->getId()==3) mode = EffectCalc::setDynCtrl(_val).toInt();
+  else if(_val->getId()==4) _scale = EffectCalc::setDynCtrl(_val).toInt();
+  else EffectCalc::setDynCtrl(_val).toInt();
   return String();
 }
 
-bool EffectNoise::run(CRGB *leds, EffectWorker *param) {
-  EffectMath::dimAll(200U);
-    uint8_t layer = 0;
-
-  CRGBPalette16 Pal( pit );
-  //modulate the position so that it increases/decreases x
-  //(here based on the top left pixel - it could be any position else)
-  //the factor "2" defines the max speed of the x movement
-  //the "-255" defines the median moving direction
-  x[layer] = x[layer] + (noise[layer][0][0] * speedFactor) - 255U;
-  //modulate the position so that it increases/decreases y
-  //(here based on the top right pixel - it could be any position else)
-  y[layer] = y[layer] + (noise[layer][EffectMath::getmaxWidthIndex()][0] * speedFactor) - 255U;
-  //z just in one direction but with the additional "1" to make sure to never get stuck
-  //in case the movement is stopped by a crazy parameter (noise data) combination
-  //(here based on the down left pixel - it could be any position else)
-  z[layer] += 1 + ((noise[layer][0][EffectMath::getmaxHeightIndex()]) / 4);
-  //set the scaling based on left and right pixel of the middle line
-  //here you can set the range of the zoom in both dimensions
-  scale_x[layer] = 8000 + (noise[layer][0][CentreY] * 16);
-  scale_y[layer] = 8000 + (noise[layer][EffectMath::getmaxWidthIndex()][CentreY] * 16);
-  //calculate the noise data
-  for (uint8_t i = 0; i < WIDTH; i++) {
-    uint32_t ioffset = scale_x[layer] * (i - CentreX);
-    for (uint8_t j = 0; j < HEIGHT; j++) {
-      uint32_t joffset = scale_y[layer] * (j - CentreY);
-      uint16_t data = inoise16(x[layer] + ioffset, y[layer] + joffset, z[layer]);
-      // limit the 16 bit results to the interesting range
-      if (data < 11000) data = 11000;
-      if (data > 51000) data = 51000;
-      // normalize
-      data = data - 11000;
-      // scale down that the result fits into a byte
-      data = data / 161;
-      // store the result in the array
-      noise[layer][i][j] = data;
-    }
-  }
-  //map the colors
+void EffectDemo::checkerboard() {
+  uint8_t cell = max((uint8_t)1, _scale);
+  uint16_t shift = t >> 3;
   for (uint8_t y = 0; y < HEIGHT; y++) {
     for (uint8_t x = 0; x < WIDTH; x++) {
-      //I will add this overlay CRGB later for more colors
-      //it´s basically a rainbow mapping with an inverted brightness mask
-      CRGB overlay;
-      if (palettepos == 14) overlay = CHSV(160,255 - noise[layer][x][y], noise[layer][EffectMath::getmaxWidthIndex()][EffectMath::getmaxHeightIndex()] + noise[layer][x][y]);
-      else overlay = CHSV(noise[layer][y][x], 255, noise[layer][x][y]);
-      //here the actual colormapping happens - note the additional colorshift caused by the down right pixel noise[layer][15][15]
-      if (palettepos == 4) EffectMath::drawPixelXYF(x, EffectMath::getmaxHeightIndex() - y, CHSV(160, 0 , noise[layer][x][y]), 35);
-      else EffectMath::drawPixelXY(x, y, ColorFromPalette(palettepos > 0 ? *curPalette : Pal, noise[layer][EffectMath::getmaxWidthIndex()][EffectMath::getmaxHeightIndex()] + noise[layer][x][y]) + overlay);
+      uint8_t cx = ((x + shift) / cell) & 1;
+      uint8_t cy = ((y + shift) / cell) & 1;
+      CRGB color = (cx ^ cy) ? ColorFromPalette(*curPalette, t >> 2) : CRGB::Black;
+      EffectMath::drawPixelXY(x, y, color);
     }
   }
-  //make it looking nice
-  if (palettepos != 4) {
-    if (type) EffectMath::nightMode(*&leds);
-    else EffectMath::gammaCorrection();
-    EffectMath::blur2d(32);
-  } else EffectMath::blur2d(48);
-  //and show it!
- return true;
 }
 
-void EffectNoise::load() {
+void EffectDemo::plasma() {
+  for (uint8_t y = 0; y < HEIGHT; y++) {
+    for (uint8_t x = 0; x < WIDTH; x++) {
+      float dx = (float)x - (float)WIDTH / 2.0f;
+      float dy = (float)y - (float)HEIGHT / 2.0f;
+      uint8_t dist = (uint8_t)(EffectMath::sqrt(dx * dx + dy * dy) * _scale);
+      uint8_t v = sin8(x * _scale + t) + sin8(y * _scale - (t >> 1)) + sin8(dist - t);
+      EffectMath::drawPixelXY(x, y, ColorFromPalette(*curPalette, v));
+    }
+  }
+}
+
+void EffectDemo::rotozoom() {
+  uint16_t angle16 = t * 16U;
+  float ca = sin16(angle16 + 16384) / 32767.0f; // cos(angle) = sin(angle + 90°)
+  float sa = sin16(angle16) / 32767.0f;
+  float scale = 0.04f + (float)_scale * 0.02f;
+  float cx = (float)WIDTH / 2.0f, cy = (float)HEIGHT / 2.0f;
+
+  for (uint8_t y = 0; y < HEIGHT; y++) {
+    for (uint8_t x = 0; x < WIDTH; x++) {
+      float dx = ((float)x - cx) * scale;
+      float dy = ((float)y - cy) * scale;
+      float u = dx * ca - dy * sa;
+      float v = dx * sa + dy * ca;
+      bool tex = ((int)floorf(u) ^ (int)floorf(v)) & 1;
+      CRGB color = tex ? ColorFromPalette(*curPalette, (uint8_t)((u + v) * 24.0f) + t) : CRGB::Black;
+      EffectMath::drawPixelXY(x, y, color);
+    }
+  }
+}
+
+void EffectDemo::pspHills() {
+  const uint8_t col = 150;
+  const uint16_t xadj = (256 / HEIGHT) << 7;
+  uint32_t tt = (uint32_t)t << 4;
+
+  for (uint8_t x = 0; x < WIDTH; x++) {
+    uint16_t h1 = map(inoise16(x * xadj + tt), 0, 65535, 0, (uint16_t)HEIGHT << 8);
+    uint16_t h2 = map(inoise16(0, 35550, x * xadj + tt), 0, 65535, 0, (uint16_t)HEIGHT << 8);
+    uint8_t bh1 = (uint8_t)(h1 >> 8);
+    uint8_t bh2 = (uint8_t)(h2 >> 8);
+
+    for (uint8_t y = 0; y < HEIGHT; y++) {
+      EffectMath::drawPixelXY(x, y, CHSV(col, map(y + x, 0, HEIGHT + WIDTH - 1, 255, 32), map(x - (int16_t)(HEIGHT - 1 - y), 0, WIDTH - 1, 196, 255)));
+      if (y < bh1) EffectMath::getPixel(x,y) += CHSV(0, 0, map(y << 8, 0, h1, 32, 256));
+      if (y < bh2) EffectMath::getPixel(x,y) += CHSV(0, 0,map(y << 8, 0, h2, 32, 256));
+    }
+    EffectMath::getPixel(x, bh1) += CHSV(0, 0, (h1 % 256));
+    EffectMath::getPixel(x, bh2) += CHSV(0, 0, (h2 % 256));
+  }
+}
+
+bool EffectDemo::run(CRGB *leds, EffectWorker *param) {
+  t += speedFactor;
+  switch (mode) {
+    case 1: plasma(); break;
+    case 2: rotozoom(); break;
+    case 3: pspHills(); break;
+    default: checkerboard(); break;
+  }
+  return true;
+}
+
+void EffectDemo::load() {
   palettesload();
 }
 

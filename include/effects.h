@@ -828,23 +828,21 @@ public:
     bool run(CRGB *ledarr, EffectWorker *opt=nullptr) override;
 };
 
-//===== Ефект Кольоровий шум ===================//
-// (с) https://gist.github.com/StefanPetrick/c856b6d681ec3122e5551403aabfcc68
-class EffectNoise : public EffectCalc {
+// Effect Retro demos
+//
+class EffectDemo : public EffectCalc {
 private:
+    uint8_t mode = 0;
+    uint8_t speedFactor = 4;
+    uint8_t _scale = 4;
+    uint16_t t = 0;
 
-    uint8_t CentreX =  (WIDTH / 2) - 1;
-    uint8_t CentreY = (HEIGHT / 2) - 1;
-    uint32_t x[NUM_LAYERS];
-    uint32_t y[NUM_LAYERS];
-    uint32_t z[NUM_LAYERS];
-    uint32_t scale_x[NUM_LAYERS];
-    uint32_t scale_y[NUM_LAYERS];
-    uint8_t  noise[NUM_LAYERS][WIDTH][HEIGHT];
-	uint8_t speedFactor;
-    bool type = false;
+    void checkerboard();
+    void plasma();
+    void rotozoom();
+    void pspHills();
 
-	String setDynCtrl(UIControl*_val) override;
+    String setDynCtrl(UIControl*_val) override;
 
 public:
     void load() override;

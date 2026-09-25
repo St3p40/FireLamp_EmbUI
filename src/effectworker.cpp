@@ -205,7 +205,7 @@ void EffectWorker::workerset(uint16_t effect, const bool isCfgProceed, const boo
     worker = std::unique_ptr<EffectMunch>(new EffectMunch());
     break;
   case EFF_ENUM::EFF_NOISE :
-    worker = std::unique_ptr<EffectNoise>(new EffectNoise());
+    worker = std::unique_ptr<EffectDemo>(new EffectDemo());
     break;
   case EFF_ENUM::EFF_BUTTERFLY :
     worker = std::unique_ptr<EffectButterfly>(new EffectButterfly());

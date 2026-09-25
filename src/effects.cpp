@@ -869,21 +869,13 @@ switch (type) {
     case 2: //Sinusoid I/III
       for (uint8_t y = 0; y < HEIGHT; y++) {
         for (uint8_t x = 0; x < WIDTH; x++) {
-          CRGB color;
-          float cx = (y - semiHeightMajor) + sshft[0].X;
-          float cy = (x - semiWidthMajor) + sshft[0].Y;
-          int8_t v = (int)(32767 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))))) >> 8;
-          color.r = ~v;
-
-          cx = (y - semiHeightMajor) + sshft[1].X;
-          cy = (x - semiWidthMajor) + sshft[1].Y;
-          v = (int)(32767 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))))) >> 8;
-          color.g = (type)? ~v : 0;
-
-          cx = (y - semiHeightMajor) + sshft[2].X;
-          cy = (x - semiWidthMajor) + sshft[2].Y;
-          v = (int)(32767 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))))) >> 8;
-          color.b = ~v;
+          CRGB color = 0;
+          for (uint8_t i = 0; i < 3; i++) {
+            float cx = (y - semiHeightMajor) + sshft[i].X;
+            float cy = (x - semiWidthMajor) + sshft[i].Y;
+            int8_t v = (int)(32767 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))))) >> 8;
+            color[i] = (!(!(type) && (i & 1)))? ~v : 0;
+          }
           EffectMath::drawPixelXY(x, y, color);
         }
       }
@@ -892,20 +884,12 @@ switch (type) {
       for (uint8_t y = 0; y < HEIGHT; y++) {
         for (uint8_t x = 0; x < WIDTH; x++) {
           CRGB color;
-          float cx = (y - semiHeightMajor) + sshft[0].X;
-          float cy = (x - semiWidthMajor) + sshft[0].Y;
-          int8_t v = (int)(32767 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))) + shift3)) >> 8;
-          color.r = ~v;
-
-          cx = (y - semiHeightMajor) + sshft[1].X;
-          cy = (x - semiWidthMajor) + sshft[1].Y;
-          v = (int)(32767 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))) + shift3)) >> 8;
-          color.g = ~v;
-
-          cx = (y - semiHeightMajor);
-          cy = (x - semiWidthMajor);
-          v = (int)(32767 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))) + shift3)) >> 8;
-          color.b = ~v;
+          for (uint8_t i = 0; i < 3; i++) {
+            float cx = (y - semiHeightMajor) + (( i == 2 ) ? 0 : sshft[i].X);
+            float cy = (x - semiWidthMajor) + (( i == 2 ) ? 0 : sshft[i].Y);
+            int8_t v = (int)(32767 + sin16(_scale * EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))) + shift3)) >> 8;
+            color[i] = ~v;
+          }
           EffectMath::drawPixelXY(x, y, color);
         }
       }
@@ -913,14 +897,13 @@ switch (type) {
     case 4: //XOR circles
       for (uint8_t y = 0; y < HEIGHT; y++) {
         for (uint8_t x = 0; x < WIDTH; x++) {
-          float cx = (y - semiHeightMajor) + sshft[0].X;
-          float cy = (x - semiWidthMajor) + sshft[0].Y;
-          uint8_t v = EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))) * xorScale; // bit different way to draw circles, that's why another "scale"
-
-          cx = (y - semiHeightMajor) + sshft[1].X;
-          cy = (x - semiWidthMajor) + sshft[1].Y;
-          uint8_t a = EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))) * xorScale;
-          EffectMath::drawPixelXY(x, y, CHSV(shift1, 255, (((a ^ v) >> 4) & 1) * 255));
+          uint8_t v[2] = {0, 0};
+          for (uint8_t i = 0; i < 2; i++) {
+            float cx = (y - semiHeightMajor) + sshft[i].X;
+            float cy = (x - semiWidthMajor) + sshft[i].Y;
+            v[i] = EffectMath::sqrt((((float) cx * cx) + ((float) cy * cy))) * xorScale; // bit different way to draw circles, that's why another "scale"
+          }
+          EffectMath::drawPixelXY(x, y, CHSV(shift1, 255, (((v[1] ^ v[0]) >> 4) & 1) * 255));
         }
       }
       break;
@@ -948,7 +931,7 @@ void EffectComet::FillNoise(int8_t layer) {
       int32_t joffset = e_scaleY[layer] * (j - e_centerY);
       int8_t data = inoise16(e_x[layer] + ioffset, e_y[layer] + joffset, e_z[layer]) >> 8;
       int8_t olddata = noise3d[layer][i][j];
-      int8_t newdata = scale8( olddata, eNs_noisesmooth ) + scale8( data, 255 - eNs_noisesmooth );
+      int8_t newdata = lerp8by8( olddata, data, 255 - eNs_noisesmooth );
       data = newdata;
       noise3d[layer][i][j] = data;
     }
@@ -4231,9 +4214,9 @@ void EffectNexus::resetDot(uint8_t idx) {
   } 
 }
 
-//===== Ефект Попкорн ==========================//
+// Effect Popcorn
 // (C) Aaron Gotwalt (Soulmate)
-// адаптація і дороблення kostyamat
+// updates by kostyamat
 void EffectPopcorn::restart_rocket(uint8_t r) {
   rockets[r].xd = (float)(random(-(WIDTH * HEIGHT + (WIDTH*2)), WIDTH * HEIGHT + (WIDTH*2))) / 256.0; 
   if ((rockets[r].x < 0 && rockets[r].xd < 0) || (rockets[r].x > EffectMath::getmaxWidthIndex() && rockets[r].xd > 0)) { // меняем направление только после выхода за пределы экрана
@@ -4265,6 +4248,9 @@ bool EffectPopcorn::run(CRGB *leds, EffectWorker *param) {
   float popcornGravity = 0.1 * speedFactor;
 
   for (uint8_t r = 0; r < numRockets; r++) {
+    float prevX = rockets[r].x;
+    float prevY = rockets[r].y;
+
     // add the X & Y velocities to the positions
     rockets[r].x += rockets[r].xd ;
     if (rockets[r].x > EffectMath::getmaxWidthIndex())
@@ -4272,12 +4258,12 @@ bool EffectPopcorn::run(CRGB *leds, EffectWorker *param) {
     if (rockets[r].x < 0)
       rockets[r].x = EffectMath::getmaxWidthIndex() + rockets[r].x;
     rockets[r].y += rockets[r].yd * speedFactor;
-    
+
     if (rockets[r].y >= (float)HEIGHT){
       //rockets[r].y = HEIGHT+HEIGHT - 2 - rockets[r].y;
       rockets[r].yd = -0.001; //rockets[r].yd;
-    } 
-    
+    }
+
 
     // bounce off the floor?
     if (rockets[r].y < 0 && rockets[r].yd < -0.7) { // 0.7 вычислено в экселе. скорость свободного падения ниже этой не падает. если ниже, значит ещё есть ускорение
@@ -4287,8 +4273,11 @@ bool EffectPopcorn::run(CRGB *leds, EffectWorker *param) {
     }
 
     // settled on the floor?
-    if (rockets[r].y <= -1)
+    bool restarted = false;
+    if (rockets[r].y <= -1) {
       restart_rocket(r);
+      restarted = true;
+    }
 
     // bounce off the sides of the screen?
     /*if (rockets[r].x < 0 || rockets[r].x > (int)WIDTH * 256) {
@@ -4307,14 +4296,22 @@ bool EffectPopcorn::run(CRGB *leds, EffectWorker *param) {
     rockets[r].xd *= 0.875;
     rockets[r].yd *= 0.875;
     // make the acme gray, because why not
-    if (-0.004 > rockets[r].yd and rockets[r].yd < 0.004)
-      EffectMath::drawPixelXYF(rockets[r].x, rockets[r].y, revCol ?
-                ColorFromPalette(*curPalette, rockets[r].hue) 
-              : CRGB::Pink, blurred ? 35 : 0);
-    else
-      EffectMath::drawPixelXYF(rockets[r].x, rockets[r].y, revCol ? 
-                CRGB::Gray 
-              : ColorFromPalette(*curPalette, rockets[r].hue), blurred ? 35 : 0);
+    CRGB rcolor = (-0.004 > rockets[r].yd and rockets[r].yd < 0.004)
+      ? (revCol ? ColorFromPalette(*curPalette, rockets[r].hue) : CRGB::Pink)
+      : (revCol ? CRGB::Gray : ColorFromPalette(*curPalette, rockets[r].hue));
+    uint8_t rdark = blurred ? 35 : 0;
+
+    float dx = rockets[r].x - prevX;
+    float dy = rockets[r].y - prevY;
+    if (!restarted && fabs(dx) < (float)WIDTH / 2.0f && (dx * dx + dy * dy) > 1.0f) {
+      uint8_t steps = (uint8_t)EffectMath::sqrt(dx * dx + dy * dy) + 1;
+      for (uint8_t s = 1; s <= steps; s++) {
+        float t = (float)s / steps;
+        EffectMath::drawPixelXYF(prevX + dx * t, prevY + dy * t, rcolor, rdark);
+      }
+    } else {
+      EffectMath::drawPixelXYF(rockets[r].x, rockets[r].y, rcolor, rdark);
+    }
   }
   return true;
 }
@@ -5289,7 +5286,7 @@ void EffectWrain::Clouds(bool flash)
       uint16_t yoffset = noiseScaleY * y ;
       int16_t noise = (inoise8(xoffset + noiseZ, yoffset + noiseZ) * 3) / 2 - y * (382 / HEIGHT);
       CRGB col = (noise < 96)? CRGB(0,0,0) : ColorFromPalette((clouds == 1)? WaterfallColors_p : *curPalette, noise, noise).nscale8(noise);
-      EffectMath::getPixel(x, HEIGHT - 1 - y) += CRGB(col.r * noise / 255, col.g * noise / 255, col.b * noise / 255);
+      EffectMath::getPixel(x, HEIGHT - 1 - y) += col.nscale8(noise);
     }
   }
   if (millis() - timer < 500) {
@@ -6189,7 +6186,7 @@ void EffectStarShips::MoveX(uint8_t am = 128, int8_t amplitude = 1, float shift 
       if ((zD >= 0) && (zD < (int8_t)WIDTH)) PixelA = EffectMath::getPixel(zD, y);
       CRGB PixelB = CRGB::Black ;
       if ((zF >= 0) && (zF < (int8_t)WIDTH)) PixelB = EffectMath::getPixel(zF, y);
-      ledsbuff[x] = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));   // lerp8by8(PixelA, PixelB, fraction );
+      ledsbuff[x] = blend(PixelA, PixelB, ease8InOutApprox(fraction));
     }
     for(uint8_t x = 0; x < WIDTH; x++){
     EffectMath::getPixel(x, y) = ledsbuff[x];}
@@ -6212,7 +6209,7 @@ void EffectStarShips::MoveY(uint8_t am = 128, int8_t amplitude = 1, float shift 
       if ((zD >= 0) && (zD < (int8_t)HEIGHT)) PixelA = EffectMath::getPixel(x, zD);
       CRGB PixelB = CRGB::Black ;
       if ((zF >= 0) && (zF < (int8_t)HEIGHT)) PixelB = EffectMath::getPixel(x, zF);
-      ledsbuff[y] = (PixelA.nscale8(ease8InOutApprox(255 - fraction))) + (PixelB.nscale8(ease8InOutApprox(fraction)));
+      ledsbuff[y] = blend(PixelA, PixelB, ease8InOutApprox(fraction));
     }
     for(uint8_t y = 0; y < HEIGHT; y++){
     EffectMath::getPixel(x, y) = ledsbuff[y];}
@@ -6864,6 +6861,7 @@ String EffectDNA::setDynCtrl(UIControl*_val) {
   else if(_val->getId()==3)  type = EffectCalc::setDynCtrl(_val).toInt();
   else if(_val->getId()==4)  _scale = EffectCalc::setDynCtrl(_val).toInt();
   else if(_val->getId()==5) bals = EffectCalc::setDynCtrl(_val).toInt();
+  else if(_val->getId()==6) showLines = EffectCalc::setDynCtrl(_val).toInt();
   else EffectCalc::setDynCtrl(_val).toInt(); // для всех других не перечисленных контролов просто дергаем функцию базового класса (если это контролы палитр, микрофона и т.д.)
   return String();
 }
@@ -6882,11 +6880,14 @@ bool EffectDNA::run(CRGB *leds, EffectWorker *param) {
   if (_type == 1 or _type == 4) a = (256.0 / (float)WIDTH);
   else a = (256.0 / (float)HEIGHT);
 
+  float lastX1 = 0, lastY1 = 0;
+  bool haveLast = false;
+
   for (byte i = 0; i < ((_type == 1) ? HEIGHT : WIDTH); i++) {
     uint16_t shift = (i * _scale);
-    uint8_t sin1 = sin8(t + shift); 
-    uint8_t brightFront =  map(sin8(t + shift + 64),0,255,96,255); 
-    uint8_t brightBack =  map(sin8(t + shift + 128 + 64),0,255,96,255);
+    uint8_t sin1 = sin8(t + shift);
+    uint8_t brightFront = map(sin8(t + shift + 64),0,255,96,255);
+    uint8_t brightBack = map(sin8(t + shift + 128 + 64),0,255,96,255);
     float x = 0, y = 0, x1 = 0, y1 = 0;
     uint8_t width_height;
 
@@ -6902,7 +6903,7 @@ bool EffectDNA::run(CRGB *leds, EffectWorker *param) {
     case 2: // Вертикально-горизонтальная
       width_height = HEIGHT;
       x = sin1 / a;
-      y = i;
+      y = i * (float)(HEIGHT - 1) / (float)(WIDTH > 1 ? WIDTH - 1 : 1);
       y1 = (float)(width_height - 1) - (sin1 / a);
       x1 = i;
       break;
@@ -6919,11 +6920,18 @@ bool EffectDNA::run(CRGB *leds, EffectWorker *param) {
     }
 
     if (flag or !bals) {
-      EffectMath::drawPixelXYF(x, y, CHSV(sin1, 255, brightFront));
+      EffectMath::drawPixelXYF(x, y, CHSV(0, 0, brightFront));
     }
     if (!flag or !bals)
-      EffectMath::drawPixelXYF(x1, y1, CHSV(~sin1, 255, brightBack));
-    flag = !flag; 
+      EffectMath::drawPixelXYF(x1, y1, CHSV(0, 0, brightBack));
+    if (showLines && (i % 4 == 0)) {
+      if (haveLast)
+        EffectMath::drawLineF(x, y, lastX1, lastY1, CHSV(sin1, 200, brightFront), CHSV(sin1, 200, brightBack));
+      lastX1 = x1; lastY1 = y1;
+      haveLast = true;
+    }
+
+    flag = !flag;
   }
   EffectMath::blur2d(leds, WIDTH, HEIGHT, 64);
 
@@ -7129,16 +7137,27 @@ bool EffectSplashBals::run(CRGB *leds, EffectWorker *param) {
   fadeToBlackBy(leds, NUM_LEDS, 100);
   hue++;
 
+  CRGB ballColor[6];
   for (byte i = 0; i < count; i++) {
     ball[i].x = (float)beatsin88(((10UL + ball[i].iniX) * 256) * speedFactor, 0, EffectMath::getmaxWidthIndex() * DEV) / DEV;
     ball[i].y = (float)beatsin88(((10UL + ball[i].iniY) * 256) * speedFactor, 0, EffectMath::getmaxHeightIndex() * DEV) / DEV;
+    ballColor[i] = ColorFromPalette(*curPalette, 256 - 256 / HEIGHT * fabs(float(HEIGHT / 2) - ball[i].y));
+  }
+
+  for (byte i = 0; i < count; i++) {
     for (byte j = i; j < count; j++) {
-      byte a = dist(ball[i].x , ball[i].y, ball[j].x , ball[j].x );
+      byte a = dist(ball[i].x, ball[i].y, ball[j].x, ball[j].y);
       if ((i != j) & (a <= float(min(WIDTH, HEIGHT) / 2))) {
-        EffectMath::drawLineF(ball[i].x, ball[i].y, ball[j].x, ball[j].y, CHSV(0, 0, EffectMath::fmap(a, min(WIDTH, HEIGHT), 0, 48, 255)));
+        uint8_t bri = EffectMath::fmap(a, min(WIDTH, HEIGHT), 0, 48, 255);
+        CRGB c1 = ballColor[i]; c1.nscale8(bri);
+        CRGB c2 = ballColor[j]; c2.nscale8(bri);
+        EffectMath::drawLineF(ball[i].x, ball[i].y, ball[j].x, ball[j].y, c1, c2);
       }
     }
-    EffectMath::fill_circleF(ball[i].x, ball[i].y, EffectMath::fmap(fabs(float(WIDTH / 2) - ball[i].x), 0, WIDTH / 2, R, 0.2), ColorFromPalette(*curPalette, 256 - 256/HEIGHT * fabs(float(HEIGHT/2) - ball[i].y)));
+  }
+
+  for (byte i = 0; i < count; i++) {
+    EffectMath::fill_circleF(ball[i].x, ball[i].y, EffectMath::fmap(fabs(float(WIDTH / 2) - ball[i].x), 0, WIDTH / 2, R, 0.2), ballColor[i]);
   }
   EffectMath::blur2d(leds, WIDTH, HEIGHT, 48);
   return true;

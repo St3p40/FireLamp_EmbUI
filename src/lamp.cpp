@@ -1366,18 +1366,20 @@ void LAMP::show() {
   tft.startWrite();
 #ifdef LAMP_TFT_RGB666
     constexpr size_t lineBytes = (HEIGHT << 3) * 3;
-    static uint8_t line[lineBytes + 4] __attribute__((aligned(4)));
+    constexpr size_t blockBytes = lineBytes * 8;
+    static uint8_t block[blockBytes + 4] __attribute__((aligned(4)));
     tft.setAddrWindow(0, 0, HEIGHT << 3, WIDTH << 3);
     for (int x = 0; x < WIDTH; x++) {
-        uint8_t *p = line;
+        uint8_t *p = block;
         for (int y = 0; y < HEIGHT; y++) {
             const CRGB &pixel = leds[x + (y * WIDTH)];
             for (int i = 0; i < 8; i++) {
                 *p++ = pixel.r; *p++ = pixel.g; *p++ = pixel.b;
             }
         }
-        for (int i = 0; i < 8; i++)
-            tft.pushPixels(line, lineBytes / 2);
+        for (int rep = 1; rep < 8; rep++)
+            memcpy(block + rep * lineBytes, block, lineBytes);
+        tft.pushPixels(block, blockBytes >> 1);
     }
 #else
     for (int y = 0; y < HEIGHT; y++) {

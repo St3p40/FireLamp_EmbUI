@@ -551,15 +551,22 @@ CRGB EffectMath::getPixColorXYF_Y(int16_t x, float y)
 }
 
 void EffectMath::drawLine(int x1, int y1, int x2, int y2, const CRGB &color){
+  drawLine(x1, y1, x2, y2, color, color);
+}
+
+void EffectMath::drawLine(int x1, int y1, int x2, int y2, const CRGB &color1, const CRGB &color2){
   int deltaX = abs(x2 - x1);
   int deltaY = abs(y2 - y1);
   int signX = x1 < x2 ? 1 : -1;
   int signY = y1 < y2 ? 1 : -1;
   int error = deltaX - deltaY;
+  int totalSteps = max(deltaX, deltaY);
+  int step = 0;
 
-  drawPixelXY(x2, y2, color);
+  drawPixelXY(x2, y2, color2);
   while (x1 != x2 || y1 != y2) {
-      drawPixelXY(x1, y1, color);
+      uint8_t t = totalSteps ? (uint8_t)constrain(255 * step / totalSteps, 0, 255) : 0;
+      drawPixelXY(x1, y1, totalSteps ? blend(color1, color2, t) : color1);
       int error2 = error * 2;
       if (error2 > -deltaY) {
           error -= deltaY;
@@ -569,10 +576,15 @@ void EffectMath::drawLine(int x1, int y1, int x2, int y2, const CRGB &color){
           error += deltaX;
           y1 += signY;
       }
+      step++;
   }
 }
 
 void EffectMath::drawLineF(float x1, float y1, float x2, float y2, const CRGB &color){
+  drawLineF(x1, y1, x2, y2, color, color);
+}
+
+void EffectMath::drawLineF(float x1, float y1, float x2, float y2, const CRGB &color1, const CRGB &color2){
   float deltaX = fabs(x2 - x1);
   float deltaY = fabs(y2 - y1);
   float error = deltaX - deltaY;
@@ -580,12 +592,16 @@ void EffectMath::drawLineF(float x1, float y1, float x2, float y2, const CRGB &c
   float signX = x1 < x2 ? 1. : -1.;
   float signY = y1 < y2 ? 1. : -1.;
 
+  float totalSteps = (deltaX > deltaY) ? deltaX : deltaY;
+  float step = 0.;
+
   while (x1 != x2 || y1 != y2) { // (true) - а я то думаю - "почему функция часто вызывает вылет по вачдогу?" А оно вон оно чё, Михалычь!
     if ((signX > 0. && x1 > x2 + signX) || (signX < 0. && x1 < x2 + signX))
       break;
     if ((signY > 0. && y1 > y2 + signY) || (signY < 0. && y1 < y2 + signY))
       break;
-    drawPixelXYF(x1, y1, color);
+    uint8_t t = (totalSteps > 0.0001f) ? (uint8_t)constrain((step / totalSteps) * 255.0f, 0.0f, 255.0f) : 0;
+    drawPixelXYF(x1, y1, (totalSteps > 0.0001f) ? blend(color1, color2, t) : color1);
     float error2 = error;
     if (error2 > -deltaY)
     {
@@ -596,6 +612,7 @@ void EffectMath::drawLineF(float x1, float y1, float x2, float y2, const CRGB &c
           error += deltaX;
           y1 += signY;
       }
+      step += 1.0f;
   }
 }
 
